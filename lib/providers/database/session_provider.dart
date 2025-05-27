@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../database/database.dart';
+import '../current_date_provider.dart';
 import 'database_provider.dart';
 
 part 'session_provider.g.dart';
@@ -66,13 +67,12 @@ Stream<List<Session>> watchSessionsByDay(Ref ref, DateTime? date) {
 /// Provider for a stream of sessions without tasks (reactive)
 @riverpod
 Stream<List<Session>> watchSessionsWithoutTasks(Ref ref) {
+  ref.watch(currentDateProvider);
+
   final db = ref.watch(databaseProvider);
   final now = DateTime.now();
   final startOfDay = DateTime(now.year, now.month, now.day);
   final endOfDay = startOfDay.add(const Duration(days: 1));
-
-  // Watch for changes to all sessions to trigger updates
-  ref.watch(watchAllSessionsProvider);
 
   return db.sessionDao.watchSessionsWithoutTaskInRange(
     startOfDay.toIso8601String(),

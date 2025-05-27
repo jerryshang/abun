@@ -97,7 +97,7 @@ class TaskDao {
       if (task.status == TaskStatus.planned.value) {
         return DateTimeUtils.isForecastWindowCoveredByStartTime(
               anchorTime: today,
-              forecastDuration: Duration(days: 1),
+              forecastDuration: Duration.zero,
               startTime: task.startTime?.toDateTime() ?? DateTimeExtension.farFuture,
             ) ||
             DateTimeUtils.isForecastWindowCovered(
