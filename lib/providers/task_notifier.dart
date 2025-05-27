@@ -2,7 +2,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../database/database.dart';
-import 'database_provider.dart';
+import 'database/index.dart';
 
 part 'task_notifier.g.dart';
 

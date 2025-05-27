@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:abun/database/database.dart';
 import 'package:abun/extensions/task_status_extension.dart';
 import 'package:abun/models/task_status.dart';
-import 'package:abun/providers/database_provider.dart';
+import 'package:abun/providers/database/index.dart';
 import 'package:abun/widgets/session_form.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

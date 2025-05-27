@@ -1,14 +1,13 @@
+import 'package:abun/constants/app_constants.dart';
+import 'package:abun/database/database.dart';
 import 'package:abun/extensions/time_extensions.dart';
-import 'package:abun/providers/database_provider.dart';
-import 'package:abun/providers/refresh_provider.dart';
+import 'package:abun/providers/current_date_provider.dart';
+import 'package:abun/providers/database/index.dart';
 import 'package:abun/routes.dart';
 import 'package:abun/widgets/session_form.dart';
 import 'package:abun/widgets/task_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'constants/app_constants.dart';
-import 'database/database.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final String title;
@@ -30,11 +29,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     // Watch for date changes to trigger refresh
-    final todayKey = ref.watch(refreshProvider);
+    final todayKey = ref.watch(currentDateProvider);
 
     final activeTasksStream = ref.watch(watchActiveTasksProvider);
-    final completedTasksStream = ref.watch(completedTasksProvider);
-    final completedStandaloneSessionsStream = ref.watch(watchSessionsWithoutTasksProvider);
+    final completedTasksStream = ref.watch(watchCompletedTasksProvider);
+    final completedIndependentSessionsStream = ref.watch(watchSessionsWithoutTasksProvider);
+    // session of today, for time blocks
     final sessionsStream = ref.watch(watchSessionsByDayProvider.call(todayKey));
 
     return Scaffold(
@@ -73,7 +73,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       // Active tasks list
                       _buildActiveTasksList(activeTasksStream),
                       // Completed tasks section
-                      _buildCompletedTasksSection(completedTasksStream, completedStandaloneSessionsStream),
+                      _buildCompletedTasksSection(completedTasksStream, completedIndependentSessionsStream),
                     ],
                   ),
                 ),

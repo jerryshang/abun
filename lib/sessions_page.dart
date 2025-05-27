@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'constants/app_constants.dart';
 import 'database/database.dart';
-import 'providers/database_provider.dart';
+import 'providers/database/index.dart';
 
 class SessionsPage extends ConsumerStatefulWidget {
   const SessionsPage({super.key});

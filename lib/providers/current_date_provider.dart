@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-final refreshProvider = StateNotifierProvider<RefreshNotifier, DateTime>((ref) {
-  return RefreshNotifier();
+final currentDateProvider = StateNotifierProvider<CurrentDateNotifier, DateTime>((ref) {
+  return CurrentDateNotifier();
 });
 
-class RefreshNotifier extends StateNotifier<DateTime> {
-  RefreshNotifier() : super(_getCurrentDateKey()) {
+class CurrentDateNotifier extends StateNotifier<DateTime> {
+  CurrentDateNotifier() : super(_getCurrentDateKey()) {
     // Check for date change periodically (every minute)
     _checkDateChange();
   }
@@ -18,7 +18,7 @@ class RefreshNotifier extends StateNotifier<DateTime> {
 
   void _checkDateChange() async {
     while (true) {
-      await Future.delayed(const Duration(minutes: 1));
+      await Future.delayed(const Duration(seconds: 1));
       final currentDate = _getCurrentDateKey();
       if (currentDate != state) {
         state = currentDate;

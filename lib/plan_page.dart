@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'database/database.dart';
 import 'models/task_status.dart';
-import 'providers/database_provider.dart';
+import 'providers/database/index.dart';
 import 'providers/task_notifier.dart';
 
 class PlanPage extends ConsumerStatefulWidget {

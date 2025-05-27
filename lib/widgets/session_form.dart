@@ -10,7 +10,7 @@ import '../database/database.dart';
 import '../models/session_mood.dart';
 import '../models/session_type.dart';
 import '../models/task_status.dart';
-import '../providers/database_provider.dart';
+import '../providers/database/index.dart';
 
 class SessionForm extends ConsumerStatefulWidget {
   final String? taskId;

@@ -1,6 +1,4 @@
-import 'dart:math';
-
-extension Iso8601DurationExtension on String {
+extension Iso8601StringExtension on String {
   /// Parses an ISO 8601 duration string (e.g., PT25M, PT1H30M) and returns the total minutes
   int toMinutes() {
     try {
@@ -29,6 +27,14 @@ extension Iso8601DurationExtension on String {
       return Duration.zero;
     }
   }
+
+  DateTime? toDateTime() {
+    try {
+      return DateTime.tryParse(this);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class DateTimeUtils {
@@ -36,9 +42,52 @@ class DateTimeUtils {
   static int overlapInMinutes(DateTime start1, DateTime end1, DateTime start2, DateTime end2) {
     final latestStart = start1.isAfter(start2) ? start1 : start2;
     final earliestEnd = end1.isBefore(end2) ? end1 : end2;
-    final overlap = earliestEnd.isAfter(latestStart)
-        ? earliestEnd.difference(latestStart)
-        : Duration.zero;
+    final overlap = earliestEnd.isAfter(latestStart) ? earliestEnd.difference(latestStart) : Duration.zero;
     return overlap.inMinutes;
+  }
+
+  static bool visible(DateTime anchor, DateTime? due, Duration? duration, int pre) {
+    final dueTime = (due ?? DateTimeExtension.farFuture).date();
+    final estimatedDuration = duration ?? Duration.zero;
+    final estimatedStartDate = dueTime.subtract(estimatedDuration).date();
+    return (anchor == estimatedStartDate || anchor.isAfter(estimatedStartDate));
+  }
+
+  static bool isForecastWindowCovered({
+    required DateTime anchorTime,
+    required Duration forecastDuration,
+    Duration? estimatedDuration,
+    DateTime? dueTime,
+  }) {
+    final Duration effectiveDuration = estimatedDuration ?? Duration.zero;
+    final DateTime effectiveDueTime = dueTime ?? DateTime(9999, 12, 31);
+    final estimatedStartTime = effectiveDueTime.subtract(effectiveDuration);
+
+    return isForecastWindowCoveredByStartTime(
+      anchorTime: anchorTime,
+      forecastDuration: forecastDuration,
+      startTime: estimatedStartTime,
+    );
+  }
+
+  static bool isForecastWindowCoveredByStartTime({
+    required DateTime anchorTime,
+    required Duration forecastDuration,
+    DateTime? startTime,
+  }) {
+    final latestAcceptableTime = anchorTime.add(forecastDuration);
+
+    final estimatedStartTime = startTime ?? DateTime(9999, 12, 31);
+
+    return estimatedStartTime.isBefore(latestAcceptableTime) ||
+        estimatedStartTime.isAtSameMomentAs(latestAcceptableTime);
+  }
+}
+
+extension DateTimeExtension on DateTime {
+  static DateTime get farFuture => DateTime(9999, 12, 31, 23, 59, 59, 999, 999);
+
+  DateTime date() {
+    return DateTime(year, month, day);
   }
 }
