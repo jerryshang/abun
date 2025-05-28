@@ -208,35 +208,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
               // Today's sessions without tasks
               Consumer(
-                builder: (context, ref, _) {
-                  return sessionsWithoutTasksStream.when(
-                    data: (sessions) {
-                      if (sessions.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...sessions.map((session) {
-                            final duration = session.duration.toString().toMinutes();
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(session.title ?? 'Untitled Session', style: const TextStyle(fontSize: 14)),
-                                  Text('$duration min', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Center(child: Text('Error: $error')),
-                  );
-                },
+                builder: (context, ref, _) => _buildSessionsWithoutTasksList(sessionsWithoutTasksStream),
               ),
 
               // Show message if no content
@@ -272,10 +244,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Text(task.title, style: const TextStyle(fontSize: 14)),
-                  Text('$totalMinutes min', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                  Icon(Icons.done_all, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text(task.title, style: const TextStyle(fontSize: 20)),
+                  Expanded(child: Container()),
+                  Text('$totalMinutes min', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
                 ],
               ),
             );
@@ -287,6 +262,37 @@ class _HomePageState extends ConsumerState<HomePage> {
           error: (_, __) => const SizedBox.shrink(),
         );
       },
+    );
+  }
+
+  Widget _buildSessionsWithoutTasksList(AsyncValue<List<Session>> sessionsStream) {
+    return sessionsStream.when(
+      data: (sessions) {
+        if (sessions.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sessions.map((session) {
+            final duration = session.duration.toString().toMinutes();
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const Icon(Icons.check, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Text(session.title ?? 'Untitled Session', style: const TextStyle(fontSize: 20)),
+                  const Expanded(child: SizedBox()),
+                  Text('$duration min', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('Error: $error')),
     );
   }
 
