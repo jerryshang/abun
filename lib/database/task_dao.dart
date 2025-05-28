@@ -22,13 +22,19 @@ class TaskDao {
 
   TaskDao(this._db);
 
-  Future<List<Task>> getAllTasks() async {
-    final results = await _db.select(_db.tasks).get();
-    return results.map((row) => row.toTask()).toList();
-  }
-
   Stream<List<Task>> watchAllTasks() {
     return _db.select(_db.tasks).watch().map((rows) => rows.map((row) => row.toTask()).toList());
+  }
+
+  Stream<List<Task>> watchTasks({bool showCompleted = false, bool recentFirst = true}) {
+    final query = _db.select(_db.tasks);
+
+    if (!showCompleted) {
+      query.where((t) => t.status.isNotIn([TaskStatus.completed.value, TaskStatus.eliminated.value]));
+    }
+    query.orderBy([(t) => recentFirst ? OrderingTerm.desc(t.updatedAt) : OrderingTerm.asc(t.updatedAt)]);
+
+    return query.watch().map((rows) => rows.map((row) => row.toTask()).toList());
   }
 
   Future<Task?> getTaskById(String id) async {
@@ -81,9 +87,7 @@ class TaskDao {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    final allTasks = await getAllTasks();
-
-    return allTasks.where((task) {
+    return (await _db.select(_db.tasks).get()).where((task) {
       if (task.status == TaskStatus.inProgress.value) {
         return true;
       }

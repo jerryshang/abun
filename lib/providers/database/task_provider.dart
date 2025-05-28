@@ -1,17 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../database/database.dart';
 import '../current_date_provider.dart';
 import 'database_provider.dart';
 
 part 'task_provider.g.dart';
-
-/// Provider for all tasks
-@riverpod
-Future<List<Task>> allTasks(Ref ref) async {
-  final db = ref.watch(databaseProvider);
-  return db.taskDao.getAllTasks();
-}
 
 /// Provider for a single task by ID
 @riverpod
@@ -20,11 +14,10 @@ Future<Task?> taskById(Ref ref, String id) async {
   return db.taskDao.getTaskById(id);
 }
 
-/// Provider for a stream of all tasks (reactive)
 @riverpod
-Stream<List<Task>> watchAllTasks(Ref ref) {
+Stream<List<Task>> watchTasks(Ref ref, {bool showCompleted = false, bool recentFirst = true}) {
   final db = ref.watch(databaseProvider);
-  return db.taskDao.watchAllTasks();
+  return db.taskDao.watchTasks(showCompleted: showCompleted, recentFirst: recentFirst);
 }
 
 /// Provider for tasks by routine ID

@@ -10,21 +10,10 @@ String _$allTasksHash() => r'e5b91ac5ac7a8007bbca5f022f10bdaf1185cdb5';
 
 /// Provider for all tasks
 ///
-/// Copied from [allTasks].
-@ProviderFor(allTasks)
-final allTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
-  allTasks,
-  name: r'allTasksProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$allTasksHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AllTasksRef = AutoDisposeFutureProviderRef<List<Task>>;
+
 String _$taskByIdHash() => r'c4a6ae21ed4de1acda6c58672a9692a7efdd3914';
 
 /// Copied from Dart SDK
@@ -83,8 +72,7 @@ class TaskByIdFamily extends Family<AsyncValue<Task?>> {
   static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
 
   @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies => _allTransitiveDependencies;
 
   @override
   String? get name => r'taskByIdProvider';
@@ -102,9 +90,7 @@ class TaskByIdProvider extends AutoDisposeFutureProvider<Task?> {
         (ref) => taskById(ref as TaskByIdRef, id),
         from: taskByIdProvider,
         name: r'taskByIdProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$taskByIdHash,
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$taskByIdHash,
         dependencies: TaskByIdFamily._dependencies,
         allTransitiveDependencies: TaskByIdFamily._allTransitiveDependencies,
         id: id,
@@ -164,8 +150,7 @@ mixin TaskByIdRef on AutoDisposeFutureProviderRef<Task?> {
   String get id;
 }
 
-class _TaskByIdProviderElement extends AutoDisposeFutureProviderElement<Task?>
-    with TaskByIdRef {
+class _TaskByIdProviderElement extends AutoDisposeFutureProviderElement<Task?> with TaskByIdRef {
   _TaskByIdProviderElement(super.provider);
 
   @override
@@ -174,23 +159,131 @@ class _TaskByIdProviderElement extends AutoDisposeFutureProviderElement<Task?>
 
 String _$watchAllTasksHash() => r'e41dadd3788544486e309f339c9e87200c3b109a';
 
-/// Provider for a stream of all tasks (reactive)
-///
-/// Copied from [watchAllTasks].
-@ProviderFor(watchAllTasks)
-final watchAllTasksProvider = AutoDisposeStreamProvider<List<Task>>.internal(
-  watchAllTasks,
-  name: r'watchAllTasksProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$watchAllTasksHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchAllTasksRef = AutoDisposeStreamProviderRef<List<Task>>;
+
+String _$watchTasksHash() => r'023f4074022e6fa1be6ae28ae1052946db10dfd3';
+
+/// See also [watchTasks].
+@ProviderFor(watchTasks)
+const watchTasksProvider = WatchTasksFamily();
+
+/// See also [watchTasks].
+class WatchTasksFamily extends Family<AsyncValue<List<Task>>> {
+  /// See also [watchTasks].
+  const WatchTasksFamily();
+
+  /// See also [watchTasks].
+  WatchTasksProvider call({bool showCompleted = false, bool recentFirst = true}) {
+    return WatchTasksProvider(showCompleted: showCompleted, recentFirst: recentFirst);
+  }
+
+  @override
+  WatchTasksProvider getProviderOverride(covariant WatchTasksProvider provider) {
+    return call(showCompleted: provider.showCompleted, recentFirst: provider.recentFirst);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies => _allTransitiveDependencies;
+
+  @override
+  String? get name => r'watchTasksProvider';
+}
+
+/// See also [watchTasks].
+class WatchTasksProvider extends AutoDisposeStreamProvider<List<Task>> {
+  /// See also [watchTasks].
+  WatchTasksProvider({bool showCompleted = false, bool recentFirst = true})
+    : this._internal(
+        (ref) => watchTasks(ref as WatchTasksRef, showCompleted: showCompleted, recentFirst: recentFirst),
+        from: watchTasksProvider,
+        name: r'watchTasksProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$watchTasksHash,
+        dependencies: WatchTasksFamily._dependencies,
+        allTransitiveDependencies: WatchTasksFamily._allTransitiveDependencies,
+        showCompleted: showCompleted,
+        recentFirst: recentFirst,
+      );
+
+  WatchTasksProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.showCompleted,
+    required this.recentFirst,
+  }) : super.internal();
+
+  final bool showCompleted;
+  final bool recentFirst;
+
+  @override
+  Override overrideWith(Stream<List<Task>> Function(WatchTasksRef provider) create) {
+    return ProviderOverride(
+      origin: this,
+      override: WatchTasksProvider._internal(
+        (ref) => create(ref as WatchTasksRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        showCompleted: showCompleted,
+        recentFirst: recentFirst,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeStreamProviderElement<List<Task>> createElement() {
+    return _WatchTasksProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is WatchTasksProvider && other.showCompleted == showCompleted && other.recentFirst == recentFirst;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, showCompleted.hashCode);
+    hash = _SystemHash.combine(hash, recentFirst.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin WatchTasksRef on AutoDisposeStreamProviderRef<List<Task>> {
+  /// The parameter `showCompleted` of this provider.
+  bool get showCompleted;
+
+  /// The parameter `recentFirst` of this provider.
+  bool get recentFirst;
+}
+
+class _WatchTasksProviderElement extends AutoDisposeStreamProviderElement<List<Task>> with WatchTasksRef {
+  _WatchTasksProviderElement(super.provider);
+
+  @override
+  bool get showCompleted => (origin as WatchTasksProvider).showCompleted;
+
+  @override
+  bool get recentFirst => (origin as WatchTasksProvider).recentFirst;
+}
+
 String _$tasksByRoutineHash() => r'30be6fb4178c03d1957a5378418e51bb5f4d6e96';
 
 /// Provider for tasks by routine ID
@@ -216,9 +309,7 @@ class TasksByRoutineFamily extends Family<AsyncValue<List<Task>>> {
   }
 
   @override
-  TasksByRoutineProvider getProviderOverride(
-    covariant TasksByRoutineProvider provider,
-  ) {
+  TasksByRoutineProvider getProviderOverride(covariant TasksByRoutineProvider provider) {
     return call(provider.routineId);
   }
 
@@ -230,8 +321,7 @@ class TasksByRoutineFamily extends Family<AsyncValue<List<Task>>> {
   static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
 
   @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies => _allTransitiveDependencies;
 
   @override
   String? get name => r'tasksByRoutineProvider';
@@ -249,12 +339,9 @@ class TasksByRoutineProvider extends AutoDisposeFutureProvider<List<Task>> {
         (ref) => tasksByRoutine(ref as TasksByRoutineRef, routineId),
         from: tasksByRoutineProvider,
         name: r'tasksByRoutineProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$tasksByRoutineHash,
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$tasksByRoutineHash,
         dependencies: TasksByRoutineFamily._dependencies,
-        allTransitiveDependencies:
-            TasksByRoutineFamily._allTransitiveDependencies,
+        allTransitiveDependencies: TasksByRoutineFamily._allTransitiveDependencies,
         routineId: routineId,
       );
 
@@ -271,9 +358,7 @@ class TasksByRoutineProvider extends AutoDisposeFutureProvider<List<Task>> {
   final String routineId;
 
   @override
-  Override overrideWith(
-    FutureOr<List<Task>> Function(TasksByRoutineRef provider) create,
-  ) {
+  Override overrideWith(FutureOr<List<Task>> Function(TasksByRoutineRef provider) create) {
     return ProviderOverride(
       origin: this,
       override: TasksByRoutineProvider._internal(
@@ -314,17 +399,14 @@ mixin TasksByRoutineRef on AutoDisposeFutureProviderRef<List<Task>> {
   String get routineId;
 }
 
-class _TasksByRoutineProviderElement
-    extends AutoDisposeFutureProviderElement<List<Task>>
-    with TasksByRoutineRef {
+class _TasksByRoutineProviderElement extends AutoDisposeFutureProviderElement<List<Task>> with TasksByRoutineRef {
   _TasksByRoutineProviderElement(super.provider);
 
   @override
   String get routineId => (origin as TasksByRoutineProvider).routineId;
 }
 
-String _$watchTasksByRoutineHash() =>
-    r'93b4fd8576afb1321cd59583e752b3b2d538477b';
+String _$watchTasksByRoutineHash() => r'93b4fd8576afb1321cd59583e752b3b2d538477b';
 
 /// Provider for a stream of tasks by routine ID (reactive)
 ///
@@ -349,9 +431,7 @@ class WatchTasksByRoutineFamily extends Family<AsyncValue<List<Task>>> {
   }
 
   @override
-  WatchTasksByRoutineProvider getProviderOverride(
-    covariant WatchTasksByRoutineProvider provider,
-  ) {
+  WatchTasksByRoutineProvider getProviderOverride(covariant WatchTasksByRoutineProvider provider) {
     return call(provider.routineId);
   }
 
@@ -363,8 +443,7 @@ class WatchTasksByRoutineFamily extends Family<AsyncValue<List<Task>>> {
   static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
 
   @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies => _allTransitiveDependencies;
 
   @override
   String? get name => r'watchTasksByRoutineProvider';
@@ -373,8 +452,7 @@ class WatchTasksByRoutineFamily extends Family<AsyncValue<List<Task>>> {
 /// Provider for a stream of tasks by routine ID (reactive)
 ///
 /// Copied from [watchTasksByRoutine].
-class WatchTasksByRoutineProvider
-    extends AutoDisposeStreamProvider<List<Task>> {
+class WatchTasksByRoutineProvider extends AutoDisposeStreamProvider<List<Task>> {
   /// Provider for a stream of tasks by routine ID (reactive)
   ///
   /// Copied from [watchTasksByRoutine].
@@ -383,12 +461,9 @@ class WatchTasksByRoutineProvider
         (ref) => watchTasksByRoutine(ref as WatchTasksByRoutineRef, routineId),
         from: watchTasksByRoutineProvider,
         name: r'watchTasksByRoutineProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$watchTasksByRoutineHash,
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$watchTasksByRoutineHash,
         dependencies: WatchTasksByRoutineFamily._dependencies,
-        allTransitiveDependencies:
-            WatchTasksByRoutineFamily._allTransitiveDependencies,
+        allTransitiveDependencies: WatchTasksByRoutineFamily._allTransitiveDependencies,
         routineId: routineId,
       );
 
@@ -405,9 +480,7 @@ class WatchTasksByRoutineProvider
   final String routineId;
 
   @override
-  Override overrideWith(
-    Stream<List<Task>> Function(WatchTasksByRoutineRef provider) create,
-  ) {
+  Override overrideWith(Stream<List<Task>> Function(WatchTasksByRoutineRef provider) create) {
     return ProviderOverride(
       origin: this,
       override: WatchTasksByRoutineProvider._internal(
@@ -448,8 +521,7 @@ mixin WatchTasksByRoutineRef on AutoDisposeStreamProviderRef<List<Task>> {
   String get routineId;
 }
 
-class _WatchTasksByRoutineProviderElement
-    extends AutoDisposeStreamProviderElement<List<Task>>
+class _WatchTasksByRoutineProviderElement extends AutoDisposeStreamProviderElement<List<Task>>
     with WatchTasksByRoutineRef {
   _WatchTasksByRoutineProviderElement(super.provider);
 
@@ -466,9 +538,7 @@ String _$activeTasksHash() => r'bcbcad4a5b91dac506e3d8de698fac0ad3d24a1e';
 final activeTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
   activeTasks,
   name: r'activeTasksProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$activeTasksHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$activeTasksHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -476,6 +546,7 @@ final activeTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ActiveTasksRef = AutoDisposeFutureProviderRef<List<Task>>;
+
 String _$watchActiveTasksHash() => r'ab922142d1dd37de1cd573091b1a8859328d0784';
 
 /// Provider for a stream of active tasks (reactive)
@@ -485,9 +556,7 @@ String _$watchActiveTasksHash() => r'ab922142d1dd37de1cd573091b1a8859328d0784';
 final watchActiveTasksProvider = AutoDisposeStreamProvider<List<Task>>.internal(
   watchActiveTasks,
   name: r'watchActiveTasksProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$watchActiveTasksHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$watchActiveTasksHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -495,6 +564,7 @@ final watchActiveTasksProvider = AutoDisposeStreamProvider<List<Task>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchActiveTasksRef = AutoDisposeStreamProviderRef<List<Task>>;
+
 String _$completedTasksHash() => r'f707ca605f580a364d29b7b19cca26b01556e8f4';
 
 /// Provider for completed tasks
@@ -504,9 +574,7 @@ String _$completedTasksHash() => r'f707ca605f580a364d29b7b19cca26b01556e8f4';
 final completedTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
   completedTasks,
   name: r'completedTasksProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$completedTasksHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$completedTasksHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -514,46 +582,41 @@ final completedTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CompletedTasksRef = AutoDisposeFutureProviderRef<List<Task>>;
-String _$watchCompletedTasksHash() =>
-    r'f058286b5e434aac162309128609af740347db65';
+
+String _$watchCompletedTasksHash() => r'f058286b5e434aac162309128609af740347db65';
 
 /// Provider for a stream of completed tasks (reactive)
 ///
 /// Copied from [watchCompletedTasks].
 @ProviderFor(watchCompletedTasks)
-final watchCompletedTasksProvider =
-    AutoDisposeStreamProvider<List<Task>>.internal(
-      watchCompletedTasks,
-      name: r'watchCompletedTasksProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$watchCompletedTasksHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final watchCompletedTasksProvider = AutoDisposeStreamProvider<List<Task>>.internal(
+  watchCompletedTasks,
+  name: r'watchCompletedTasksProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product') ? null : _$watchCompletedTasksHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchCompletedTasksRef = AutoDisposeStreamProviderRef<List<Task>>;
-String _$completedTasksWithTodaysSessionsHash() =>
-    r'a93cd9abea368f2208ec65168eb474bdc76b8d18';
+
+String _$completedTasksWithTodaysSessionsHash() => r'a93cd9abea368f2208ec65168eb474bdc76b8d18';
 
 /// See also [completedTasksWithTodaysSessions].
 @ProviderFor(completedTasksWithTodaysSessions)
-final completedTasksWithTodaysSessionsProvider =
-    AutoDisposeStreamProvider<List<Task>>.internal(
-      completedTasksWithTodaysSessions,
-      name: r'completedTasksWithTodaysSessionsProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$completedTasksWithTodaysSessionsHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final completedTasksWithTodaysSessionsProvider = AutoDisposeStreamProvider<List<Task>>.internal(
+  completedTasksWithTodaysSessions,
+  name: r'completedTasksWithTodaysSessionsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$completedTasksWithTodaysSessionsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef CompletedTasksWithTodaysSessionsRef =
-    AutoDisposeStreamProviderRef<List<Task>>;
+typedef CompletedTasksWithTodaysSessionsRef = AutoDisposeStreamProviderRef<List<Task>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

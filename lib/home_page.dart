@@ -42,18 +42,28 @@ class _HomePageState extends ConsumerState<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Row(children: [const Icon(Icons.wb_sunny, size: 24), const SizedBox(width: 8), Text(widget.title)]),
         actions: [
-          // Add a button to navigate to the SessionsPage
-          IconButton(
-            icon: const Icon(Icons.history, size: 20),
-            tooltip: 'Sessions',
-            onPressed: () => Routes.navigateToSessions(context),
+          SizedBox(
+            width: AppConstants.defaultIconButtonSize,
+            child: IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Sessions',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Routes.navigateToSessions(context),
+            ),
           ),
           // Add a button to navigate to the PlanPage
-          IconButton(
-            icon: const Icon(Icons.playlist_add_check, size: 20),
-            tooltip: 'Plan',
-            onPressed: () => Routes.navigateToPlan(context),
+          SizedBox(
+            width: AppConstants.defaultIconButtonSize,
+            child: IconButton(
+              icon: const Icon(Icons.playlist_add_check),
+              tooltip: 'Plan',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Routes.navigateToPlan(context),
+            ),
           ),
+          SizedBox(width: 8),
         ],
       ),
       body: Stack(
@@ -320,7 +330,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             spacing: 4,
-            children: List.generate(6, (index) => _buildTimeBlock(index + 6, minutesPerHour[index+6] ?? 0)),
+            children: List.generate(6, (index) => _buildTimeBlock(index + 6, minutesPerHour[index + 6] ?? 0)),
           ),
           const SizedBox(height: 4),
           // Second row of time blocks
