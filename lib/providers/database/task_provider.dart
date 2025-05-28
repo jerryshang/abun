@@ -71,3 +71,8 @@ Stream<List<Task>> watchCompletedTasks(Ref ref) {
   final db = ref.watch(databaseProvider);
   return db.taskDao.watchCompletedTasks();
 }
+
+@riverpod
+Stream<List<Task>> completedTasksWithTodaysSessions(Ref ref) {
+  return ref.watch(databaseProvider).taskDao.watchCompletedTasksWithTodaysSessions();
+}

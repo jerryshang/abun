@@ -515,7 +515,7 @@ final completedTasksProvider = AutoDisposeFutureProvider<List<Task>>.internal(
 // ignore: unused_element
 typedef CompletedTasksRef = AutoDisposeFutureProviderRef<List<Task>>;
 String _$watchCompletedTasksHash() =>
-    r'39ad7f60dc6942a6482fa605db2f28eb2c20a4b7';
+    r'f058286b5e434aac162309128609af740347db65';
 
 /// Provider for a stream of completed tasks (reactive)
 ///
@@ -535,5 +535,25 @@ final watchCompletedTasksProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchCompletedTasksRef = AutoDisposeStreamProviderRef<List<Task>>;
+String _$completedTasksWithTodaysSessionsHash() =>
+    r'a93cd9abea368f2208ec65168eb474bdc76b8d18';
+
+/// See also [completedTasksWithTodaysSessions].
+@ProviderFor(completedTasksWithTodaysSessions)
+final completedTasksWithTodaysSessionsProvider =
+    AutoDisposeStreamProvider<List<Task>>.internal(
+      completedTasksWithTodaysSessions,
+      name: r'completedTasksWithTodaysSessionsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$completedTasksWithTodaysSessionsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CompletedTasksWithTodaysSessionsRef =
+    AutoDisposeStreamProviderRef<List<Task>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

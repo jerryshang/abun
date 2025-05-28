@@ -129,4 +129,24 @@ class TaskDao {
       (rows) => rows.map((row) => row.toTask()).toList(),
     );
   }
+
+  /// In your session_dao.dart file
+
+  /// Watches completed tasks that have sessions ending today
+  Stream<List<Task>> watchCompletedTasksWithTodaysSessions() {
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    // Use a subquery to find distinct task IDs with sessions ending today
+    final sessionSubquery = _db.selectOnly(_db.sessions)
+      ..addColumns([_db.sessions.taskId])
+      ..where(_db.sessions.endTime.isBetweenValues(startOfDay.toIso8601String(), endOfDay.toIso8601String()));
+
+    // Main query that joins with the subquery
+    final query = _db.select(_db.tasks)
+      ..where((tbl) => tbl.id.isInQuery(sessionSubquery) & tbl.status.isIn(['completed', 'eliminated']));
+
+    return query.watch();
+  }
 }

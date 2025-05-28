@@ -32,7 +32,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final todayKey = ref.watch(currentDateProvider);
 
     final activeTasksStream = ref.watch(watchActiveTasksProvider);
-    final completedTasksStream = ref.watch(watchCompletedTasksProvider);
+    final completedTasksStream = ref.watch(completedTasksWithTodaysSessionsProvider);
     final completedIndependentSessionsStream = ref.watch(watchSessionsWithoutTasksProvider);
     // session of today, for time blocks
     final sessionsStream = ref.watch(watchSessionsByDayProvider.call(todayKey));

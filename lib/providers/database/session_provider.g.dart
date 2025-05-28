@@ -599,7 +599,7 @@ class _WatchSessionsByDayProviderElement
 }
 
 String _$watchSessionsWithoutTasksHash() =>
-    r'b3e052c0844bd4ece18ccacfa6723faab06c374f';
+    r'7a048211434b807f2555bac236e79d4e2ad12bc7';
 
 /// Provider for a stream of sessions without tasks (reactive)
 ///
