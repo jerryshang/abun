@@ -10,21 +10,21 @@ part 'session_provider.g.dart';
 @riverpod
 Future<List<Session>> allSessions(Ref ref) async {
   final db = ref.watch(databaseProvider);
-  return db.getAllSessions();
+  return db.sessionDao.getAllSessions();
 }
 
 /// Provider for a stream of all sessions (reactive)
 @riverpod
 Stream<List<Session>> watchAllSessions(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return db.watchAllSessions();
+  return db.sessionDao.watchAllSessions();
 }
 
 /// Provider for sessions by task ID
 @riverpod
 Future<List<Session>> sessionsByTask(Ref ref, String taskId) async {
   final db = ref.watch(databaseProvider);
-  return db.getSessionsByTask(taskId);
+  return db.sessionDao.getSessionsByTask(taskId);
 }
 
 /// Provider for a stream of sessions by task ID (reactive)

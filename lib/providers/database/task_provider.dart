@@ -67,5 +67,6 @@ Stream<List<Task>> watchCompletedTasks(Ref ref) {
 
 @riverpod
 Stream<List<Task>> completedTasksWithTodaysSessions(Ref ref) {
+  ref.watch(currentDateProvider);
   return ref.watch(databaseProvider).taskDao.watchCompletedTasksWithTodaysSessions();
 }

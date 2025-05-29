@@ -22,6 +22,9 @@ class TaskDao {
 
   TaskDao(this._db);
 
+  Future<List<Task>> getAllTasks() =>
+      _db.select(_db.tasks).get().then((rows) => rows.map((row) => row.toTask()).toList());
+
   Stream<List<Task>> watchAllTasks() {
     return _db.select(_db.tasks).watch().map((rows) => rows.map((row) => row.toTask()).toList());
   }
