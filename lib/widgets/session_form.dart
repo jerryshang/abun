@@ -2,8 +2,6 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:numberpicker/numberpicker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
@@ -12,6 +10,7 @@ import '../models/session_mood.dart';
 import '../models/session_type.dart';
 import '../models/task_status.dart';
 import '../providers/database/index.dart';
+import 'datetime_helper.dart';
 
 class SessionForm extends ConsumerStatefulWidget {
   final String? taskId;
@@ -61,7 +60,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   Future<void> _selectDateTime(BuildContext context) async {
     if (!context.mounted) return;
 
-    final time = await showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
+    final time = await DateTimeHelper.showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
 
     if (time == null) return;
 
@@ -73,84 +72,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     });
   }
 
-  Future<TimeOfDay?> showCustomTimePicker(
-    BuildContext context, {
-    required TimeOfDay initialTime,
-    required String title,
-  }) async {
-    int originalMinutes = initialTime.minute;
-    int nearestMinutes = (originalMinutes / 5).round() * 5;
-    TimeOfDay selectedTime = TimeOfDay(hour: initialTime.hour, minute: nearestMinutes);
-
-    return showDialog<TimeOfDay>(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(title),
-              content: SizedBox(
-                height: 120,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Hours picker
-                    SizedBox(
-                      width: 80,
-                      child: NumberPicker(
-                        minValue: 0,
-                        maxValue: 23,
-                        value: selectedTime.hour,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedTime = selectedTime.replacing(hour: value);
-                          });
-                        },
-                        itemHeight: 40,
-                        itemWidth: 60,
-                        textStyle: Theme.of(context).textTheme.bodyLarge,
-                        selectedTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    // Minutes picker
-                    SizedBox(
-                      width: 80,
-                      child: NumberPicker(
-                        minValue: 0,
-                        maxValue: 55,
-                        value: selectedTime.minute,
-                        step: 5,
-                        onChanged: (value) {
-                          setState(() {
-                            print('value: $value');
-                            selectedTime = selectedTime.replacing(minute: value);
-                          });
-                        },
-                        itemHeight: 40,
-                        itemWidth: 60,
-                        textStyle: Theme.of(context).textTheme.bodyLarge,
-                        selectedTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                TextButton(onPressed: () => Navigator.pop(context, selectedTime), child: const Text('OK')),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  // Time picker functionality has been moved to DateTimeHelper
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +174,9 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                 children: [
                   Expanded(
                     child: ListTile(
-                      title: Text(_endTime == null ? 'End Time' : DateFormat('HH:mm').format(_endTime!)),
+                      title: Text(
+                        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
+                      ),
                       trailing: const Icon(Icons.access_time),
                       onTap: () => _selectDateTime(context),
                       shape: RoundedRectangleBorder(
