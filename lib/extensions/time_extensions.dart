@@ -47,9 +47,9 @@ class DateTimeUtils {
   }
 
   static bool visible(DateTime anchor, DateTime? due, Duration? duration, int pre) {
-    final dueTime = (due ?? DateTimeExtension.farFuture).date();
+    final dueTime = (due ?? DateTimeExtension.farFuture).today();
     final estimatedDuration = duration ?? Duration.zero;
-    final estimatedStartDate = dueTime.subtract(estimatedDuration).date();
+    final estimatedStartDate = dueTime.subtract(estimatedDuration).today();
     return (anchor == estimatedStartDate || anchor.isAfter(estimatedStartDate));
   }
 
@@ -87,7 +87,10 @@ class DateTimeUtils {
 extension DateTimeExtension on DateTime {
   static DateTime get farFuture => DateTime(9999, 12, 31, 23, 59, 59, 999, 999);
 
-  DateTime date() {
+  DateTime today() {
     return DateTime(year, month, day);
+  }
+  DateTime tomorrow() {
+    return DateTime(year, month, day + 1);
   }
 }
