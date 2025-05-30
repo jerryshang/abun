@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'constants/app_constants.dart';
-import 'database/database.dart';
-import 'providers/database/index.dart';
+import '../../constants/app_constants.dart';
+import '../../database/database.dart';
+import '../../providers/database/index.dart';
 
 class SessionsPage extends ConsumerStatefulWidget {
   const SessionsPage({super.key});
@@ -52,6 +52,7 @@ class _SessionsPageState extends ConsumerState<SessionsPage> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Sessions'),
         actions: [
           IconButton(icon: const Icon(Icons.date_range), onPressed: () => _selectDateRange(context)),

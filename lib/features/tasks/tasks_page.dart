@@ -4,22 +4,20 @@ import 'package:drift/drift.dart' as drift hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'constants/app_constants.dart';
-import 'database/database.dart';
-import 'models/task_status.dart';
-import 'providers/database/index.dart';
-import 'providers/task_notifier.dart';
+import '../../constants/app_constants.dart';
+import '../../database/database.dart';
+import '../../models/task_status.dart';
+import '../../providers/database/index.dart';
+import '../../providers/task_notifier.dart';
 
-class PlanPage extends ConsumerStatefulWidget {
-  final String title;
-
-  const PlanPage({super.key, required this.title});
+class TasksPage extends ConsumerStatefulWidget {
+  const TasksPage({super.key});
 
   @override
-  ConsumerState<PlanPage> createState() => _PlanPageState();
+  ConsumerState<TasksPage> createState() => _PlanPageState();
 }
 
-class _PlanPageState extends ConsumerState<PlanPage> {
+class _PlanPageState extends ConsumerState<TasksPage> {
   bool _showCompleted = false;
   bool _recentFirst = true;
 
@@ -42,7 +40,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text("Tasks"),
         actions: [
           SizedBox(
             width: AppConstants.defaultIconButtonSize,
@@ -136,24 +134,24 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           ),
 
           // Add task button at the bottom right
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton(
-              onPressed: () {
-                _resetForm(); // Reset form before showing bottom sheet
-                _showTaskBottomSheet(context);
-              },
-              tooltip: 'New Task',
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              // Ensure icon is visible
-              heroTag: 'addTask',
-              // Unique hero tag
-              child: const Icon(Icons.add),
-            ),
-          ),
         ],
+      ),
+      floatingActionButton: Positioned(
+        right: 16,
+        bottom: 16,
+        child: FloatingActionButton(
+          onPressed: () {
+            _resetForm(); // Reset form before showing bottom sheet
+            _showTaskBottomSheet(context);
+          },
+          tooltip: 'New Task',
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          // Ensure icon is visible
+          heroTag: 'addTask',
+          // Unique hero tag
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

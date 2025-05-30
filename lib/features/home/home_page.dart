@@ -10,9 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomePage extends ConsumerStatefulWidget {
-  final String title;
-
-  const HomePage({super.key, required this.title});
+  const HomePage({super.key});
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -24,6 +22,15 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  bool _isExpanded = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _toggleMenu() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
   }
 
   @override
@@ -38,33 +45,56 @@ class _HomePageState extends ConsumerState<HomePage> {
     final sessionsStream = ref.watch(watchSessionsByDayProvider.call(todayKey));
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              child: Text(
+                'A.Bun.Dance',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Sessions'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToSessions(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('Routines'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToRoutines(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.task),
+              title: const Text('Tasks'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToTasks(context);
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Row(children: [const Icon(Icons.wb_sunny, size: 24), const SizedBox(width: 8), Text(widget.title)]),
-        actions: [
-          SizedBox(
-            width: AppConstants.defaultIconButtonSize,
-            child: IconButton(
-              icon: const Icon(Icons.history),
-              tooltip: 'Sessions',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () => Routes.navigateToSessions(context),
-            ),
-          ),
-          // Add a button to navigate to the PlanPage
-          SizedBox(
-            width: AppConstants.defaultIconButtonSize,
-            child: IconButton(
-              icon: const Icon(Icons.playlist_add_check),
-              tooltip: 'Plan',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () => Routes.navigateToPlan(context),
-            ),
-          ),
-          SizedBox(width: 8),
-        ],
+        title: Text("Today"),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: Stack(
         children: [
@@ -81,6 +111,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Active tasks list
+                      SizedBox(height: 8),
                       _buildActiveTasksList(activeTasksStream),
                       // Completed tasks section
                       _buildCompletedTasksSection(completedTasksStream, completedIndependentSessionsStream),
@@ -93,20 +124,65 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-            builder: (context) => const SessionForm(),
-          );
-        },
-        tooltip: 'New Session',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        heroTag: 'newSession',
-        child: const Icon(Icons.event_note),
+      floatingActionButton: Stack(
+        children: [
+          // Create Session Button (top-left in arc)
+          AnimatedPositioned(
+            bottom: _isExpanded ? 140 : 0,
+            right: 0,
+            duration: const Duration(milliseconds: 200),
+            child: AnimatedOpacity(
+              opacity: _isExpanded ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: FloatingActionButton(
+                heroTag: 'newSession',
+                onPressed: () {
+                  setState(() => _isExpanded = false);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    builder: (context) => const SessionForm(),
+                  );
+                },
+                child: const Icon(Icons.event_note),
+              ),
+            ),
+          ),
+          // Create Task Button (top in arc)
+          // AnimatedPositioned(
+          //   bottom: _isExpanded ? 70 : 0,
+          //   right: 0,
+          //   duration: const Duration(milliseconds: 200),
+          //   child: AnimatedOpacity(
+          //     opacity: _isExpanded ? 1 : 0,
+          //     duration: const Duration(milliseconds: 200),
+          //     child: FloatingActionButton(
+          //       heroTag: 'newTask',
+          //       onPressed: () {
+          //         // Handle new task
+          //         setState(() => _isExpanded = false);
+          //       },
+          //       child: const Icon(Icons.add_task),
+          //     ),
+          //   ),
+          // ),
+          // Main FAB (stays at the bottom)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: FloatingActionButton(
+              onPressed: _toggleMenu,
+              child: AnimatedRotation(
+                duration: const Duration(milliseconds: 300),
+                turns: _isExpanded ? 0.125 : 0,
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

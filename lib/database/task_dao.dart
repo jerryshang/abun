@@ -1,5 +1,31 @@
 part of 'database.dart';
 
+/// Table for task instances
+class Tasks extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+
+  TextColumn get routineId => text().nullable().references(Routines, #id)();
+
+  TextColumn get title => text()();
+
+  TextColumn get status => text().withDefault(const Constant('inbox'))();
+
+  TextColumn get estimatedDuration => text().nullable()();
+
+  TextColumn get startTime => text().nullable()();
+
+  TextColumn get dueTime => text().nullable()();
+
+  TextColumn get note => text().nullable()();
+
+  TextColumn get createdAt => text().clientDefault(() => DateTime.now().toIso8601String())();
+
+  TextColumn get updatedAt => text().clientDefault(() => DateTime.now().toIso8601String())();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Extension to convert Tasks table row to Task model
 extension TaskRow on Task {
   Task toTask() => Task(

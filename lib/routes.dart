@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'plan_page.dart';
-import 'sessions_page.dart';
+
+import 'features/index.dart';
 
 /// Route names used throughout the app
 class Routes {
   static const String home = '/';
-  static const String plan = '/plan';
+  static const String tasks = '/tasks';
   static const String sessions = '/sessions';
+  static const String routines = '/routines';
 
   /// Define routes for the application
   static Map<String, WidgetBuilder> getRoutes() {
     return {
-      home: (context) => const HomePage(title: 'Today'),
-      plan: (context) => const PlanPage(title: 'Plan'),
+      home: (context) => const HomePage(),
+      tasks: (context) => const TasksPage(),
       sessions: (context) => const SessionsPage(),
+      routines: (context) => const RoutinesPage(),
     };
   }
 
   /// Navigate to the plan page
-  static void navigateToPlan(BuildContext context) {
-    Navigator.pushNamed(context, plan);
+  static void navigateToTasks(BuildContext context) {
+    Navigator.pushNamed(context, tasks);
   }
 
   /// Navigate to the home page
@@ -31,5 +32,10 @@ class Routes {
   /// Navigate to the sessions page
   static void navigateToSessions(BuildContext context) {
     Navigator.pushNamed(context, sessions);
+  }
+
+  /// Navigate to the routines page
+  static void navigateToRoutines(BuildContext context) {
+    Navigator.pushNamed(context, routines);
   }
 }
