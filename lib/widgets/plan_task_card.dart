@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../constants/app_constants.dart';
 import '../database/database.dart';
 import '../extensions/task_status_extension.dart';
 import '../models/task_status.dart';
@@ -33,21 +34,11 @@ class PlanTaskCard extends ConsumerWidget {
             if (task.estimatedDuration != null &&
                 task.estimatedDuration!.startsWith('PT') &&
                 task.estimatedDuration!.endsWith('M'))
-              Text(
-                'Est. Time: ${task.estimatedDuration!.substring(2, task.estimatedDuration!.length - 1)} min',
-              ),
-            if (task.startTime != null)
-              Text(
-                'Start: ${formatDate(DateTime.parse(task.startTime!))}',
-              ),
-            if (task.dueTime != null)
-              Text(
-                'Due: ${formatDate(DateTime.parse(task.dueTime!))}',
-              ),
+              Text('Est. Time: ${task.estimatedDuration!.substring(2, task.estimatedDuration!.length - 1)} min'),
+            if (task.startTime != null) Text('Start: ${formatDate(DateTime.parse(task.startTime!))}'),
+            if (task.dueTime != null) Text('Due: ${formatDate(DateTime.parse(task.dueTime!))}'),
             if (task.note != null && task.note!.isNotEmpty)
-              Text(
-                'Note: ${task.note!.length > 30 ? '${task.note!.substring(0, 30)}...' : task.note}',
-              ),
+              Text('Note: ${task.note!.length > 30 ? '${task.note!.substring(0, 30)}...' : task.note}'),
           ],
         ),
         // isThreeLine: true,
@@ -56,31 +47,37 @@ class PlanTaskCard extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            IconButton(
-              icon: const Icon(
-                Icons.schedule,
-                color: Colors.green,
+            SizedBox(
+              width: AppConstants.defaultIconButtonSize,
+              child: IconButton(
+                icon: const Icon(Icons.schedule, color: Colors.green),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () async {
+                  final selectedDate = await _showDatePickerDialog(context);
+                  if (selectedDate != null) {
+                    await onSchedulePressed(selectedDate);
+                  }
+                },
               ),
-              onPressed: () async {
-                final selectedDate = await _showDatePickerDialog(context);
-                if (selectedDate != null) {
-                  await onSchedulePressed(selectedDate);
-                }
-              },
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.edit,
-                color: Colors.blue,
+            SizedBox(
+              width: AppConstants.defaultIconButtonSize,
+              child: IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: onEditPressed,
               ),
-              onPressed: onEditPressed,
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete,
-                color: Colors.red,
+            SizedBox(
+              width: AppConstants.defaultIconButtonSize,
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: onDeletePressed,
               ),
-              onPressed: onDeletePressed,
             ),
           ],
         ),
@@ -105,18 +102,9 @@ class PlanTaskCard extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                title: const Text('Today'),
-                onTap: () => Navigator.pop(context, today),
-              ),
-              ListTile(
-                title: const Text('Tomorrow'),
-                onTap: () => Navigator.pop(context, tomorrow),
-              ),
-              ListTile(
-                title: const Text('Next Week'),
-                onTap: () => Navigator.pop(context, nextWeek),
-              ),
+              ListTile(title: const Text('Today'), onTap: () => Navigator.pop(context, today)),
+              ListTile(title: const Text('Tomorrow'), onTap: () => Navigator.pop(context, tomorrow)),
+              ListTile(title: const Text('Next Week'), onTap: () => Navigator.pop(context, nextWeek)),
               const Divider(),
               ListTile(
                 title: const Text('Pick a date...'),
@@ -134,12 +122,7 @@ class PlanTaskCard extends ConsumerWidget {
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))],
         );
       },
     );

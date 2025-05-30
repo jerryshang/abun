@@ -2,7 +2,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../database/database.dart';
-import 'database_provider.dart';
+import 'database/index.dart';
 
 part 'task_notifier.g.dart';
 
@@ -73,9 +73,6 @@ class TaskNotifier extends _$TaskNotifier {
 
       // Update state to success
       state = TaskOperations(state: TaskOperationState.success);
-
-      // Invalidate the task providers to refresh the data
-      ref.invalidate(allTasksProvider);
     } catch (e) {
       // Update state to error
       state = TaskOperations(
@@ -104,7 +101,6 @@ class TaskNotifier extends _$TaskNotifier {
       state = TaskOperations(state: TaskOperationState.success);
 
       // Invalidate the task providers to refresh the data
-      ref.invalidate(allTasksProvider);
       ref.invalidate(taskByIdProvider(task.id));
 
       // If the task has a routine, invalidate the tasks by routine provider
@@ -137,7 +133,6 @@ class TaskNotifier extends _$TaskNotifier {
       state = TaskOperations(state: TaskOperationState.success);
 
       // Invalidate the task providers to refresh the data
-      ref.invalidate(allTasksProvider);
       ref.invalidate(taskByIdProvider(id));
 
       // If the task had a routine, invalidate the tasks by routine provider
@@ -165,9 +160,6 @@ class TaskNotifier extends _$TaskNotifier {
 
       // Update state to success
       state = TaskOperations(state: TaskOperationState.success);
-
-      // Invalidate the task providers to refresh the data
-      ref.invalidate(allTasksProvider);
     } catch (e) {
       // Update state to error
       state = TaskOperations(

@@ -1,19 +1,16 @@
+import 'package:abun/constants/app_constants.dart';
+import 'package:abun/database/database.dart';
 import 'package:abun/extensions/time_extensions.dart';
-import 'package:abun/providers/database_provider.dart';
-import 'package:abun/providers/refresh_provider.dart';
+import 'package:abun/providers/current_date_provider.dart';
+import 'package:abun/providers/database/index.dart';
 import 'package:abun/routes.dart';
 import 'package:abun/widgets/session_form.dart';
 import 'package:abun/widgets/task_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'constants/app_constants.dart';
-import 'database/database.dart';
-
 class HomePage extends ConsumerStatefulWidget {
-  final String title;
-
-  const HomePage({super.key, required this.title});
+  const HomePage({super.key});
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -27,34 +24,77 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
   }
 
+  bool _isExpanded = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void _toggleMenu() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch for date changes to trigger refresh
-    final todayKey = ref.watch(refreshProvider);
+    final todayKey = ref.watch(currentDateProvider);
 
     final activeTasksStream = ref.watch(watchActiveTasksProvider);
-    final completedTasksStream = ref.watch(completedTasksProvider);
-    final completedStandaloneSessionsStream = ref.watch(watchSessionsWithoutTasksProvider);
+    final completedTasksStream = ref.watch(completedTasksWithTodaysSessionsProvider);
+    final completedIndependentSessionsStream = ref.watch(watchSessionsWithoutTasksProvider);
+    // session of today, for time blocks
     final sessionsStream = ref.watch(watchSessionsByDayProvider.call(todayKey));
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              child: Text(
+                'A.Bun.Dance',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Sessions'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToSessions(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('Routines'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToRoutines(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.task),
+              title: const Text('Tasks'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToTasks(context);
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Row(children: [const Icon(Icons.wb_sunny, size: 24), const SizedBox(width: 8), Text(widget.title)]),
-        actions: [
-          // Add a button to navigate to the SessionsPage
-          IconButton(
-            icon: const Icon(Icons.history, size: 20),
-            tooltip: 'Sessions',
-            onPressed: () => Routes.navigateToSessions(context),
-          ),
-          // Add a button to navigate to the PlanPage
-          IconButton(
-            icon: const Icon(Icons.playlist_add_check, size: 20),
-            tooltip: 'Plan',
-            onPressed: () => Routes.navigateToPlan(context),
-          ),
-        ],
+        title: Text("Today"),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: Stack(
         children: [
@@ -71,9 +111,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Active tasks list
+                      SizedBox(height: 8),
                       _buildActiveTasksList(activeTasksStream),
                       // Completed tasks section
-                      _buildCompletedTasksSection(completedTasksStream, completedStandaloneSessionsStream),
+                      _buildCompletedTasksSection(completedTasksStream, completedIndependentSessionsStream),
                     ],
                   ),
                 ),
@@ -83,20 +124,65 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-            builder: (context) => const SessionForm(),
-          );
-        },
-        tooltip: 'New Session',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        heroTag: 'newSession',
-        child: const Icon(Icons.event_note),
+      floatingActionButton: Stack(
+        children: [
+          // Create Session Button (top-left in arc)
+          AnimatedPositioned(
+            bottom: _isExpanded ? 140 : 0,
+            right: 0,
+            duration: const Duration(milliseconds: 200),
+            child: AnimatedOpacity(
+              opacity: _isExpanded ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: FloatingActionButton(
+                heroTag: 'newSession',
+                onPressed: () {
+                  setState(() => _isExpanded = false);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    builder: (context) => const SessionForm(),
+                  );
+                },
+                child: const Icon(Icons.event_note),
+              ),
+            ),
+          ),
+          // Create Task Button (top in arc)
+          // AnimatedPositioned(
+          //   bottom: _isExpanded ? 70 : 0,
+          //   right: 0,
+          //   duration: const Duration(milliseconds: 200),
+          //   child: AnimatedOpacity(
+          //     opacity: _isExpanded ? 1 : 0,
+          //     duration: const Duration(milliseconds: 200),
+          //     child: FloatingActionButton(
+          //       heroTag: 'newTask',
+          //       onPressed: () {
+          //         // Handle new task
+          //         setState(() => _isExpanded = false);
+          //       },
+          //       child: const Icon(Icons.add_task),
+          //     ),
+          //   ),
+          // ),
+          // Main FAB (stays at the bottom)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: FloatingActionButton(
+              onPressed: _toggleMenu,
+              child: AnimatedRotation(
+                duration: const Duration(milliseconds: 300),
+                turns: _isExpanded ? 0.125 : 0,
+                child: const Icon(Icons.add),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -198,35 +284,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
               // Today's sessions without tasks
               Consumer(
-                builder: (context, ref, _) {
-                  return sessionsWithoutTasksStream.when(
-                    data: (sessions) {
-                      if (sessions.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ...sessions.map((session) {
-                            final duration = session.duration.toString().toMinutes();
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(session.title ?? 'Untitled Session', style: const TextStyle(fontSize: 14)),
-                                  Text('$duration min', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Center(child: Text('Error: $error')),
-                  );
-                },
+                builder: (context, ref, _) => _buildSessionsWithoutTasksList(sessionsWithoutTasksStream),
               ),
 
               // Show message if no content
@@ -262,10 +320,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Text(task.title, style: const TextStyle(fontSize: 14)),
-                  Text('$totalMinutes min', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+                  Icon(Icons.done_all, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text(task.title, style: const TextStyle(fontSize: 20)),
+                  Expanded(child: Container()),
+                  Text('$totalMinutes min', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
                 ],
               ),
             );
@@ -277,6 +338,37 @@ class _HomePageState extends ConsumerState<HomePage> {
           error: (_, __) => const SizedBox.shrink(),
         );
       },
+    );
+  }
+
+  Widget _buildSessionsWithoutTasksList(AsyncValue<List<Session>> sessionsStream) {
+    return sessionsStream.when(
+      data: (sessions) {
+        if (sessions.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sessions.map((session) {
+            final duration = session.duration.toString().toMinutes();
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const Icon(Icons.check, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Text(session.title ?? 'Untitled Session', style: const TextStyle(fontSize: 20)),
+                  const Expanded(child: SizedBox()),
+                  Text('$duration min', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => Center(child: Text('Error: $error')),
     );
   }
 
@@ -320,7 +412,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             spacing: 4,
-            children: List.generate(6, (index) => _buildTimeBlock(index + 6, minutesPerHour[index+6] ?? 0)),
+            children: List.generate(6, (index) => _buildTimeBlock(index + 6, minutesPerHour[index + 6] ?? 0)),
           ),
           const SizedBox(height: 4),
           // Second row of time blocks

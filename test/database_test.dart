@@ -106,7 +106,7 @@ void main() {
 
   test('Get tasks by routine', () async {
     // Create a routine
-    final routineId = await database.createRoutine(
+    final routineId = await database.routineDao.createRoutine(
       RoutinesCompanion.insert(
         id: Value(const Uuid().v4()),
         title: 'Daily Routine',
@@ -167,7 +167,7 @@ void main() {
     final startTime = now.subtract(const Duration(minutes: 25));
     final endTime = now;
 
-    final sessionId = await database.createSession(
+    final sessionId = await database.sessionDao.createSession(
       SessionsCompanion.insert(
         id: Value(const Uuid().v4()),
         taskId: Value(taskId),
@@ -183,7 +183,7 @@ void main() {
     expect(sessionId, isNotNull);
 
     // Get sessions by task
-    final sessions = await database.getSessionsByTask(taskId);
+    final sessions = await database.sessionDao.getSessionsByTask(taskId);
 
     // Verify we got the correct session
     expect(sessions.length, 1);
@@ -198,7 +198,7 @@ void main() {
     final startTime = now.subtract(const Duration(minutes: 25));
     final endTime = now;
 
-    final sessionId = await database.createSession(
+    final sessionId = await database.sessionDao.createSession(
       SessionsCompanion.insert(
         id: Value(const Uuid().v4()),
         title: Value('Session without task'),

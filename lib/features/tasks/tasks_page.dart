@@ -4,25 +4,26 @@ import 'package:drift/drift.dart' as drift hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'database/database.dart';
-import 'models/task_status.dart';
-import 'providers/database_provider.dart';
-import 'providers/task_notifier.dart';
+import '../../constants/app_constants.dart';
+import '../../database/database.dart';
+import '../../models/task_status.dart';
+import '../../providers/database/index.dart';
+import '../../providers/task_notifier.dart';
 
-class PlanPage extends ConsumerStatefulWidget {
-  final String title;
-
-  const PlanPage({super.key, required this.title});
+class TasksPage extends ConsumerStatefulWidget {
+  const TasksPage({super.key});
 
   @override
-  ConsumerState<PlanPage> createState() => _PlanPageState();
+  ConsumerState<TasksPage> createState() => _PlanPageState();
 }
 
-class _PlanPageState extends ConsumerState<PlanPage> {
+class _PlanPageState extends ConsumerState<TasksPage> {
+  bool _showCompleted = false;
+  bool _recentFirst = true;
+
   // Controllers for the form fields
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _estimatedDurationController =
-      TextEditingController();
+  final TextEditingController _estimatedDurationController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   DateTime? _startTime;
   DateTime? _dueTime;
@@ -30,6 +31,130 @@ class _PlanPageState extends ConsumerState<PlanPage> {
 
   // Selected task for editing
   Task? _selectedTask;
+
+  @override
+  Widget build(BuildContext context) {
+    // final tasksAsync = ref.watch(watchAllTasksProvider);
+
+    final tasks = ref.watch(watchTasksProvider.call(showCompleted: _showCompleted, recentFirst: _recentFirst));
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text("Tasks"),
+        actions: [
+          SizedBox(
+            width: AppConstants.defaultIconButtonSize,
+            child: IconButton(
+              icon: const Icon(Icons.done_outline),
+              tooltip: 'Show Completed',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  _showCompleted = !_showCompleted;
+                });
+              },
+            ),
+          ),
+          SizedBox(
+            width: AppConstants.defaultIconButtonSize,
+            child: IconButton(
+              icon: const Icon(Icons.sort_by_alpha),
+              tooltip: 'Sort by Date',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  _recentFirst = !_recentFirst;
+                });
+              },
+            ),
+          ),
+          SizedBox(
+            width: AppConstants.defaultIconButtonSize,
+            child: IconButton(
+              icon: const Icon(Icons.delete_forever, color: Colors.red),
+              tooltip: 'Delete All Tasks',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                _showClearDatabaseConfirmation(context);
+              },
+            ),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Task list
+                Expanded(
+                  child: tasks.when(
+                    data: (tasks) {
+                      if (tasks.isEmpty) {
+                        return const Center(child: Text('No tasks available. Create your first task!'));
+                      }
+
+                      return ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final task = tasks[index];
+                          return PlanTaskCard(
+                            task: task,
+                            formatDate: _formatDate,
+                            onEditPressed: () {
+                              _selectTask(task);
+                              _showTaskBottomSheet(context);
+                            },
+                            onDeletePressed: () => _showDeleteConfirmation(context, task.id),
+                            onSchedulePressed: (selectedDate) async {
+                              await ref
+                                  .read(taskNotifierProvider.notifier)
+                                  .updateTask(
+                                    task.copyWith(
+                                      status: TaskStatus.planned.value,
+                                      startTime: drift.Value(selectedDate.toIso8601String()),
+                                    ),
+                                  );
+                            },
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Center(child: Text('Error: $error')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Add task button at the bottom right
+        ],
+      ),
+      floatingActionButton: Positioned(
+        right: 16,
+        bottom: 16,
+        child: FloatingActionButton(
+          onPressed: () {
+            _resetForm(); // Reset form before showing bottom sheet
+            _showTaskBottomSheet(context);
+          },
+          tooltip: 'New Task',
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          // Ensure icon is visible
+          heroTag: 'addTask',
+          // Unique hero tag
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -59,12 +184,9 @@ class _PlanPageState extends ConsumerState<PlanPage> {
   Future<void> _createTask() async {
     if (_titleController.text.isEmpty) {
       // Show error message if title is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task title cannot be empty'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Task title cannot be empty'), backgroundColor: Colors.red));
       return;
     }
 
@@ -76,10 +198,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         estimatedDuration = 'PT${minutes}M'; // ISO8601 duration format
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Estimated time must be a number in minutes'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Estimated time must be a number in minutes'), backgroundColor: Colors.red),
         );
         return;
       }
@@ -114,10 +233,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
         estimatedDuration = 'PT${minutes}M'; // ISO8601 duration format
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Estimated time must be a number in minutes'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Estimated time must be a number in minutes'), backgroundColor: Colors.red),
         );
         return;
       }
@@ -126,18 +242,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     final updatedTask = _selectedTask!.copyWith(
       title: _titleController.text,
       status: _selectedStatus.value,
-      estimatedDuration: estimatedDuration != null
-          ? drift.Value(estimatedDuration)
-          : const drift.Value.absent(),
-      startTime: _startTime != null
-          ? drift.Value(_startTime!.toIso8601String())
-          : const drift.Value.absent(),
-      dueTime: _dueTime != null
-          ? drift.Value(_dueTime!.toIso8601String())
-          : const drift.Value.absent(),
-      note: _noteController.text.isNotEmpty
-          ? drift.Value(_noteController.text)
-          : const drift.Value.absent(),
+      estimatedDuration: estimatedDuration != null ? drift.Value(estimatedDuration) : const drift.Value.absent(),
+      startTime: _startTime != null ? drift.Value(_startTime!.toIso8601String()) : const drift.Value.absent(),
+      dueTime: _dueTime != null ? drift.Value(_dueTime!.toIso8601String()) : const drift.Value.absent(),
+      note: _noteController.text.isNotEmpty ? drift.Value(_noteController.text) : const drift.Value.absent(),
       updatedAt: DateTime.now().toIso8601String(),
     );
 
@@ -169,12 +277,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
           task.estimatedDuration!.startsWith('PT') &&
           task.estimatedDuration!.endsWith('M')) {
         try {
-          final minutes = int.parse(
-            task.estimatedDuration!.substring(
-              2,
-              task.estimatedDuration!.length - 1,
-            ),
-          );
+          final minutes = int.parse(task.estimatedDuration!.substring(2, task.estimatedDuration!.length - 1));
           _estimatedDurationController.text = minutes.toString();
         } catch (e) {
           _estimatedDurationController.clear();
@@ -184,9 +287,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
       }
 
       // Parse ISO8601 strings to DateTime objects
-      _startTime = task.startTime != null
-          ? DateTime.parse(task.startTime!)
-          : null;
+      _startTime = task.startTime != null ? DateTime.parse(task.startTime!) : null;
       _dueTime = task.dueTime != null ? DateTime.parse(task.dueTime!) : null;
       _noteController.text = task.note ?? '';
     });
@@ -238,17 +339,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (BuildContext context) {
         return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
           child: TaskForm(
             task: _selectedTask,
             titleController: _titleController,
@@ -271,126 +365,10 @@ class _PlanPageState extends ConsumerState<PlanPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Watch the task operation state
-    final taskOperations = ref.watch(taskNotifierProvider);
-
-    // Watch the tasks using the provider
-    final tasksAsync = ref.watch(watchAllTasksProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-        // We don't need a custom back button with named routes
-        // Flutter will automatically add a back button to the AppBar
-        // when there are routes in the navigation stack
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Task list
-                Expanded(
-                  child: tasksAsync.when(
-                    data: (tasks) {
-                      if (tasks.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No tasks available. Create your first task!',
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          final task = tasks[index];
-                          return PlanTaskCard(
-                            task: task,
-                            formatDate: _formatDate,
-                            onEditPressed: () {
-                              _selectTask(task);
-                              _showTaskBottomSheet(context);
-                            },
-                            onDeletePressed: () => _showDeleteConfirmation(context, task.id),
-                            onSchedulePressed: (selectedDate) async {
-                              await ref.read(taskNotifierProvider.notifier).updateTask(
-                                task.copyWith(
-                                  status: TaskStatus.planned.value,
-                                  startTime: drift.Value(selectedDate.toIso8601String()),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) =>
-                        Center(child: Text('Error: $error')),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Clear database button at the bottom left
-          Positioned(
-            left: 16,
-            bottom: 16,
-            child: FloatingActionButton(
-              onPressed: () => _showClearDatabaseConfirmation(context),
-              tooltip: 'Clear Database',
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              // Ensure icon is visible
-              heroTag: 'clearDatabase',
-              // Unique hero tag
-              child: const Icon(Icons.delete_forever),
-            ),
-          ),
-
-          // Add task button at the bottom right
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton(
-              onPressed: () {
-                _resetForm(); // Reset form before showing bottom sheet
-                _showTaskBottomSheet(context);
-              },
-              tooltip: 'New Task',
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              // Ensure icon is visible
-              heroTag: 'addTask',
-              // Unique hero tag
-              child: const Icon(Icons.add),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Helper method to format date
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
-
-  // Helper method to format date and time
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-
-  // Helper method to get icon for task status
-  // Moved to PlanTaskCard widget
 
   // Show confirmation dialog before clearing the database
   Future<void> _showClearDatabaseConfirmation(BuildContext context) async {
@@ -416,10 +394,7 @@ class _PlanPageState extends ConsumerState<PlanPage> {
               },
             ),
             TextButton(
-              child: const Text(
-                'Clear All',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Clear All', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 ref.read(taskNotifierProvider.notifier).clearAllTasks();
