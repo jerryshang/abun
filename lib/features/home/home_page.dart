@@ -128,7 +128,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           // Create Session Button (top-left in arc)
           AnimatedPositioned(
-            bottom: _isExpanded ? 140 : 0,
+            bottom: _isExpanded ? 70 : 0,
             right: 0,
             duration: const Duration(milliseconds: 200),
             child: AnimatedOpacity(
@@ -153,7 +153,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           // Create Task Button (top in arc)
           // AnimatedPositioned(
-          //   bottom: _isExpanded ? 70 : 0,
+          //   bottom: _isExpanded ? 140 : 0,
           //   right: 0,
           //   duration: const Duration(milliseconds: 200),
           //   child: AnimatedOpacity(

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:numberpicker/numberpicker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
@@ -31,12 +32,14 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   final _durationController = TextEditingController(text: '${AppConstants.defaultTimeBlockMinutes}');
   DateTime? _startTime;
   DateTime? _endTime;
+  TimeOfDay _selectedTime = TimeOfDay.now();
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedTime = TimeOfDay(hour: now.hour, minute: (now.minute / 5).round() * 5);
     _endTime = DateTime.now();
-    _startTime = _startTime?.subtract(const Duration(minutes: AppConstants.defaultTimeBlockMinutes));
 
     // Only set title to empty if taskId is provided
     if (widget.taskId != null) {
@@ -55,34 +58,98 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     super.dispose();
   }
 
-  Future<void> _selectDateTime(BuildContext context, bool isStart) async {
-    final now = DateTime.now();
-    // final date = await showDatePicker(
-    //   context: context,
-    //   initialDate: isStart ? now : _startTime ?? now,
-    //   firstDate: DateTime(now.year - 1),
-    //   lastDate: DateTime(now.year + 1),
-    // );
-
-    // if (date == null) return;
+  Future<void> _selectDateTime(BuildContext context) async {
     if (!context.mounted) return;
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(isStart ? now : _startTime ?? now),
-    );
+    final time = await showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
 
     if (time == null) return;
 
+    final now = DateTime.now();
     final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
 
     setState(() {
-      if (isStart) {
-        _startTime = dateTime;
-      } else {
-        _endTime = dateTime;
-      }
+      _endTime = dateTime;
     });
+  }
+
+  Future<TimeOfDay?> showCustomTimePicker(
+    BuildContext context, {
+    required TimeOfDay initialTime,
+    required String title,
+  }) async {
+    int originalMinutes = initialTime.minute;
+    int nearestMinutes = (originalMinutes / 5).round() * 5;
+    TimeOfDay selectedTime = TimeOfDay(hour: initialTime.hour, minute: nearestMinutes);
+
+    return showDialog<TimeOfDay>(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(title),
+              content: SizedBox(
+                height: 120,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Hours picker
+                    SizedBox(
+                      width: 80,
+                      child: NumberPicker(
+                        minValue: 0,
+                        maxValue: 23,
+                        value: selectedTime.hour,
+                        onChanged: (value) {
+                          setState(() {
+                            selectedTime = selectedTime.replacing(hour: value);
+                          });
+                        },
+                        itemHeight: 40,
+                        itemWidth: 60,
+                        textStyle: Theme.of(context).textTheme.bodyLarge,
+                        selectedTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    // Minutes picker
+                    SizedBox(
+                      width: 80,
+                      child: NumberPicker(
+                        minValue: 0,
+                        maxValue: 55,
+                        value: selectedTime.minute,
+                        step: 5,
+                        onChanged: (value) {
+                          setState(() {
+                            print('value: $value');
+                            selectedTime = selectedTime.replacing(minute: value);
+                          });
+                        },
+                        itemHeight: 40,
+                        itemWidth: 60,
+                        textStyle: Theme.of(context).textTheme.bodyLarge,
+                        selectedTextStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.pop(context, selectedTime), child: const Text('OK')),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -97,12 +164,13 @@ class _SessionFormState extends ConsumerState<SessionForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 16,
             children: [
+              // form title
               Text(
                 widget.taskId != null ? 'New Task Session' : 'New Free Session',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              // Only show title field if no task ID is provided
+              // session content. Only show when free session
               if (widget.taskId == null)
                 TextFormField(
                   controller: _titleController,
@@ -113,13 +181,27 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a title';
+                      return 'Please fill what you did';
                     }
                     return null;
                   },
                 ),
+              // complete task? Only show when task session
+              if (widget.taskId != null)
+                CheckboxListTile(
+                  title: const Text('Mark task as complete'),
+                  value: _completeTask,
+                  onChanged: (value) {
+                    setState(() {
+                      _completeTask = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              // mood
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: SessionMood.values.map((mood) {
                   return GestureDetector(
                     onTap: () {
@@ -144,6 +226,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   );
                 }).toList(),
               ),
+              // time cost
               Row(
                 children: [
                   Expanded(
@@ -169,21 +252,9 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                 children: [
                   Expanded(
                     child: ListTile(
-                      title: Text(_startTime == null ? 'Start Time' : DateFormat('HH:mm').format(_startTime!)),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () => _selectDateTime(context, true),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        side: BorderSide(color: Colors.grey[300]!),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ListTile(
                       title: Text(_endTime == null ? 'End Time' : DateFormat('HH:mm').format(_endTime!)),
                       trailing: const Icon(Icons.access_time),
-                      onTap: () => _selectDateTime(context, false),
+                      onTap: () => _selectDateTime(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                         side: BorderSide(color: Colors.grey[300]!),
@@ -192,31 +263,8 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   ),
                 ],
               ),
-              // Show complete task checkbox only when there's a taskId
-              if (widget.taskId != null) ...[
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Mark task as complete'),
-                  value: _completeTask,
-                  onChanged: (value) {
-                    setState(() {
-                      _completeTask = value ?? false;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
 
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                  hintText: 'Any notes about this session...',
-                ),
-                maxLines: 2,
-              ),
+              // form actions
               Consumer(
                 builder: (context, ref, _) {
                   return ElevatedButton(
@@ -245,19 +293,6 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                             }
                             return; // Don't proceed with session creation if task update fails
                           }
-                        }
-
-                        // Validate title for sessions without a task
-                        if (widget.taskId == null && _titleController.text.isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter a title for the session'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          }
-                          return;
                         }
 
                         try {
