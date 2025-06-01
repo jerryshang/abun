@@ -3,14 +3,17 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
-class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
+class $RoutinesTable extends Routines
+    with drift.TableInfo<$RoutinesTable, Routine> {
   @override
-  final GeneratedDatabase attachedDatabase;
+  final drift.GeneratedDatabase attachedDatabase;
   final String? _alias;
   $RoutinesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  static const drift.VerificationMeta _idMeta = const drift.VerificationMeta(
+    'id',
+  );
   @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> id = drift.GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
@@ -18,95 +21,99 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
     requiredDuringInsert: false,
     clientDefault: () => const Uuid().v4(),
   );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+  static const drift.VerificationMeta _titleMeta = const drift.VerificationMeta(
     'title',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _recurrenceRuleMeta = const VerificationMeta(
-    'recurrenceRule',
   );
   @override
-  late final GeneratedColumn<String> recurrenceRule = GeneratedColumn<String>(
-    'recurrence_rule',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _estimatedDurationMeta = const VerificationMeta(
-    'estimatedDuration',
-  );
+  late final drift.GeneratedColumn<String> title =
+      drift.GeneratedColumn<String>(
+        'title',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const drift.VerificationMeta _recurrenceRuleMeta =
+      const drift.VerificationMeta('recurrenceRule');
   @override
-  late final GeneratedColumn<String> estimatedDuration =
-      GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> recurrenceRule =
+      drift.GeneratedColumn<String>(
+        'recurrence_rule',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const drift.VerificationMeta _estimatedDurationMeta =
+      const drift.VerificationMeta('estimatedDuration');
+  @override
+  late final drift.GeneratedColumn<String> estimatedDuration =
+      drift.GeneratedColumn<String>(
         'estimated_duration',
         aliasedName,
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
-  static const VerificationMeta _startTimeMeta = const VerificationMeta(
-    'startTime',
+  static const drift.VerificationMeta _startTimeMeta =
+      const drift.VerificationMeta('startTime');
+  @override
+  late final drift.GeneratedColumn<String> startTime =
+      drift.GeneratedColumn<String>(
+        'start_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _dueTimeMeta =
+      const drift.VerificationMeta('dueTime');
+  @override
+  late final drift.GeneratedColumn<String> dueTime =
+      drift.GeneratedColumn<String>(
+        'due_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _noteMeta = const drift.VerificationMeta(
+    'note',
   );
   @override
-  late final GeneratedColumn<String> startTime = GeneratedColumn<String>(
-    'start_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _dueTimeMeta = const VerificationMeta(
-    'dueTime',
-  );
-  @override
-  late final GeneratedColumn<String> dueTime = GeneratedColumn<String>(
-    'due_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _noteMeta = const VerificationMeta('note');
-  @override
-  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> note = drift.GeneratedColumn<String>(
     'note',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
+  static const drift.VerificationMeta _createdAtMeta =
+      const drift.VerificationMeta('createdAt');
   @override
-  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    clientDefault: () => DateTime.now().toIso8601String(),
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
+  late final drift.GeneratedColumn<String> createdAt =
+      drift.GeneratedColumn<String>(
+        'created_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DateTime.now().toIso8601String(),
+      );
+  static const drift.VerificationMeta _updatedAtMeta =
+      const drift.VerificationMeta('updatedAt');
   @override
-  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    clientDefault: () => DateTime.now().toIso8601String(),
-  );
+  late final drift.GeneratedColumn<String> updatedAt =
+      drift.GeneratedColumn<String>(
+        'updated_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DateTime.now().toIso8601String(),
+      );
   @override
-  List<GeneratedColumn> get $columns => [
+  List<drift.GeneratedColumn> get $columns => [
     id,
     title,
     recurrenceRule,
@@ -123,11 +130,11 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
   String get actualTableName => $name;
   static const String $name = 'routines';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<Routine> instance, {
+  drift.VerificationContext validateIntegrity(
+    drift.Insertable<Routine> instance, {
     bool isInserting = false,
   }) {
-    final context = VerificationContext();
+    final context = drift.VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
@@ -194,7 +201,7 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<drift.GeneratedColumn> get $primaryKey => {id};
   @override
   Routine map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -244,7 +251,7 @@ class $RoutinesTable extends Routines with TableInfo<$RoutinesTable, Routine> {
   }
 }
 
-class Routine extends DataClass implements Insertable<Routine> {
+class Routine extends drift.DataClass implements drift.Insertable<Routine> {
   final String id;
   final String title;
   final String recurrenceRule;
@@ -266,45 +273,47 @@ class Routine extends DataClass implements Insertable<Routine> {
     required this.updatedAt,
   });
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['title'] = Variable<String>(title);
-    map['recurrence_rule'] = Variable<String>(recurrenceRule);
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
+    map['id'] = drift.Variable<String>(id);
+    map['title'] = drift.Variable<String>(title);
+    map['recurrence_rule'] = drift.Variable<String>(recurrenceRule);
     if (!nullToAbsent || estimatedDuration != null) {
-      map['estimated_duration'] = Variable<String>(estimatedDuration);
+      map['estimated_duration'] = drift.Variable<String>(estimatedDuration);
     }
     if (!nullToAbsent || startTime != null) {
-      map['start_time'] = Variable<String>(startTime);
+      map['start_time'] = drift.Variable<String>(startTime);
     }
     if (!nullToAbsent || dueTime != null) {
-      map['due_time'] = Variable<String>(dueTime);
+      map['due_time'] = drift.Variable<String>(dueTime);
     }
     if (!nullToAbsent || note != null) {
-      map['note'] = Variable<String>(note);
+      map['note'] = drift.Variable<String>(note);
     }
-    map['created_at'] = Variable<String>(createdAt);
-    map['updated_at'] = Variable<String>(updatedAt);
+    map['created_at'] = drift.Variable<String>(createdAt);
+    map['updated_at'] = drift.Variable<String>(updatedAt);
     return map;
   }
 
   RoutinesCompanion toCompanion(bool nullToAbsent) {
     return RoutinesCompanion(
-      id: Value(id),
-      title: Value(title),
-      recurrenceRule: Value(recurrenceRule),
+      id: drift.Value(id),
+      title: drift.Value(title),
+      recurrenceRule: drift.Value(recurrenceRule),
       estimatedDuration: estimatedDuration == null && nullToAbsent
-          ? const Value.absent()
-          : Value(estimatedDuration),
+          ? const drift.Value.absent()
+          : drift.Value(estimatedDuration),
       startTime: startTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(startTime),
+          ? const drift.Value.absent()
+          : drift.Value(startTime),
       dueTime: dueTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(dueTime),
-      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
+          ? const drift.Value.absent()
+          : drift.Value(dueTime),
+      note: note == null && nullToAbsent
+          ? const drift.Value.absent()
+          : drift.Value(note),
+      createdAt: drift.Value(createdAt),
+      updatedAt: drift.Value(updatedAt),
     );
   }
 
@@ -312,7 +321,7 @@ class Routine extends DataClass implements Insertable<Routine> {
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return Routine(
       id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
@@ -329,7 +338,7 @@ class Routine extends DataClass implements Insertable<Routine> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
@@ -347,10 +356,10 @@ class Routine extends DataClass implements Insertable<Routine> {
     String? id,
     String? title,
     String? recurrenceRule,
-    Value<String?> estimatedDuration = const Value.absent(),
-    Value<String?> startTime = const Value.absent(),
-    Value<String?> dueTime = const Value.absent(),
-    Value<String?> note = const Value.absent(),
+    drift.Value<String?> estimatedDuration = const drift.Value.absent(),
+    drift.Value<String?> startTime = const drift.Value.absent(),
+    drift.Value<String?> dueTime = const drift.Value.absent(),
+    drift.Value<String?> note = const drift.Value.absent(),
     String? createdAt,
     String? updatedAt,
   }) => Routine(
@@ -427,55 +436,55 @@ class Routine extends DataClass implements Insertable<Routine> {
           other.updatedAt == this.updatedAt);
 }
 
-class RoutinesCompanion extends UpdateCompanion<Routine> {
-  final Value<String> id;
-  final Value<String> title;
-  final Value<String> recurrenceRule;
-  final Value<String?> estimatedDuration;
-  final Value<String?> startTime;
-  final Value<String?> dueTime;
-  final Value<String?> note;
-  final Value<String> createdAt;
-  final Value<String> updatedAt;
-  final Value<int> rowid;
+class RoutinesCompanion extends drift.UpdateCompanion<Routine> {
+  final drift.Value<String> id;
+  final drift.Value<String> title;
+  final drift.Value<String> recurrenceRule;
+  final drift.Value<String?> estimatedDuration;
+  final drift.Value<String?> startTime;
+  final drift.Value<String?> dueTime;
+  final drift.Value<String?> note;
+  final drift.Value<String> createdAt;
+  final drift.Value<String> updatedAt;
+  final drift.Value<int> rowid;
   const RoutinesCompanion({
-    this.id = const Value.absent(),
-    this.title = const Value.absent(),
-    this.recurrenceRule = const Value.absent(),
-    this.estimatedDuration = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.dueTime = const Value.absent(),
-    this.note = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.id = const drift.Value.absent(),
+    this.title = const drift.Value.absent(),
+    this.recurrenceRule = const drift.Value.absent(),
+    this.estimatedDuration = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.dueTime = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.createdAt = const drift.Value.absent(),
+    this.updatedAt = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
   });
   RoutinesCompanion.insert({
-    this.id = const Value.absent(),
+    this.id = const drift.Value.absent(),
     required String title,
     required String recurrenceRule,
-    this.estimatedDuration = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.dueTime = const Value.absent(),
-    this.note = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : title = Value(title),
-       recurrenceRule = Value(recurrenceRule);
-  static Insertable<Routine> custom({
-    Expression<String>? id,
-    Expression<String>? title,
-    Expression<String>? recurrenceRule,
-    Expression<String>? estimatedDuration,
-    Expression<String>? startTime,
-    Expression<String>? dueTime,
-    Expression<String>? note,
-    Expression<String>? createdAt,
-    Expression<String>? updatedAt,
-    Expression<int>? rowid,
+    this.estimatedDuration = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.dueTime = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.createdAt = const drift.Value.absent(),
+    this.updatedAt = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
+  }) : title = drift.Value(title),
+       recurrenceRule = drift.Value(recurrenceRule);
+  static drift.Insertable<Routine> custom({
+    drift.Expression<String>? id,
+    drift.Expression<String>? title,
+    drift.Expression<String>? recurrenceRule,
+    drift.Expression<String>? estimatedDuration,
+    drift.Expression<String>? startTime,
+    drift.Expression<String>? dueTime,
+    drift.Expression<String>? note,
+    drift.Expression<String>? createdAt,
+    drift.Expression<String>? updatedAt,
+    drift.Expression<int>? rowid,
   }) {
-    return RawValuesInsertable({
+    return drift.RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
@@ -490,16 +499,16 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
   }
 
   RoutinesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? title,
-    Value<String>? recurrenceRule,
-    Value<String?>? estimatedDuration,
-    Value<String?>? startTime,
-    Value<String?>? dueTime,
-    Value<String?>? note,
-    Value<String>? createdAt,
-    Value<String>? updatedAt,
-    Value<int>? rowid,
+    drift.Value<String>? id,
+    drift.Value<String>? title,
+    drift.Value<String>? recurrenceRule,
+    drift.Value<String?>? estimatedDuration,
+    drift.Value<String?>? startTime,
+    drift.Value<String?>? dueTime,
+    drift.Value<String?>? note,
+    drift.Value<String>? createdAt,
+    drift.Value<String>? updatedAt,
+    drift.Value<int>? rowid,
   }) {
     return RoutinesCompanion(
       id: id ?? this.id,
@@ -516,37 +525,39 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
   }
 
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
     if (id.present) {
-      map['id'] = Variable<String>(id.value);
+      map['id'] = drift.Variable<String>(id.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] = drift.Variable<String>(title.value);
     }
     if (recurrenceRule.present) {
-      map['recurrence_rule'] = Variable<String>(recurrenceRule.value);
+      map['recurrence_rule'] = drift.Variable<String>(recurrenceRule.value);
     }
     if (estimatedDuration.present) {
-      map['estimated_duration'] = Variable<String>(estimatedDuration.value);
+      map['estimated_duration'] = drift.Variable<String>(
+        estimatedDuration.value,
+      );
     }
     if (startTime.present) {
-      map['start_time'] = Variable<String>(startTime.value);
+      map['start_time'] = drift.Variable<String>(startTime.value);
     }
     if (dueTime.present) {
-      map['due_time'] = Variable<String>(dueTime.value);
+      map['due_time'] = drift.Variable<String>(dueTime.value);
     }
     if (note.present) {
-      map['note'] = Variable<String>(note.value);
+      map['note'] = drift.Variable<String>(note.value);
     }
     if (createdAt.present) {
-      map['created_at'] = Variable<String>(createdAt.value);
+      map['created_at'] = drift.Variable<String>(createdAt.value);
     }
     if (updatedAt.present) {
-      map['updated_at'] = Variable<String>(updatedAt.value);
+      map['updated_at'] = drift.Variable<String>(updatedAt.value);
     }
     if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+      map['rowid'] = drift.Variable<int>(rowid.value);
     }
     return map;
   }
@@ -569,14 +580,16 @@ class RoutinesCompanion extends UpdateCompanion<Routine> {
   }
 }
 
-class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
+class $TasksTable extends Tasks with drift.TableInfo<$TasksTable, Task> {
   @override
-  final GeneratedDatabase attachedDatabase;
+  final drift.GeneratedDatabase attachedDatabase;
   final String? _alias;
   $TasksTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  static const drift.VerificationMeta _idMeta = const drift.VerificationMeta(
+    'id',
+  );
   @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> id = drift.GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
@@ -584,108 +597,114 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     requiredDuringInsert: false,
     clientDefault: () => const Uuid().v4(),
   );
-  static const VerificationMeta _routineIdMeta = const VerificationMeta(
-    'routineId',
-  );
+  static const drift.VerificationMeta _routineIdMeta =
+      const drift.VerificationMeta('routineId');
   @override
-  late final GeneratedColumn<String> routineId = GeneratedColumn<String>(
-    'routine_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES routines (id)',
-    ),
-  );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> routineId =
+      drift.GeneratedColumn<String>(
+        'routine_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES routines (id)',
+        ),
+      );
+  static const drift.VerificationMeta _titleMeta = const drift.VerificationMeta(
     'title',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
-  @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('inbox'),
-  );
-  static const VerificationMeta _estimatedDurationMeta = const VerificationMeta(
-    'estimatedDuration',
   );
   @override
-  late final GeneratedColumn<String> estimatedDuration =
-      GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> title =
+      drift.GeneratedColumn<String>(
+        'title',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const drift.VerificationMeta _statusMeta =
+      const drift.VerificationMeta('status');
+  @override
+  late final drift.GeneratedColumn<String> status =
+      drift.GeneratedColumn<String>(
+        'status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const drift.Constant('inbox'),
+      );
+  static const drift.VerificationMeta _estimatedDurationMeta =
+      const drift.VerificationMeta('estimatedDuration');
+  @override
+  late final drift.GeneratedColumn<String> estimatedDuration =
+      drift.GeneratedColumn<String>(
         'estimated_duration',
         aliasedName,
         true,
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
-  static const VerificationMeta _startTimeMeta = const VerificationMeta(
-    'startTime',
+  static const drift.VerificationMeta _startTimeMeta =
+      const drift.VerificationMeta('startTime');
+  @override
+  late final drift.GeneratedColumn<String> startTime =
+      drift.GeneratedColumn<String>(
+        'start_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _dueTimeMeta =
+      const drift.VerificationMeta('dueTime');
+  @override
+  late final drift.GeneratedColumn<String> dueTime =
+      drift.GeneratedColumn<String>(
+        'due_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _noteMeta = const drift.VerificationMeta(
+    'note',
   );
   @override
-  late final GeneratedColumn<String> startTime = GeneratedColumn<String>(
-    'start_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _dueTimeMeta = const VerificationMeta(
-    'dueTime',
-  );
-  @override
-  late final GeneratedColumn<String> dueTime = GeneratedColumn<String>(
-    'due_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _noteMeta = const VerificationMeta('note');
-  @override
-  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> note = drift.GeneratedColumn<String>(
     'note',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
+  static const drift.VerificationMeta _createdAtMeta =
+      const drift.VerificationMeta('createdAt');
   @override
-  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    clientDefault: () => DateTime.now().toIso8601String(),
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
+  late final drift.GeneratedColumn<String> createdAt =
+      drift.GeneratedColumn<String>(
+        'created_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DateTime.now().toIso8601String(),
+      );
+  static const drift.VerificationMeta _updatedAtMeta =
+      const drift.VerificationMeta('updatedAt');
   @override
-  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    clientDefault: () => DateTime.now().toIso8601String(),
-  );
+  late final drift.GeneratedColumn<String> updatedAt =
+      drift.GeneratedColumn<String>(
+        'updated_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        clientDefault: () => DateTime.now().toIso8601String(),
+      );
   @override
-  List<GeneratedColumn> get $columns => [
+  List<drift.GeneratedColumn> get $columns => [
     id,
     routineId,
     title,
@@ -703,11 +722,11 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   String get actualTableName => $name;
   static const String $name = 'tasks';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<Task> instance, {
+  drift.VerificationContext validateIntegrity(
+    drift.Insertable<Task> instance, {
     bool isInserting = false,
   }) {
-    final context = VerificationContext();
+    final context = drift.VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
@@ -775,7 +794,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<drift.GeneratedColumn> get $primaryKey => {id};
   @override
   Task map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -829,7 +848,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   }
 }
 
-class Task extends DataClass implements Insertable<Task> {
+class Task extends drift.DataClass implements drift.Insertable<Task> {
   final String id;
   final String? routineId;
   final String title;
@@ -853,51 +872,53 @@ class Task extends DataClass implements Insertable<Task> {
     required this.updatedAt,
   });
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
+    map['id'] = drift.Variable<String>(id);
     if (!nullToAbsent || routineId != null) {
-      map['routine_id'] = Variable<String>(routineId);
+      map['routine_id'] = drift.Variable<String>(routineId);
     }
-    map['title'] = Variable<String>(title);
-    map['status'] = Variable<String>(status);
+    map['title'] = drift.Variable<String>(title);
+    map['status'] = drift.Variable<String>(status);
     if (!nullToAbsent || estimatedDuration != null) {
-      map['estimated_duration'] = Variable<String>(estimatedDuration);
+      map['estimated_duration'] = drift.Variable<String>(estimatedDuration);
     }
     if (!nullToAbsent || startTime != null) {
-      map['start_time'] = Variable<String>(startTime);
+      map['start_time'] = drift.Variable<String>(startTime);
     }
     if (!nullToAbsent || dueTime != null) {
-      map['due_time'] = Variable<String>(dueTime);
+      map['due_time'] = drift.Variable<String>(dueTime);
     }
     if (!nullToAbsent || note != null) {
-      map['note'] = Variable<String>(note);
+      map['note'] = drift.Variable<String>(note);
     }
-    map['created_at'] = Variable<String>(createdAt);
-    map['updated_at'] = Variable<String>(updatedAt);
+    map['created_at'] = drift.Variable<String>(createdAt);
+    map['updated_at'] = drift.Variable<String>(updatedAt);
     return map;
   }
 
   TasksCompanion toCompanion(bool nullToAbsent) {
     return TasksCompanion(
-      id: Value(id),
+      id: drift.Value(id),
       routineId: routineId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(routineId),
-      title: Value(title),
-      status: Value(status),
+          ? const drift.Value.absent()
+          : drift.Value(routineId),
+      title: drift.Value(title),
+      status: drift.Value(status),
       estimatedDuration: estimatedDuration == null && nullToAbsent
-          ? const Value.absent()
-          : Value(estimatedDuration),
+          ? const drift.Value.absent()
+          : drift.Value(estimatedDuration),
       startTime: startTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(startTime),
+          ? const drift.Value.absent()
+          : drift.Value(startTime),
       dueTime: dueTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(dueTime),
-      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
+          ? const drift.Value.absent()
+          : drift.Value(dueTime),
+      note: note == null && nullToAbsent
+          ? const drift.Value.absent()
+          : drift.Value(note),
+      createdAt: drift.Value(createdAt),
+      updatedAt: drift.Value(updatedAt),
     );
   }
 
@@ -905,7 +926,7 @@ class Task extends DataClass implements Insertable<Task> {
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return Task(
       id: serializer.fromJson<String>(json['id']),
       routineId: serializer.fromJson<String?>(json['routineId']),
@@ -923,7 +944,7 @@ class Task extends DataClass implements Insertable<Task> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'routineId': serializer.toJson<String?>(routineId),
@@ -940,13 +961,13 @@ class Task extends DataClass implements Insertable<Task> {
 
   Task copyWith({
     String? id,
-    Value<String?> routineId = const Value.absent(),
+    drift.Value<String?> routineId = const drift.Value.absent(),
     String? title,
     String? status,
-    Value<String?> estimatedDuration = const Value.absent(),
-    Value<String?> startTime = const Value.absent(),
-    Value<String?> dueTime = const Value.absent(),
-    Value<String?> note = const Value.absent(),
+    drift.Value<String?> estimatedDuration = const drift.Value.absent(),
+    drift.Value<String?> startTime = const drift.Value.absent(),
+    drift.Value<String?> dueTime = const drift.Value.absent(),
+    drift.Value<String?> note = const drift.Value.absent(),
     String? createdAt,
     String? updatedAt,
   }) => Task(
@@ -1026,58 +1047,58 @@ class Task extends DataClass implements Insertable<Task> {
           other.updatedAt == this.updatedAt);
 }
 
-class TasksCompanion extends UpdateCompanion<Task> {
-  final Value<String> id;
-  final Value<String?> routineId;
-  final Value<String> title;
-  final Value<String> status;
-  final Value<String?> estimatedDuration;
-  final Value<String?> startTime;
-  final Value<String?> dueTime;
-  final Value<String?> note;
-  final Value<String> createdAt;
-  final Value<String> updatedAt;
-  final Value<int> rowid;
+class TasksCompanion extends drift.UpdateCompanion<Task> {
+  final drift.Value<String> id;
+  final drift.Value<String?> routineId;
+  final drift.Value<String> title;
+  final drift.Value<String> status;
+  final drift.Value<String?> estimatedDuration;
+  final drift.Value<String?> startTime;
+  final drift.Value<String?> dueTime;
+  final drift.Value<String?> note;
+  final drift.Value<String> createdAt;
+  final drift.Value<String> updatedAt;
+  final drift.Value<int> rowid;
   const TasksCompanion({
-    this.id = const Value.absent(),
-    this.routineId = const Value.absent(),
-    this.title = const Value.absent(),
-    this.status = const Value.absent(),
-    this.estimatedDuration = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.dueTime = const Value.absent(),
-    this.note = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.id = const drift.Value.absent(),
+    this.routineId = const drift.Value.absent(),
+    this.title = const drift.Value.absent(),
+    this.status = const drift.Value.absent(),
+    this.estimatedDuration = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.dueTime = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.createdAt = const drift.Value.absent(),
+    this.updatedAt = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
   });
   TasksCompanion.insert({
-    this.id = const Value.absent(),
-    this.routineId = const Value.absent(),
+    this.id = const drift.Value.absent(),
+    this.routineId = const drift.Value.absent(),
     required String title,
-    this.status = const Value.absent(),
-    this.estimatedDuration = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.dueTime = const Value.absent(),
-    this.note = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : title = Value(title);
-  static Insertable<Task> custom({
-    Expression<String>? id,
-    Expression<String>? routineId,
-    Expression<String>? title,
-    Expression<String>? status,
-    Expression<String>? estimatedDuration,
-    Expression<String>? startTime,
-    Expression<String>? dueTime,
-    Expression<String>? note,
-    Expression<String>? createdAt,
-    Expression<String>? updatedAt,
-    Expression<int>? rowid,
+    this.status = const drift.Value.absent(),
+    this.estimatedDuration = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.dueTime = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.createdAt = const drift.Value.absent(),
+    this.updatedAt = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
+  }) : title = drift.Value(title);
+  static drift.Insertable<Task> custom({
+    drift.Expression<String>? id,
+    drift.Expression<String>? routineId,
+    drift.Expression<String>? title,
+    drift.Expression<String>? status,
+    drift.Expression<String>? estimatedDuration,
+    drift.Expression<String>? startTime,
+    drift.Expression<String>? dueTime,
+    drift.Expression<String>? note,
+    drift.Expression<String>? createdAt,
+    drift.Expression<String>? updatedAt,
+    drift.Expression<int>? rowid,
   }) {
-    return RawValuesInsertable({
+    return drift.RawValuesInsertable({
       if (id != null) 'id': id,
       if (routineId != null) 'routine_id': routineId,
       if (title != null) 'title': title,
@@ -1093,17 +1114,17 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 
   TasksCompanion copyWith({
-    Value<String>? id,
-    Value<String?>? routineId,
-    Value<String>? title,
-    Value<String>? status,
-    Value<String?>? estimatedDuration,
-    Value<String?>? startTime,
-    Value<String?>? dueTime,
-    Value<String?>? note,
-    Value<String>? createdAt,
-    Value<String>? updatedAt,
-    Value<int>? rowid,
+    drift.Value<String>? id,
+    drift.Value<String?>? routineId,
+    drift.Value<String>? title,
+    drift.Value<String>? status,
+    drift.Value<String?>? estimatedDuration,
+    drift.Value<String?>? startTime,
+    drift.Value<String?>? dueTime,
+    drift.Value<String?>? note,
+    drift.Value<String>? createdAt,
+    drift.Value<String>? updatedAt,
+    drift.Value<int>? rowid,
   }) {
     return TasksCompanion(
       id: id ?? this.id,
@@ -1121,40 +1142,42 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
     if (id.present) {
-      map['id'] = Variable<String>(id.value);
+      map['id'] = drift.Variable<String>(id.value);
     }
     if (routineId.present) {
-      map['routine_id'] = Variable<String>(routineId.value);
+      map['routine_id'] = drift.Variable<String>(routineId.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] = drift.Variable<String>(title.value);
     }
     if (status.present) {
-      map['status'] = Variable<String>(status.value);
+      map['status'] = drift.Variable<String>(status.value);
     }
     if (estimatedDuration.present) {
-      map['estimated_duration'] = Variable<String>(estimatedDuration.value);
+      map['estimated_duration'] = drift.Variable<String>(
+        estimatedDuration.value,
+      );
     }
     if (startTime.present) {
-      map['start_time'] = Variable<String>(startTime.value);
+      map['start_time'] = drift.Variable<String>(startTime.value);
     }
     if (dueTime.present) {
-      map['due_time'] = Variable<String>(dueTime.value);
+      map['due_time'] = drift.Variable<String>(dueTime.value);
     }
     if (note.present) {
-      map['note'] = Variable<String>(note.value);
+      map['note'] = drift.Variable<String>(note.value);
     }
     if (createdAt.present) {
-      map['created_at'] = Variable<String>(createdAt.value);
+      map['created_at'] = drift.Variable<String>(createdAt.value);
     }
     if (updatedAt.present) {
-      map['updated_at'] = Variable<String>(updatedAt.value);
+      map['updated_at'] = drift.Variable<String>(updatedAt.value);
     }
     if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+      map['rowid'] = drift.Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1178,14 +1201,17 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 }
 
-class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
+class $SessionsTable extends Sessions
+    with drift.TableInfo<$SessionsTable, Session> {
   @override
-  final GeneratedDatabase attachedDatabase;
+  final drift.GeneratedDatabase attachedDatabase;
   final String? _alias;
   $SessionsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  static const drift.VerificationMeta _idMeta = const drift.VerificationMeta(
+    'id',
+  );
   @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> id = drift.GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
@@ -1193,83 +1219,94 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     requiredDuringInsert: false,
     clientDefault: () => const Uuid().v4(),
   );
-  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  static const drift.VerificationMeta _taskIdMeta =
+      const drift.VerificationMeta('taskId');
   @override
-  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
-    'task_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES tasks (id)',
-    ),
-  );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> taskId =
+      drift.GeneratedColumn<String>(
+        'task_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES tasks (id)',
+        ),
+      );
+  static const drift.VerificationMeta _titleMeta = const drift.VerificationMeta(
     'title',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _startTimeMeta = const VerificationMeta(
-    'startTime',
   );
   @override
-  late final GeneratedColumn<String> startTime = GeneratedColumn<String>(
-    'start_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _endTimeMeta = const VerificationMeta(
-    'endTime',
+  late final drift.GeneratedColumn<String> title =
+      drift.GeneratedColumn<String>(
+        'title',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _startTimeMeta =
+      const drift.VerificationMeta('startTime');
+  @override
+  late final drift.GeneratedColumn<String> startTime =
+      drift.GeneratedColumn<String>(
+        'start_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _endTimeMeta =
+      const drift.VerificationMeta('endTime');
+  @override
+  late final drift.GeneratedColumn<String> endTime =
+      drift.GeneratedColumn<String>(
+        'end_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const drift.VerificationMeta _durationMeta =
+      const drift.VerificationMeta('duration');
+  @override
+  late final drift.GeneratedColumn<String> duration =
+      drift.GeneratedColumn<String>(
+        'duration',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const drift.VerificationMeta _typeMeta = const drift.VerificationMeta(
+    'type',
   );
   @override
-  late final GeneratedColumn<String> endTime = GeneratedColumn<String>(
-    'end_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _durationMeta = const VerificationMeta(
-    'duration',
-  );
-  @override
-  late final GeneratedColumn<String> duration = GeneratedColumn<String>(
-    'duration',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
-  @override
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> type = drift.GeneratedColumn<String>(
     'type',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('free'),
+    defaultValue: const drift.Constant('free'),
   );
-  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  static const drift.VerificationMeta _moodMeta = const drift.VerificationMeta(
+    'mood',
+  );
   @override
-  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> mood = drift.GeneratedColumn<String>(
     'mood',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('okay'),
+    defaultValue: const drift.Constant('okay'),
   );
-  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  static const drift.VerificationMeta _noteMeta = const drift.VerificationMeta(
+    'note',
+  );
   @override
-  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+  late final drift.GeneratedColumn<String> note = drift.GeneratedColumn<String>(
     'note',
     aliasedName,
     true,
@@ -1277,7 +1314,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [
+  List<drift.GeneratedColumn> get $columns => [
     id,
     taskId,
     title,
@@ -1294,11 +1331,11 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   String get actualTableName => $name;
   static const String $name = 'sessions';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<Session> instance, {
+  drift.VerificationContext validateIntegrity(
+    drift.Insertable<Session> instance, {
     bool isInserting = false,
   }) {
-    final context = VerificationContext();
+    final context = drift.VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
@@ -1357,7 +1394,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<drift.GeneratedColumn> get $primaryKey => {id};
   @override
   Session map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -1407,7 +1444,7 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
   }
 }
 
-class Session extends DataClass implements Insertable<Session> {
+class Session extends drift.DataClass implements drift.Insertable<Session> {
   final String id;
   final String? taskId;
   final String? title;
@@ -1429,51 +1466,55 @@ class Session extends DataClass implements Insertable<Session> {
     this.note,
   });
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
+    map['id'] = drift.Variable<String>(id);
     if (!nullToAbsent || taskId != null) {
-      map['task_id'] = Variable<String>(taskId);
+      map['task_id'] = drift.Variable<String>(taskId);
     }
     if (!nullToAbsent || title != null) {
-      map['title'] = Variable<String>(title);
+      map['title'] = drift.Variable<String>(title);
     }
     if (!nullToAbsent || startTime != null) {
-      map['start_time'] = Variable<String>(startTime);
+      map['start_time'] = drift.Variable<String>(startTime);
     }
     if (!nullToAbsent || endTime != null) {
-      map['end_time'] = Variable<String>(endTime);
+      map['end_time'] = drift.Variable<String>(endTime);
     }
-    map['duration'] = Variable<String>(duration);
-    map['type'] = Variable<String>(type);
+    map['duration'] = drift.Variable<String>(duration);
+    map['type'] = drift.Variable<String>(type);
     if (!nullToAbsent || mood != null) {
-      map['mood'] = Variable<String>(mood);
+      map['mood'] = drift.Variable<String>(mood);
     }
     if (!nullToAbsent || note != null) {
-      map['note'] = Variable<String>(note);
+      map['note'] = drift.Variable<String>(note);
     }
     return map;
   }
 
   SessionsCompanion toCompanion(bool nullToAbsent) {
     return SessionsCompanion(
-      id: Value(id),
+      id: drift.Value(id),
       taskId: taskId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(taskId),
+          ? const drift.Value.absent()
+          : drift.Value(taskId),
       title: title == null && nullToAbsent
-          ? const Value.absent()
-          : Value(title),
+          ? const drift.Value.absent()
+          : drift.Value(title),
       startTime: startTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(startTime),
+          ? const drift.Value.absent()
+          : drift.Value(startTime),
       endTime: endTime == null && nullToAbsent
-          ? const Value.absent()
-          : Value(endTime),
-      duration: Value(duration),
-      type: Value(type),
-      mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
-      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+          ? const drift.Value.absent()
+          : drift.Value(endTime),
+      duration: drift.Value(duration),
+      type: drift.Value(type),
+      mood: mood == null && nullToAbsent
+          ? const drift.Value.absent()
+          : drift.Value(mood),
+      note: note == null && nullToAbsent
+          ? const drift.Value.absent()
+          : drift.Value(note),
     );
   }
 
@@ -1481,7 +1522,7 @@ class Session extends DataClass implements Insertable<Session> {
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return Session(
       id: serializer.fromJson<String>(json['id']),
       taskId: serializer.fromJson<String?>(json['taskId']),
@@ -1496,7 +1537,7 @@ class Session extends DataClass implements Insertable<Session> {
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
+    serializer ??= drift.driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'taskId': serializer.toJson<String?>(taskId),
@@ -1512,14 +1553,14 @@ class Session extends DataClass implements Insertable<Session> {
 
   Session copyWith({
     String? id,
-    Value<String?> taskId = const Value.absent(),
-    Value<String?> title = const Value.absent(),
-    Value<String?> startTime = const Value.absent(),
-    Value<String?> endTime = const Value.absent(),
+    drift.Value<String?> taskId = const drift.Value.absent(),
+    drift.Value<String?> title = const drift.Value.absent(),
+    drift.Value<String?> startTime = const drift.Value.absent(),
+    drift.Value<String?> endTime = const drift.Value.absent(),
     String? duration,
     String? type,
-    Value<String?> mood = const Value.absent(),
-    Value<String?> note = const Value.absent(),
+    drift.Value<String?> mood = const drift.Value.absent(),
+    drift.Value<String?> note = const drift.Value.absent(),
   }) => Session(
     id: id ?? this.id,
     taskId: taskId.present ? taskId.value : this.taskId,
@@ -1588,54 +1629,54 @@ class Session extends DataClass implements Insertable<Session> {
           other.note == this.note);
 }
 
-class SessionsCompanion extends UpdateCompanion<Session> {
-  final Value<String> id;
-  final Value<String?> taskId;
-  final Value<String?> title;
-  final Value<String?> startTime;
-  final Value<String?> endTime;
-  final Value<String> duration;
-  final Value<String> type;
-  final Value<String?> mood;
-  final Value<String?> note;
-  final Value<int> rowid;
+class SessionsCompanion extends drift.UpdateCompanion<Session> {
+  final drift.Value<String> id;
+  final drift.Value<String?> taskId;
+  final drift.Value<String?> title;
+  final drift.Value<String?> startTime;
+  final drift.Value<String?> endTime;
+  final drift.Value<String> duration;
+  final drift.Value<String> type;
+  final drift.Value<String?> mood;
+  final drift.Value<String?> note;
+  final drift.Value<int> rowid;
   const SessionsCompanion({
-    this.id = const Value.absent(),
-    this.taskId = const Value.absent(),
-    this.title = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.endTime = const Value.absent(),
-    this.duration = const Value.absent(),
-    this.type = const Value.absent(),
-    this.mood = const Value.absent(),
-    this.note = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.id = const drift.Value.absent(),
+    this.taskId = const drift.Value.absent(),
+    this.title = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.endTime = const drift.Value.absent(),
+    this.duration = const drift.Value.absent(),
+    this.type = const drift.Value.absent(),
+    this.mood = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
   });
   SessionsCompanion.insert({
-    this.id = const Value.absent(),
-    this.taskId = const Value.absent(),
-    this.title = const Value.absent(),
-    this.startTime = const Value.absent(),
-    this.endTime = const Value.absent(),
+    this.id = const drift.Value.absent(),
+    this.taskId = const drift.Value.absent(),
+    this.title = const drift.Value.absent(),
+    this.startTime = const drift.Value.absent(),
+    this.endTime = const drift.Value.absent(),
     required String duration,
-    this.type = const Value.absent(),
-    this.mood = const Value.absent(),
-    this.note = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : duration = Value(duration);
-  static Insertable<Session> custom({
-    Expression<String>? id,
-    Expression<String>? taskId,
-    Expression<String>? title,
-    Expression<String>? startTime,
-    Expression<String>? endTime,
-    Expression<String>? duration,
-    Expression<String>? type,
-    Expression<String>? mood,
-    Expression<String>? note,
-    Expression<int>? rowid,
+    this.type = const drift.Value.absent(),
+    this.mood = const drift.Value.absent(),
+    this.note = const drift.Value.absent(),
+    this.rowid = const drift.Value.absent(),
+  }) : duration = drift.Value(duration);
+  static drift.Insertable<Session> custom({
+    drift.Expression<String>? id,
+    drift.Expression<String>? taskId,
+    drift.Expression<String>? title,
+    drift.Expression<String>? startTime,
+    drift.Expression<String>? endTime,
+    drift.Expression<String>? duration,
+    drift.Expression<String>? type,
+    drift.Expression<String>? mood,
+    drift.Expression<String>? note,
+    drift.Expression<int>? rowid,
   }) {
-    return RawValuesInsertable({
+    return drift.RawValuesInsertable({
       if (id != null) 'id': id,
       if (taskId != null) 'task_id': taskId,
       if (title != null) 'title': title,
@@ -1650,16 +1691,16 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   }
 
   SessionsCompanion copyWith({
-    Value<String>? id,
-    Value<String?>? taskId,
-    Value<String?>? title,
-    Value<String?>? startTime,
-    Value<String?>? endTime,
-    Value<String>? duration,
-    Value<String>? type,
-    Value<String?>? mood,
-    Value<String?>? note,
-    Value<int>? rowid,
+    drift.Value<String>? id,
+    drift.Value<String?>? taskId,
+    drift.Value<String?>? title,
+    drift.Value<String?>? startTime,
+    drift.Value<String?>? endTime,
+    drift.Value<String>? duration,
+    drift.Value<String>? type,
+    drift.Value<String?>? mood,
+    drift.Value<String?>? note,
+    drift.Value<int>? rowid,
   }) {
     return SessionsCompanion(
       id: id ?? this.id,
@@ -1676,37 +1717,37 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   }
 
   @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
+  Map<String, drift.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, drift.Expression>{};
     if (id.present) {
-      map['id'] = Variable<String>(id.value);
+      map['id'] = drift.Variable<String>(id.value);
     }
     if (taskId.present) {
-      map['task_id'] = Variable<String>(taskId.value);
+      map['task_id'] = drift.Variable<String>(taskId.value);
     }
     if (title.present) {
-      map['title'] = Variable<String>(title.value);
+      map['title'] = drift.Variable<String>(title.value);
     }
     if (startTime.present) {
-      map['start_time'] = Variable<String>(startTime.value);
+      map['start_time'] = drift.Variable<String>(startTime.value);
     }
     if (endTime.present) {
-      map['end_time'] = Variable<String>(endTime.value);
+      map['end_time'] = drift.Variable<String>(endTime.value);
     }
     if (duration.present) {
-      map['duration'] = Variable<String>(duration.value);
+      map['duration'] = drift.Variable<String>(duration.value);
     }
     if (type.present) {
-      map['type'] = Variable<String>(type.value);
+      map['type'] = drift.Variable<String>(type.value);
     }
     if (mood.present) {
-      map['mood'] = Variable<String>(mood.value);
+      map['mood'] = drift.Variable<String>(mood.value);
     }
     if (note.present) {
-      map['note'] = Variable<String>(note.value);
+      map['note'] = drift.Variable<String>(note.value);
     }
     if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+      map['rowid'] = drift.Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1729,17 +1770,17 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   }
 }
 
-abstract class _$AppDatabase extends GeneratedDatabase {
+abstract class _$AppDatabase extends drift.GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $RoutinesTable routines = $RoutinesTable(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $SessionsTable sessions = $SessionsTable(this);
   @override
-  Iterable<TableInfo<Table, Object?>> get allTables =>
-      allSchemaEntities.whereType<TableInfo<Table, Object?>>();
+  Iterable<drift.TableInfo<drift.Table, Object?>> get allTables =>
+      allSchemaEntities.whereType<drift.TableInfo<drift.Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
+  List<drift.DatabaseSchemaEntity> get allSchemaEntities => [
     routines,
     tasks,
     sessions,
@@ -1748,40 +1789,40 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$RoutinesTableCreateCompanionBuilder =
     RoutinesCompanion Function({
-      Value<String> id,
+      drift.Value<String> id,
       required String title,
       required String recurrenceRule,
-      Value<String?> estimatedDuration,
-      Value<String?> startTime,
-      Value<String?> dueTime,
-      Value<String?> note,
-      Value<String> createdAt,
-      Value<String> updatedAt,
-      Value<int> rowid,
+      drift.Value<String?> estimatedDuration,
+      drift.Value<String?> startTime,
+      drift.Value<String?> dueTime,
+      drift.Value<String?> note,
+      drift.Value<String> createdAt,
+      drift.Value<String> updatedAt,
+      drift.Value<int> rowid,
     });
 typedef $$RoutinesTableUpdateCompanionBuilder =
     RoutinesCompanion Function({
-      Value<String> id,
-      Value<String> title,
-      Value<String> recurrenceRule,
-      Value<String?> estimatedDuration,
-      Value<String?> startTime,
-      Value<String?> dueTime,
-      Value<String?> note,
-      Value<String> createdAt,
-      Value<String> updatedAt,
-      Value<int> rowid,
+      drift.Value<String> id,
+      drift.Value<String> title,
+      drift.Value<String> recurrenceRule,
+      drift.Value<String?> estimatedDuration,
+      drift.Value<String?> startTime,
+      drift.Value<String?> dueTime,
+      drift.Value<String?> note,
+      drift.Value<String> createdAt,
+      drift.Value<String> updatedAt,
+      drift.Value<int> rowid,
     });
 
 final class $$RoutinesTableReferences
-    extends BaseReferences<_$AppDatabase, $RoutinesTable, Routine> {
+    extends drift.BaseReferences<_$AppDatabase, $RoutinesTable, Routine> {
   $$RoutinesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$TasksTable, List<Task>> _tasksRefsTable(
+  static drift.MultiTypedResultKey<$TasksTable, List<Task>> _tasksRefsTable(
     _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
+  ) => drift.MultiTypedResultKey.fromTable(
     db.tasks,
-    aliasName: $_aliasNameGenerator(db.routines.id, db.tasks.routineId),
+    aliasName: drift.$_aliasNameGenerator(db.routines.id, db.tasks.routineId),
   );
 
   $$TasksTableProcessedTableManager get tasksRefs {
@@ -1791,14 +1832,14 @@ final class $$RoutinesTableReferences
     ).filter((f) => f.routineId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_tasksRefsTable($_db));
-    return ProcessedTableManager(
+    return drift.ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
 
 class $$RoutinesTableFilterComposer
-    extends Composer<_$AppDatabase, $RoutinesTable> {
+    extends drift.Composer<_$AppDatabase, $RoutinesTable> {
   $$RoutinesTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -1806,53 +1847,53 @@ class $$RoutinesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get id => $composableBuilder(
+  drift.ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get title => $composableBuilder(
+  drift.ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get recurrenceRule => $composableBuilder(
+  drift.ColumnFilters<String> get recurrenceRule => $composableBuilder(
     column: $table.recurrenceRule,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get estimatedDuration => $composableBuilder(
+  drift.ColumnFilters<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get startTime => $composableBuilder(
+  drift.ColumnFilters<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get dueTime => $composableBuilder(
+  drift.ColumnFilters<String> get dueTime => $composableBuilder(
     column: $table.dueTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get note => $composableBuilder(
+  drift.ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get createdAt => $composableBuilder(
+  drift.ColumnFilters<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get updatedAt => $composableBuilder(
+  drift.ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  Expression<bool> tasksRefs(
-    Expression<bool> Function($$TasksTableFilterComposer f) f,
+  drift.Expression<bool> tasksRefs(
+    drift.Expression<bool> Function($$TasksTableFilterComposer f) f,
   ) {
     final $$TasksTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -1878,7 +1919,7 @@ class $$RoutinesTableFilterComposer
 }
 
 class $$RoutinesTableOrderingComposer
-    extends Composer<_$AppDatabase, $RoutinesTable> {
+    extends drift.Composer<_$AppDatabase, $RoutinesTable> {
   $$RoutinesTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -1886,54 +1927,54 @@ class $$RoutinesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get id => $composableBuilder(
+  drift.ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get title => $composableBuilder(
+  drift.ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get recurrenceRule => $composableBuilder(
+  drift.ColumnOrderings<String> get recurrenceRule => $composableBuilder(
     column: $table.recurrenceRule,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get estimatedDuration => $composableBuilder(
+  drift.ColumnOrderings<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get startTime => $composableBuilder(
+  drift.ColumnOrderings<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get dueTime => $composableBuilder(
+  drift.ColumnOrderings<String> get dueTime => $composableBuilder(
     column: $table.dueTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get note => $composableBuilder(
+  drift.ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get createdAt => $composableBuilder(
+  drift.ColumnOrderings<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get updatedAt => $composableBuilder(
+  drift.ColumnOrderings<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 }
 
 class $$RoutinesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RoutinesTable> {
+    extends drift.Composer<_$AppDatabase, $RoutinesTable> {
   $$RoutinesTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -1941,39 +1982,39 @@ class $$RoutinesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get id =>
+  drift.GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  drift.GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get recurrenceRule => $composableBuilder(
+  drift.GeneratedColumn<String> get recurrenceRule => $composableBuilder(
     column: $table.recurrenceRule,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get estimatedDuration => $composableBuilder(
+  drift.GeneratedColumn<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get startTime =>
+  drift.GeneratedColumn<String> get startTime =>
       $composableBuilder(column: $table.startTime, builder: (column) => column);
 
-  GeneratedColumn<String> get dueTime =>
+  drift.GeneratedColumn<String> get dueTime =>
       $composableBuilder(column: $table.dueTime, builder: (column) => column);
 
-  GeneratedColumn<String> get note =>
+  drift.GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
-  GeneratedColumn<String> get createdAt =>
+  drift.GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  GeneratedColumn<String> get updatedAt =>
+  drift.GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  Expression<T> tasksRefs<T extends Object>(
-    Expression<T> Function($$TasksTableAnnotationComposer a) f,
+  drift.Expression<T> tasksRefs<T extends Object>(
+    drift.Expression<T> Function($$TasksTableAnnotationComposer a) f,
   ) {
     final $$TasksTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -2000,7 +2041,7 @@ class $$RoutinesTableAnnotationComposer
 
 class $$RoutinesTableTableManager
     extends
-        RootTableManager<
+        drift.RootTableManager<
           _$AppDatabase,
           $RoutinesTable,
           Routine,
@@ -2011,11 +2052,11 @@ class $$RoutinesTableTableManager
           $$RoutinesTableUpdateCompanionBuilder,
           (Routine, $$RoutinesTableReferences),
           Routine,
-          PrefetchHooks Function({bool tasksRefs})
+          drift.PrefetchHooks Function({bool tasksRefs})
         > {
   $$RoutinesTableTableManager(_$AppDatabase db, $RoutinesTable table)
     : super(
-        TableManagerState(
+        drift.TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2026,16 +2067,17 @@ class $$RoutinesTableTableManager
               $$RoutinesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String> title = const Value.absent(),
-                Value<String> recurrenceRule = const Value.absent(),
-                Value<String?> estimatedDuration = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> dueTime = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<String> createdAt = const Value.absent(),
-                Value<String> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
+                drift.Value<String> title = const drift.Value.absent(),
+                drift.Value<String> recurrenceRule = const drift.Value.absent(),
+                drift.Value<String?> estimatedDuration =
+                    const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> dueTime = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<String> createdAt = const drift.Value.absent(),
+                drift.Value<String> updatedAt = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => RoutinesCompanion(
                 id: id,
                 title: title,
@@ -2050,16 +2092,17 @@ class $$RoutinesTableTableManager
               ),
           createCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
                 required String title,
                 required String recurrenceRule,
-                Value<String?> estimatedDuration = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> dueTime = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<String> createdAt = const Value.absent(),
-                Value<String> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String?> estimatedDuration =
+                    const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> dueTime = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<String> createdAt = const drift.Value.absent(),
+                drift.Value<String> updatedAt = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => RoutinesCompanion.insert(
                 id: id,
                 title: title,
@@ -2081,14 +2124,18 @@ class $$RoutinesTableTableManager
               )
               .toList(),
           prefetchHooksCallback: ({tasksRefs = false}) {
-            return PrefetchHooks(
+            return drift.PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [if (tasksRefs) db.tasks],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (tasksRefs)
-                    await $_getPrefetchedData<Routine, $RoutinesTable, Task>(
+                    await drift.$_getPrefetchedData<
+                      Routine,
+                      $RoutinesTable,
+                      Task
+                    >(
                       currentTable: table,
                       referencedTable: $$RoutinesTableReferences
                           ._tasksRefsTable(db),
@@ -2107,7 +2154,7 @@ class $$RoutinesTableTableManager
 }
 
 typedef $$RoutinesTableProcessedTableManager =
-    ProcessedTableManager<
+    drift.ProcessedTableManager<
       _$AppDatabase,
       $RoutinesTable,
       Routine,
@@ -2118,43 +2165,45 @@ typedef $$RoutinesTableProcessedTableManager =
       $$RoutinesTableUpdateCompanionBuilder,
       (Routine, $$RoutinesTableReferences),
       Routine,
-      PrefetchHooks Function({bool tasksRefs})
+      drift.PrefetchHooks Function({bool tasksRefs})
     >;
 typedef $$TasksTableCreateCompanionBuilder =
     TasksCompanion Function({
-      Value<String> id,
-      Value<String?> routineId,
+      drift.Value<String> id,
+      drift.Value<String?> routineId,
       required String title,
-      Value<String> status,
-      Value<String?> estimatedDuration,
-      Value<String?> startTime,
-      Value<String?> dueTime,
-      Value<String?> note,
-      Value<String> createdAt,
-      Value<String> updatedAt,
-      Value<int> rowid,
+      drift.Value<String> status,
+      drift.Value<String?> estimatedDuration,
+      drift.Value<String?> startTime,
+      drift.Value<String?> dueTime,
+      drift.Value<String?> note,
+      drift.Value<String> createdAt,
+      drift.Value<String> updatedAt,
+      drift.Value<int> rowid,
     });
 typedef $$TasksTableUpdateCompanionBuilder =
     TasksCompanion Function({
-      Value<String> id,
-      Value<String?> routineId,
-      Value<String> title,
-      Value<String> status,
-      Value<String?> estimatedDuration,
-      Value<String?> startTime,
-      Value<String?> dueTime,
-      Value<String?> note,
-      Value<String> createdAt,
-      Value<String> updatedAt,
-      Value<int> rowid,
+      drift.Value<String> id,
+      drift.Value<String?> routineId,
+      drift.Value<String> title,
+      drift.Value<String> status,
+      drift.Value<String?> estimatedDuration,
+      drift.Value<String?> startTime,
+      drift.Value<String?> dueTime,
+      drift.Value<String?> note,
+      drift.Value<String> createdAt,
+      drift.Value<String> updatedAt,
+      drift.Value<int> rowid,
     });
 
 final class $$TasksTableReferences
-    extends BaseReferences<_$AppDatabase, $TasksTable, Task> {
+    extends drift.BaseReferences<_$AppDatabase, $TasksTable, Task> {
   $$TasksTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $RoutinesTable _routineIdTable(_$AppDatabase db) => db.routines
-      .createAlias($_aliasNameGenerator(db.tasks.routineId, db.routines.id));
+  static $RoutinesTable _routineIdTable(_$AppDatabase db) =>
+      db.routines.createAlias(
+        drift.$_aliasNameGenerator(db.tasks.routineId, db.routines.id),
+      );
 
   $$RoutinesTableProcessedTableManager? get routineId {
     final $_column = $_itemColumn<String>('routine_id');
@@ -2165,16 +2214,15 @@ final class $$TasksTableReferences
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_routineIdTable($_db));
     if (item == null) return manager;
-    return ProcessedTableManager(
+    return drift.ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
 
-  static MultiTypedResultKey<$SessionsTable, List<Session>> _sessionsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
+  static drift.MultiTypedResultKey<$SessionsTable, List<Session>>
+  _sessionsRefsTable(_$AppDatabase db) => drift.MultiTypedResultKey.fromTable(
     db.sessions,
-    aliasName: $_aliasNameGenerator(db.tasks.id, db.sessions.taskId),
+    aliasName: drift.$_aliasNameGenerator(db.tasks.id, db.sessions.taskId),
   );
 
   $$SessionsTableProcessedTableManager get sessionsRefs {
@@ -2184,13 +2232,14 @@ final class $$TasksTableReferences
     ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_sessionsRefsTable($_db));
-    return ProcessedTableManager(
+    return drift.ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
 
-class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
+class $$TasksTableFilterComposer
+    extends drift.Composer<_$AppDatabase, $TasksTable> {
   $$TasksTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2198,49 +2247,49 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get id => $composableBuilder(
+  drift.ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get title => $composableBuilder(
+  drift.ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get status => $composableBuilder(
+  drift.ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get estimatedDuration => $composableBuilder(
+  drift.ColumnFilters<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get startTime => $composableBuilder(
+  drift.ColumnFilters<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get dueTime => $composableBuilder(
+  drift.ColumnFilters<String> get dueTime => $composableBuilder(
     column: $table.dueTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get note => $composableBuilder(
+  drift.ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get createdAt => $composableBuilder(
+  drift.ColumnFilters<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get updatedAt => $composableBuilder(
+  drift.ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
   $$RoutinesTableFilterComposer get routineId {
@@ -2266,8 +2315,8 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     return composer;
   }
 
-  Expression<bool> sessionsRefs(
-    Expression<bool> Function($$SessionsTableFilterComposer f) f,
+  drift.Expression<bool> sessionsRefs(
+    drift.Expression<bool> Function($$SessionsTableFilterComposer f) f,
   ) {
     final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -2293,7 +2342,7 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 }
 
 class $$TasksTableOrderingComposer
-    extends Composer<_$AppDatabase, $TasksTable> {
+    extends drift.Composer<_$AppDatabase, $TasksTable> {
   $$TasksTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2301,49 +2350,49 @@ class $$TasksTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get id => $composableBuilder(
+  drift.ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get title => $composableBuilder(
+  drift.ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get status => $composableBuilder(
+  drift.ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get estimatedDuration => $composableBuilder(
+  drift.ColumnOrderings<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get startTime => $composableBuilder(
+  drift.ColumnOrderings<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get dueTime => $composableBuilder(
+  drift.ColumnOrderings<String> get dueTime => $composableBuilder(
     column: $table.dueTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get note => $composableBuilder(
+  drift.ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get createdAt => $composableBuilder(
+  drift.ColumnOrderings<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get updatedAt => $composableBuilder(
+  drift.ColumnOrderings<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
   $$RoutinesTableOrderingComposer get routineId {
@@ -2371,7 +2420,7 @@ class $$TasksTableOrderingComposer
 }
 
 class $$TasksTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TasksTable> {
+    extends drift.Composer<_$AppDatabase, $TasksTable> {
   $$TasksTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2379,33 +2428,33 @@ class $$TasksTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get id =>
+  drift.GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  drift.GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get status =>
+  drift.GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<String> get estimatedDuration => $composableBuilder(
+  drift.GeneratedColumn<String> get estimatedDuration => $composableBuilder(
     column: $table.estimatedDuration,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get startTime =>
+  drift.GeneratedColumn<String> get startTime =>
       $composableBuilder(column: $table.startTime, builder: (column) => column);
 
-  GeneratedColumn<String> get dueTime =>
+  drift.GeneratedColumn<String> get dueTime =>
       $composableBuilder(column: $table.dueTime, builder: (column) => column);
 
-  GeneratedColumn<String> get note =>
+  drift.GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
-  GeneratedColumn<String> get createdAt =>
+  drift.GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  GeneratedColumn<String> get updatedAt =>
+  drift.GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$RoutinesTableAnnotationComposer get routineId {
@@ -2431,8 +2480,8 @@ class $$TasksTableAnnotationComposer
     return composer;
   }
 
-  Expression<T> sessionsRefs<T extends Object>(
-    Expression<T> Function($$SessionsTableAnnotationComposer a) f,
+  drift.Expression<T> sessionsRefs<T extends Object>(
+    drift.Expression<T> Function($$SessionsTableAnnotationComposer a) f,
   ) {
     final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -2459,7 +2508,7 @@ class $$TasksTableAnnotationComposer
 
 class $$TasksTableTableManager
     extends
-        RootTableManager<
+        drift.RootTableManager<
           _$AppDatabase,
           $TasksTable,
           Task,
@@ -2470,11 +2519,11 @@ class $$TasksTableTableManager
           $$TasksTableUpdateCompanionBuilder,
           (Task, $$TasksTableReferences),
           Task,
-          PrefetchHooks Function({bool routineId, bool sessionsRefs})
+          drift.PrefetchHooks Function({bool routineId, bool sessionsRefs})
         > {
   $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
     : super(
-        TableManagerState(
+        drift.TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2485,17 +2534,18 @@ class $$TasksTableTableManager
               $$TasksTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String?> routineId = const Value.absent(),
-                Value<String> title = const Value.absent(),
-                Value<String> status = const Value.absent(),
-                Value<String?> estimatedDuration = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> dueTime = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<String> createdAt = const Value.absent(),
-                Value<String> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
+                drift.Value<String?> routineId = const drift.Value.absent(),
+                drift.Value<String> title = const drift.Value.absent(),
+                drift.Value<String> status = const drift.Value.absent(),
+                drift.Value<String?> estimatedDuration =
+                    const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> dueTime = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<String> createdAt = const drift.Value.absent(),
+                drift.Value<String> updatedAt = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => TasksCompanion(
                 id: id,
                 routineId: routineId,
@@ -2511,17 +2561,18 @@ class $$TasksTableTableManager
               ),
           createCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String?> routineId = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
+                drift.Value<String?> routineId = const drift.Value.absent(),
                 required String title,
-                Value<String> status = const Value.absent(),
-                Value<String?> estimatedDuration = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> dueTime = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<String> createdAt = const Value.absent(),
-                Value<String> updatedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String> status = const drift.Value.absent(),
+                drift.Value<String?> estimatedDuration =
+                    const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> dueTime = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<String> createdAt = const drift.Value.absent(),
+                drift.Value<String> updatedAt = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
                 routineId: routineId,
@@ -2542,12 +2593,12 @@ class $$TasksTableTableManager
               )
               .toList(),
           prefetchHooksCallback: ({routineId = false, sessionsRefs = false}) {
-            return PrefetchHooks(
+            return drift.PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [if (sessionsRefs) db.sessions],
               addJoins:
                   <
-                    T extends TableManagerState<
+                    T extends drift.TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -2580,7 +2631,7 @@ class $$TasksTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (sessionsRefs)
-                    await $_getPrefetchedData<Task, $TasksTable, Session>(
+                    await drift.$_getPrefetchedData<Task, $TasksTable, Session>(
                       currentTable: table,
                       referencedTable: $$TasksTableReferences
                           ._sessionsRefsTable(db),
@@ -2599,7 +2650,7 @@ class $$TasksTableTableManager
 }
 
 typedef $$TasksTableProcessedTableManager =
-    ProcessedTableManager<
+    drift.ProcessedTableManager<
       _$AppDatabase,
       $TasksTable,
       Task,
@@ -2610,41 +2661,41 @@ typedef $$TasksTableProcessedTableManager =
       $$TasksTableUpdateCompanionBuilder,
       (Task, $$TasksTableReferences),
       Task,
-      PrefetchHooks Function({bool routineId, bool sessionsRefs})
+      drift.PrefetchHooks Function({bool routineId, bool sessionsRefs})
     >;
 typedef $$SessionsTableCreateCompanionBuilder =
     SessionsCompanion Function({
-      Value<String> id,
-      Value<String?> taskId,
-      Value<String?> title,
-      Value<String?> startTime,
-      Value<String?> endTime,
+      drift.Value<String> id,
+      drift.Value<String?> taskId,
+      drift.Value<String?> title,
+      drift.Value<String?> startTime,
+      drift.Value<String?> endTime,
       required String duration,
-      Value<String> type,
-      Value<String?> mood,
-      Value<String?> note,
-      Value<int> rowid,
+      drift.Value<String> type,
+      drift.Value<String?> mood,
+      drift.Value<String?> note,
+      drift.Value<int> rowid,
     });
 typedef $$SessionsTableUpdateCompanionBuilder =
     SessionsCompanion Function({
-      Value<String> id,
-      Value<String?> taskId,
-      Value<String?> title,
-      Value<String?> startTime,
-      Value<String?> endTime,
-      Value<String> duration,
-      Value<String> type,
-      Value<String?> mood,
-      Value<String?> note,
-      Value<int> rowid,
+      drift.Value<String> id,
+      drift.Value<String?> taskId,
+      drift.Value<String?> title,
+      drift.Value<String?> startTime,
+      drift.Value<String?> endTime,
+      drift.Value<String> duration,
+      drift.Value<String> type,
+      drift.Value<String?> mood,
+      drift.Value<String?> note,
+      drift.Value<int> rowid,
     });
 
 final class $$SessionsTableReferences
-    extends BaseReferences<_$AppDatabase, $SessionsTable, Session> {
+    extends drift.BaseReferences<_$AppDatabase, $SessionsTable, Session> {
   $$SessionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $TasksTable _taskIdTable(_$AppDatabase db) => db.tasks.createAlias(
-    $_aliasNameGenerator(db.sessions.taskId, db.tasks.id),
+    drift.$_aliasNameGenerator(db.sessions.taskId, db.tasks.id),
   );
 
   $$TasksTableProcessedTableManager? get taskId {
@@ -2656,14 +2707,14 @@ final class $$SessionsTableReferences
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
     if (item == null) return manager;
-    return ProcessedTableManager(
+    return drift.ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
 }
 
 class $$SessionsTableFilterComposer
-    extends Composer<_$AppDatabase, $SessionsTable> {
+    extends drift.Composer<_$AppDatabase, $SessionsTable> {
   $$SessionsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2671,44 +2722,44 @@ class $$SessionsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get id => $composableBuilder(
+  drift.ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get title => $composableBuilder(
+  drift.ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get startTime => $composableBuilder(
+  drift.ColumnFilters<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get endTime => $composableBuilder(
+  drift.ColumnFilters<String> get endTime => $composableBuilder(
     column: $table.endTime,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get duration => $composableBuilder(
+  drift.ColumnFilters<String> get duration => $composableBuilder(
     column: $table.duration,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get type => $composableBuilder(
+  drift.ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get mood => $composableBuilder(
+  drift.ColumnFilters<String> get mood => $composableBuilder(
     column: $table.mood,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
-  ColumnFilters<String> get note => $composableBuilder(
+  drift.ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnFilters(column),
+    builder: (column) => drift.ColumnFilters(column),
   );
 
   $$TasksTableFilterComposer get taskId {
@@ -2736,7 +2787,7 @@ class $$SessionsTableFilterComposer
 }
 
 class $$SessionsTableOrderingComposer
-    extends Composer<_$AppDatabase, $SessionsTable> {
+    extends drift.Composer<_$AppDatabase, $SessionsTable> {
   $$SessionsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2744,44 +2795,44 @@ class $$SessionsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get id => $composableBuilder(
+  drift.ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get title => $composableBuilder(
+  drift.ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get startTime => $composableBuilder(
+  drift.ColumnOrderings<String> get startTime => $composableBuilder(
     column: $table.startTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get endTime => $composableBuilder(
+  drift.ColumnOrderings<String> get endTime => $composableBuilder(
     column: $table.endTime,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get duration => $composableBuilder(
+  drift.ColumnOrderings<String> get duration => $composableBuilder(
     column: $table.duration,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get type => $composableBuilder(
+  drift.ColumnOrderings<String> get type => $composableBuilder(
     column: $table.type,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get mood => $composableBuilder(
+  drift.ColumnOrderings<String> get mood => $composableBuilder(
     column: $table.mood,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get note => $composableBuilder(
+  drift.ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
-    builder: (column) => ColumnOrderings(column),
+    builder: (column) => drift.ColumnOrderings(column),
   );
 
   $$TasksTableOrderingComposer get taskId {
@@ -2809,7 +2860,7 @@ class $$SessionsTableOrderingComposer
 }
 
 class $$SessionsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SessionsTable> {
+    extends drift.Composer<_$AppDatabase, $SessionsTable> {
   $$SessionsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2817,28 +2868,28 @@ class $$SessionsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get id =>
+  drift.GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get title =>
+  drift.GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
-  GeneratedColumn<String> get startTime =>
+  drift.GeneratedColumn<String> get startTime =>
       $composableBuilder(column: $table.startTime, builder: (column) => column);
 
-  GeneratedColumn<String> get endTime =>
+  drift.GeneratedColumn<String> get endTime =>
       $composableBuilder(column: $table.endTime, builder: (column) => column);
 
-  GeneratedColumn<String> get duration =>
+  drift.GeneratedColumn<String> get duration =>
       $composableBuilder(column: $table.duration, builder: (column) => column);
 
-  GeneratedColumn<String> get type =>
+  drift.GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<String> get mood =>
+  drift.GeneratedColumn<String> get mood =>
       $composableBuilder(column: $table.mood, builder: (column) => column);
 
-  GeneratedColumn<String> get note =>
+  drift.GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
   $$TasksTableAnnotationComposer get taskId {
@@ -2867,7 +2918,7 @@ class $$SessionsTableAnnotationComposer
 
 class $$SessionsTableTableManager
     extends
-        RootTableManager<
+        drift.RootTableManager<
           _$AppDatabase,
           $SessionsTable,
           Session,
@@ -2878,11 +2929,11 @@ class $$SessionsTableTableManager
           $$SessionsTableUpdateCompanionBuilder,
           (Session, $$SessionsTableReferences),
           Session,
-          PrefetchHooks Function({bool taskId})
+          drift.PrefetchHooks Function({bool taskId})
         > {
   $$SessionsTableTableManager(_$AppDatabase db, $SessionsTable table)
     : super(
-        TableManagerState(
+        drift.TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2893,16 +2944,16 @@ class $$SessionsTableTableManager
               $$SessionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String?> taskId = const Value.absent(),
-                Value<String?> title = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> endTime = const Value.absent(),
-                Value<String> duration = const Value.absent(),
-                Value<String> type = const Value.absent(),
-                Value<String?> mood = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
+                drift.Value<String?> taskId = const drift.Value.absent(),
+                drift.Value<String?> title = const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> endTime = const drift.Value.absent(),
+                drift.Value<String> duration = const drift.Value.absent(),
+                drift.Value<String> type = const drift.Value.absent(),
+                drift.Value<String?> mood = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => SessionsCompanion(
                 id: id,
                 taskId: taskId,
@@ -2917,16 +2968,16 @@ class $$SessionsTableTableManager
               ),
           createCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String?> taskId = const Value.absent(),
-                Value<String?> title = const Value.absent(),
-                Value<String?> startTime = const Value.absent(),
-                Value<String?> endTime = const Value.absent(),
+                drift.Value<String> id = const drift.Value.absent(),
+                drift.Value<String?> taskId = const drift.Value.absent(),
+                drift.Value<String?> title = const drift.Value.absent(),
+                drift.Value<String?> startTime = const drift.Value.absent(),
+                drift.Value<String?> endTime = const drift.Value.absent(),
                 required String duration,
-                Value<String> type = const Value.absent(),
-                Value<String?> mood = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                drift.Value<String> type = const drift.Value.absent(),
+                drift.Value<String?> mood = const drift.Value.absent(),
+                drift.Value<String?> note = const drift.Value.absent(),
+                drift.Value<int> rowid = const drift.Value.absent(),
               }) => SessionsCompanion.insert(
                 id: id,
                 taskId: taskId,
@@ -2948,12 +2999,12 @@ class $$SessionsTableTableManager
               )
               .toList(),
           prefetchHooksCallback: ({taskId = false}) {
-            return PrefetchHooks(
+            return drift.PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
               addJoins:
                   <
-                    T extends TableManagerState<
+                    T extends drift.TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -2993,7 +3044,7 @@ class $$SessionsTableTableManager
 }
 
 typedef $$SessionsTableProcessedTableManager =
-    ProcessedTableManager<
+    drift.ProcessedTableManager<
       _$AppDatabase,
       $SessionsTable,
       Session,
@@ -3004,7 +3055,7 @@ typedef $$SessionsTableProcessedTableManager =
       $$SessionsTableUpdateCompanionBuilder,
       (Session, $$SessionsTableReferences),
       Session,
-      PrefetchHooks Function({bool taskId})
+      drift.PrefetchHooks Function({bool taskId})
     >;
 
 class $AppDatabaseManager {

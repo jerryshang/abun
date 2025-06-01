@@ -15,9 +15,9 @@ Future<Task?> taskById(Ref ref, String id) async {
 }
 
 @riverpod
-Stream<List<Task>> watchTasks(Ref ref, {bool showCompleted = false, bool recentFirst = true}) {
+Stream<List<Task>> watchTasks(Ref ref, {bool showCompleted = false, bool recentFirst = true, bool showRoutineGenerated = false}) {
   final db = ref.watch(databaseProvider);
-  return db.taskDao.watchTasks(showCompleted: showCompleted, recentFirst: recentFirst);
+  return db.taskDao.watchTasks(showCompleted: showCompleted, recentFirst: recentFirst, showRoutineGenerated: showRoutineGenerated);
 }
 
 /// Provider for tasks by routine ID

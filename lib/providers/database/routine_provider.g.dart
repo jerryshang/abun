@@ -6,7 +6,7 @@ part of 'routine_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$allRoutinesHash() => r'2d3837b1a2a6c1b066485903f9caad613cff7175';
+String _$allRoutinesHash() => r'624f90f591d367af67d0aae1e0bf83ac2013ac10';
 
 /// Provider for all routines
 ///
@@ -25,7 +25,7 @@ final allRoutinesProvider = AutoDisposeFutureProvider<List<Routine>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AllRoutinesRef = AutoDisposeFutureProviderRef<List<Routine>>;
-String _$watchAllRoutinesHash() => r'f8c942127604434288ee4c2c98c5167b0a946d54';
+String _$watchAllRoutinesHash() => r'bd60a68c8d7ab744c36033ca0fa510f71398f300';
 
 /// Provider for a stream of all routines (reactive)
 ///
@@ -45,7 +45,7 @@ final watchAllRoutinesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchAllRoutinesRef = AutoDisposeStreamProviderRef<List<Routine>>;
-String _$routineByIdHash() => r'151cd8dad57cdd75a1316ff089914b0138d5639f';
+String _$routineByIdHash() => r'edfc4b115377565ba68fbe1d7c38425cd6a4c5f0';
 
 /// Copied from Dart SDK
 class _SystemHash {

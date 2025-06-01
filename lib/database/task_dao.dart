@@ -55,12 +55,17 @@ class TaskDao {
     return _db.select(_db.tasks).watch().map((rows) => rows.map((row) => row.toTask()).toList());
   }
 
-  Stream<List<Task>> watchTasks({bool showCompleted = false, bool recentFirst = true}) {
+  Stream<List<Task>> watchTasks({bool showCompleted = false, bool recentFirst = true, bool showRoutineGenerated = false}) {
     final query = _db.select(_db.tasks);
 
     if (!showCompleted) {
       query.where((t) => t.status.isNotIn([TaskStatus.completed.value, TaskStatus.eliminated.value]));
     }
+
+    if (!showRoutineGenerated) {
+      query.where((t) => t.routineId.isNull());
+    }
+
     query.orderBy([(t) => recentFirst ? OrderingTerm.desc(t.updatedAt) : OrderingTerm.asc(t.updatedAt)]);
 
     return query.watch().map((rows) => rows.map((row) => row.toTask()).toList());
@@ -181,5 +186,14 @@ class TaskDao {
       ..where((tbl) => tbl.id.isInQuery(sessionSubquery) & tbl.status.isIn(['completed', 'eliminated']));
 
     return query.watch();
+  }
+
+  /// Gets all tasks for a specific routine, ordered by due date descending
+  Future<List<Task>> getTasksByRoutineId(String routineId) async {
+    final results = await (_db.select(_db.tasks)
+      ..where((t) => t.routineId.equals(routineId))
+      ..orderBy([(t) => OrderingTerm.desc(t.dueTime)]))
+        .get();
+    return results.map((row) => row.toTask()).toList();
   }
 }

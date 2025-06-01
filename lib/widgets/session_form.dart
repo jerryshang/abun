@@ -13,9 +13,9 @@ import '../providers/database/index.dart';
 import 'datetime_helper.dart';
 
 class SessionForm extends ConsumerStatefulWidget {
-  final String? taskId;
+  final Task? task;
 
-  const SessionForm({super.key, this.taskId});
+  const SessionForm({super.key, this.task});
 
   @override
   ConsumerState<SessionForm> createState() => _SessionFormState();
@@ -41,11 +41,33 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     _endTime = DateTime.now();
 
     // Only set title to empty if taskId is provided
-    if (widget.taskId != null) {
+    if (widget.task != null) {
       _titleController.text = '';
+      // Use Future.microtask to schedule the async operation after the widget is built
+      Future.microtask(() => _loadRoutineData());
     } else {
       // For sessions without a task, set a default type
       _type = SessionType.free;
+    }
+  }
+
+  Future<void> _loadRoutineData() async {
+    if (widget.task == null || widget.task!.routineId == null || !mounted) return;
+
+    try {
+      final routine = await ref.read(databaseProvider).routineDao.getRoutineById(widget.task!.routineId!);
+      if (!mounted) return;
+
+      print('Routine data loaded: $routine');
+
+      if (routine != null) {
+        setState(() {
+          _completeTask = true;
+          _durationController.text = '${routine.estimatedDuration}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading routine data: $e');
     }
   }
 
@@ -68,6 +90,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
 
     setState(() {
+      _selectedTime = time;
       _endTime = dateTime;
     });
   }
@@ -88,12 +111,12 @@ class _SessionFormState extends ConsumerState<SessionForm> {
             children: [
               // form title
               Text(
-                widget.taskId != null ? 'New Task Session' : 'New Free Session',
+                widget.task != null ? 'New Task Session' : 'New Free Session',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               // session content. Only show when free session
-              if (widget.taskId == null)
+              if (widget.task == null)
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
@@ -109,7 +132,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   },
                 ),
               // complete task? Only show when task session
-              if (widget.taskId != null)
+              if (widget.task != null)
                 CheckboxListTile(
                   title: const Text('Mark task as complete'),
                   value: _completeTask,
@@ -202,9 +225,9 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                         final now = DateTime.now().toIso8601String();
 
                         // Update task status if needed
-                        if (widget.taskId != null && _completeTask) {
+                        if (widget.task != null && _completeTask) {
                           try {
-                            final task = await database.taskDao.getTaskById(widget.taskId!);
+                            final task = await database.taskDao.getTaskById(widget.task!.id);
                             if (task != null) {
                               final updatedTask = task.copyWith(status: TaskStatus.completed.value, updatedAt: now);
                               await database.taskDao.updateTask(updatedTask);
@@ -224,8 +247,8 @@ class _SessionFormState extends ConsumerState<SessionForm> {
 
                           final session = SessionsCompanion.insert(
                             id: Value(const Uuid().v4()),
-                            taskId: widget.taskId != null ? Value(widget.taskId!) : const Value.absent(),
-                            title: widget.taskId != null && _titleController.text.isEmpty
+                            taskId: widget.task != null ? Value(widget.task!.id) : const Value.absent(),
+                            title: widget.task != null && _titleController.text.isEmpty
                                 ? const Value.absent()
                                 : Value(_titleController.text),
                             note: _noteController.text.isNotEmpty ? Value(_noteController.text) : const Value.absent(),
