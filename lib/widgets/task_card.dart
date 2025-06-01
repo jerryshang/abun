@@ -59,6 +59,15 @@ class TaskCard extends ConsumerWidget {
                     ),
                   },
 
+                  if (task.dueTime != null) ...{
+                    const SizedBox(height: 8),
+                    Text(
+                      task.dueTime!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 1,
+                    ),
+                  },
+
                   const SizedBox(height: 8),
                   // Sessions preview
                   Row(
@@ -234,7 +243,7 @@ class TaskCard extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) => SessionForm(taskId: task.id),
+      builder: (context) => SessionForm(task: task),
     );
   }
 

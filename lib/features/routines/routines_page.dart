@@ -1,5 +1,6 @@
 import 'package:abun/constants/app_constants.dart';
 import 'package:abun/database/database.dart';
+import 'package:abun/features/routines/tasks_by_routine_page.dart';
 import 'package:abun/providers/database/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,9 +96,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
                       filteredRoutines.sort((a, b) {
                         final aTime = DateTime.tryParse(a.updatedAt) ?? DateTime(0);
                         final bTime = DateTime.tryParse(b.updatedAt) ?? DateTime(0);
-                        return _recentFirst
-                            ? bTime.compareTo(aTime)
-                            : aTime.compareTo(bTime);
+                        return _recentFirst ? bTime.compareTo(aTime) : aTime.compareTo(bTime);
                       });
 
                       return ListView.builder(
@@ -139,33 +138,48 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
   Widget _buildRoutineCard(BuildContext context, Routine routine) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8.0),
-      child: ListTile(
-        title: Text(routine.title),
-        subtitle: Text(
-          routine.recurrenceRule.isNotEmpty
-              ? 'Recurrence: ${routine.recurrenceRule}'
-              : 'No recurrence set',
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              onPressed: () {
-                _selectRoutine(routine);
-                _showRoutineBottomSheet(context);
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-              onPressed: () => _showDeleteConfirmation(context, routine.id),
-            ),
-          ],
-        ),
+      child: InkWell(
         onTap: () {
-          _selectRoutine(routine);
-          _showRoutineBottomSheet(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TasksByRoutinePage(routineId: routine.id, routineTitle: routine.title),
+            ),
+          );
         },
+        child: ListTile(
+          title: Text(routine.title),
+          subtitle: Text(
+            routine.recurrenceRule.isNotEmpty ? 'Recurrence: ${routine.recurrenceRule}' : 'No recurrence set',
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                onPressed: () {
+                  _selectRoutine(routine);
+                  _showRoutineBottomSheet(context);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                onPressed: () => _showDeleteConfirmation(context, routine.id),
+              ),
+            ],
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TasksByRoutinePage(
+                  routineId: routine.id,
+                  routineTitle: routine.title,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -188,12 +202,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -205,10 +214,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Title', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -231,10 +237,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
@@ -255,11 +258,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
                           });
                         }
                       },
-                      child: Text(
-                        _startTime == null
-                            ? 'Set Start Date'
-                            : 'Start: ${_formatDate(_startTime!)}',
-                      ),
+                      child: Text(_startTime == null ? 'Set Start Date' : 'Start: ${_formatDate(_startTime!)}'),
                     ),
                   ),
                   Expanded(
@@ -277,11 +276,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
                           });
                         }
                       },
-                      child: Text(
-                        _dueTime == null
-                            ? 'Set Due Date'
-                            : 'Due: ${_formatDate(_dueTime!)}',
-                      ),
+                      child: Text(_dueTime == null ? 'Set Due Date' : 'Due: ${_formatDate(_dueTime!)}'),
                     ),
                   ),
                 ],
@@ -302,9 +297,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
   Future<void> _saveRoutine() async {
     if (_titleController.text.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Title is required')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Title is required')));
       }
       return;
     }
@@ -323,10 +316,33 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
 
     try {
       final db = ref.read(databaseProvider);
-      if (_selectedRoutine == null) {
+      final isNew = _selectedRoutine == null;
+
+      if (isNew) {
         await db.routineDao.createRoutine(routine.toCompanion(true));
       } else {
         await db.routineDao.updateRoutine(routine);
+      }
+
+      // Generate tasks for the routine
+      try {
+        final count = await db.routineDao.generateTasksFromRoutine(routine.id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isNew ? 'Routine created! Generated $count new tasks.' : 'Routine updated! Generated $count new tasks.',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Routine saved, but there was an error generating tasks.')));
+        }
       }
 
       if (mounted) {
@@ -335,9 +351,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving routine: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving routine: $e')));
       }
     }
   }
@@ -361,10 +375,7 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
         title: const Text('Delete Routine'),
         content: const Text('Are you sure you want to delete this routine?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -378,15 +389,11 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
         final db = ref.read(databaseProvider);
         await db.routineDao.deleteRoutine(id);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Routine deleted')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Routine deleted')));
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting routine: $e')),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting routine: $e')));
         }
       }
     }

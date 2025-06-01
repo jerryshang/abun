@@ -6,7 +6,7 @@ part of 'session_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$allSessionsHash() => r'a68a7adccf220cd37780d9960062d40abcc90aae';
+String _$allSessionsHash() => r'c5f368534085632eeb838c38b18e28f3fd244927';
 
 /// Provider for all sessions
 ///
@@ -25,7 +25,7 @@ final allSessionsProvider = AutoDisposeFutureProvider<List<Session>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AllSessionsRef = AutoDisposeFutureProviderRef<List<Session>>;
-String _$watchAllSessionsHash() => r'5fd3d7d5e55d44cfc42cc67fb3c3b5a9984b0b87';
+String _$watchAllSessionsHash() => r'2a976f32f16c1126bfb1fd7fd2d59f43fe1f10ce';
 
 /// Provider for a stream of all sessions (reactive)
 ///
@@ -45,7 +45,7 @@ final watchAllSessionsProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WatchAllSessionsRef = AutoDisposeStreamProviderRef<List<Session>>;
-String _$sessionsByTaskHash() => r'eb54c18b47d7af23e7fd6c2b6618010d0a5b6739';
+String _$sessionsByTaskHash() => r'0c01f09c0e301b456c57421316a547b55fa1cf95';
 
 /// Copied from Dart SDK
 class _SystemHash {

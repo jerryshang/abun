@@ -4,7 +4,6 @@ import 'package:drift/drift.dart' as drift hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../constants/app_constants.dart';
 import '../../database/database.dart';
 import '../../models/task_status.dart';
 import '../../providers/database/index.dart';
@@ -19,6 +18,7 @@ class TasksPage extends ConsumerStatefulWidget {
 
 class _PlanPageState extends ConsumerState<TasksPage> {
   bool _showCompleted = false;
+  bool _showRoutineTasks = false;
   bool _recentFirst = true;
 
   // Form state
@@ -31,6 +31,7 @@ class _PlanPageState extends ConsumerState<TasksPage> {
       watchTasksProvider.call(
         showCompleted: _showCompleted,
         recentFirst: _recentFirst,
+        showRoutineGenerated: _showRoutineTasks,
       ),
     );
 
@@ -39,45 +40,84 @@ class _PlanPageState extends ConsumerState<TasksPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Tasks"),
         actions: [
-          SizedBox(
-            width: AppConstants.defaultIconButtonSize,
-            child: IconButton(
-              icon: const Icon(Icons.done_outline),
-              tooltip: 'Show Completed',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                setState(() {
-                  _showCompleted = !_showCompleted;
-                });
-              },
-            ),
-          ),
-          SizedBox(
-            width: AppConstants.defaultIconButtonSize,
-            child: IconButton(
-              icon: const Icon(Icons.sort_by_alpha),
-              tooltip: 'Sort by Date',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                setState(() {
-                  _recentFirst = !_recentFirst;
-                });
-              },
-            ),
-          ),
-          SizedBox(
-            width: AppConstants.defaultIconButtonSize,
-            child: IconButton(
-              icon: const Icon(Icons.delete_forever, color: Colors.red),
-              tooltip: 'Delete All Tasks',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
+          PopupMenuButton<dynamic>(
+            icon: const Icon(Icons.more_vert),
+            position: PopupMenuPosition.under,
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<dynamic>>[
+              PopupMenuItem(
+                value: 'sort_desc',
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _recentFirst,
+                      onChanged: null, // Disable direct checkbox interaction
+                    ),
+                    const Text("Sort by Date Desc"),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'sort_asc',
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: !_recentFirst,
+                      onChanged: null, // Disable direct checkbox interaction
+                    ),
+                    const Text("Sort by Date Asc"),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'toggle_completed',
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _showCompleted,
+                      onChanged: null, // Disable direct checkbox interaction
+                    ),
+                    const Text("Show Completed Tasks"),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'toggle_routine',
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _showRoutineTasks,
+                      onChanged: null, // Disable direct checkbox interaction
+                    ),
+                    const Text("Show Routine Tasks"),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete_all',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_forever, color: Colors.red, size: 20),
+                    const SizedBox(width: 12),
+                    Text('Delete All Tasks', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'sort_desc') {
+                setState(() => _recentFirst = true);
+              } else if (value == 'sort_asc') {
+                setState(() => _recentFirst = false);
+              } else if (value == 'toggle_completed') {
+                setState(() => _showCompleted = !_showCompleted);
+              } else if (value == 'toggle_routine') {
+                setState(() => _showRoutineTasks = !_showRoutineTasks);
+              } else if (value == 'delete_all') {
                 _showClearDatabaseConfirmation(context);
-              },
-            ),
+              }
+            },
           ),
         ],
       ),
@@ -86,9 +126,7 @@ class _PlanPageState extends ConsumerState<TasksPage> {
         child: tasks.when(
           data: (tasks) {
             if (tasks.isEmpty) {
-              return const Center(
-                child: Text('No tasks available. Create your first task!'),
-              );
+              return const Center(child: Text('No tasks available. Create your first task!'));
             }
 
             return ListView.builder(
@@ -105,17 +143,14 @@ class _PlanPageState extends ConsumerState<TasksPage> {
                     _selectTask(task);
                     _showTaskBottomSheet(context);
                   },
-                  onDeletePressed: () =>
-                      _showDeleteConfirmation(context, task.id),
+                  onDeletePressed: () => _showDeleteConfirmation(context, task.id),
                   onSchedulePressed: (selectedDate) async {
                     await ref
                         .read(taskNotifierProvider.notifier)
                         .updateTask(
                           task.copyWith(
                             status: TaskStatus.planned.value,
-                            startTime: drift.Value(
-                              selectedDate.toIso8601String(),
-                            ),
+                            startTime: drift.Value(selectedDate.toIso8601String()),
                           ),
                         );
                   },
@@ -167,24 +202,23 @@ class _PlanPageState extends ConsumerState<TasksPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Estimated time must be a number in minutes'),
-              backgroundColor: Colors.red,
-            ),
+            const SnackBar(content: Text('Estimated time must be a number in minutes'), backgroundColor: Colors.red),
           );
         }
         return;
       }
     }
 
-    await ref.read(taskNotifierProvider.notifier).createTask(
-      title: formData.title,
-      status: formData.status,
-      estimatedDuration: estimatedDuration,
-      startTime: formData.startTime,
-      dueTime: formData.dueTime,
-      note: formData.note,
-    );
+    await ref
+        .read(taskNotifierProvider.notifier)
+        .createTask(
+          title: formData.title,
+          status: formData.status,
+          estimatedDuration: estimatedDuration,
+          startTime: formData.startTime,
+          dueTime: formData.dueTime,
+          note: formData.note,
+        );
 
     // Reset form after creating task
     _resetForm();
@@ -203,10 +237,7 @@ class _PlanPageState extends ConsumerState<TasksPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Estimated time must be a number in minutes'),
-              backgroundColor: Colors.red,
-            ),
+            const SnackBar(content: Text('Estimated time must be a number in minutes'), backgroundColor: Colors.red),
           );
         }
         return;
@@ -216,18 +247,10 @@ class _PlanPageState extends ConsumerState<TasksPage> {
     final updatedTask = _selectedTask!.copyWith(
       title: formData.title,
       status: formData.status,
-      estimatedDuration: estimatedDuration != null
-          ? drift.Value(estimatedDuration)
-          : drift.Value(null),
-      startTime: formData.startTime != null
-          ? drift.Value(formData.startTime!.toIso8601String())
-          : drift.Value(null),
-      dueTime: formData.dueTime != null
-          ? drift.Value(formData.dueTime!.toIso8601String())
-          : drift.Value(null),
-      note: formData.note != null
-          ? drift.Value(formData.note!)
-          : drift.Value(null),
+      estimatedDuration: estimatedDuration != null ? drift.Value(estimatedDuration) : drift.Value(null),
+      startTime: formData.startTime != null ? drift.Value(formData.startTime!.toIso8601String()) : drift.Value(null),
+      dueTime: formData.dueTime != null ? drift.Value(formData.dueTime!.toIso8601String()) : drift.Value(null),
+      note: formData.note != null ? drift.Value(formData.note!) : drift.Value(null),
       updatedAt: DateTime.now().toIso8601String(),
     );
 
@@ -301,33 +324,22 @@ class _PlanPageState extends ConsumerState<TasksPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (BuildContext context) {
         return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
           child: TaskForm(
             task: _selectedTask,
             initialTitle: _selectedTask?.title ?? '',
-            initialEstimatedDuration: _selectedTask?.estimatedDuration != null &&
+            initialEstimatedDuration:
+                _selectedTask?.estimatedDuration != null &&
                     _selectedTask!.estimatedDuration!.startsWith('PT') &&
                     _selectedTask!.estimatedDuration!.endsWith('M')
-                ? _selectedTask!.estimatedDuration!
-                    .substring(2, _selectedTask!.estimatedDuration!.length - 1)
+                ? _selectedTask!.estimatedDuration!.substring(2, _selectedTask!.estimatedDuration!.length - 1)
                 : null,
             initialNote: _selectedTask?.note,
-            initialStartTime: _selectedTask?.startTime != null
-                ? DateTime.parse(_selectedTask!.startTime!)
-                : null,
-            initialDueTime: _selectedTask?.dueTime != null
-                ? DateTime.parse(_selectedTask!.dueTime!)
-                : null,
+            initialStartTime: _selectedTask?.startTime != null ? DateTime.parse(_selectedTask!.startTime!) : null,
+            initialDueTime: _selectedTask?.dueTime != null ? DateTime.parse(_selectedTask!.dueTime!) : null,
             initialStatus: _selectedStatus,
             onSaved: (formData) {
               if (_selectedTask == null) {
@@ -372,10 +384,7 @@ class _PlanPageState extends ConsumerState<TasksPage> {
               },
             ),
             TextButton(
-              child: const Text(
-                'Clear All',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Clear All', style: TextStyle(color: Colors.red)),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 ref.read(taskNotifierProvider.notifier).clearAllTasks();
