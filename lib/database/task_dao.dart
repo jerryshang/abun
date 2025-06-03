@@ -133,6 +133,17 @@ class TaskDao {
 
       // For planned tasks, check time conditions
       if (task.status == TaskStatus.planned.value) {
+        // If task has a routine, only check if it's within the forecast window
+        if (task.routineId != null) {
+          // For routine tasks, only show if start date is today
+          if (task.startTime == null) return false;
+          final startDate = task.startTime!.toDateTime()!;
+          return startDate.year == today.year &&
+                 startDate.month == today.month &&
+                 startDate.day == today.day;
+        }
+
+        // For non-routine tasks, check both start time and forecast window
         return DateTimeUtils.isForecastWindowCoveredByStartTime(
               anchorTime: today,
               forecastDuration: Duration.zero,
