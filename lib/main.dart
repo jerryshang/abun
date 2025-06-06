@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes.dart';
 
 void main() async {
+  print("Test");
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
 

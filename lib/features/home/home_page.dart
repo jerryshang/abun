@@ -35,6 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("Hello from subtask");
     // Watch for date changes to trigger refresh
     final todayKey = ref.watch(currentDateProvider);
 
