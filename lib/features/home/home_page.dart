@@ -85,6 +85,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Routes.navigateToTasks(context);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Future'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToFuture(context);
+              },
+            ),
           ],
         ),
       ),
