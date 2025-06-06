@@ -3,7 +3,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../database/database.dart';
 import 'database/index.dart';
-import '../models/task_status.dart';
 
 part 'task_notifier.g.dart';
 
@@ -37,7 +36,7 @@ class TaskNotifier extends _$TaskNotifier {
   Future<void> createTask({
     required String title,
     String? routineId,
-    // String status = 'inbox', // Original status parameter, now determined by logic
+    String status = 'inbox',
     String? estimatedDuration,
     DateTime? startTime,
     DateTime? dueTime,
@@ -50,21 +49,13 @@ class TaskNotifier extends _$TaskNotifier {
       final db = ref.read(databaseProvider);
       final now = DateTime.now().toIso8601String();
 
-      // Determine the status based on startTime or dueTime
-      String determinedStatus;
-      if (startTime != null || dueTime != null) {
-        determinedStatus = TaskStatus.planned.value;
-      } else {
-        determinedStatus = TaskStatus.inbox.value;
-      }
-
       await db.taskDao.createTask(
         TasksCompanion.insert(
           title: title,
           routineId: routineId != null
               ? drift.Value(routineId)
               : const drift.Value.absent(),
-          status: drift.Value(determinedStatus), // Use the determinedStatus
+          status: drift.Value(status),
           estimatedDuration: estimatedDuration != null
               ? drift.Value(estimatedDuration)
               : const drift.Value.absent(),
