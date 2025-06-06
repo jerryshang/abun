@@ -8,6 +8,7 @@ class Routes {
   static const String tasks = '/tasks';
   static const String sessions = '/sessions';
   static const String routines = '/routines';
+  static const String future = '/future';
 
   /// Define routes for the application
   static Map<String, WidgetBuilder> getRoutes() {
@@ -16,6 +17,7 @@ class Routes {
       tasks: (context) => const TasksPage(),
       sessions: (context) => const SessionsPage(),
       routines: (context) => const RoutinesPage(),
+      future: (context) => const FuturePage(),
     };
   }
 
@@ -37,5 +39,10 @@ class Routes {
   /// Navigate to the routines page
   static void navigateToRoutines(BuildContext context) {
     Navigator.pushNamed(context, routines);
+  }
+
+  /// Navigate to the future page
+  static void navigateToFuture(BuildContext context) {
+    Navigator.pushNamed(context, future);
   }
 }

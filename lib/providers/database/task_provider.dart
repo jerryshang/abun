@@ -70,3 +70,21 @@ Stream<List<Task>> completedTasksWithTodaysSessions(Ref ref) {
   ref.watch(currentDateProvider);
   return ref.watch(databaseProvider).taskDao.watchCompletedTasksWithTodaysSessions();
 }
+
+/// Provider for tasks by day
+final tasksByDayProvider = FutureProvider.autoDispose.family<List<Task>, DateTime?>(
+  (ref, date) {
+    final db = ref.watch(databaseProvider);
+    final day = date ?? DateTime.now();
+    return db.taskDao.getTasksByDay(day);
+  },
+);
+
+final watchTasksByDayProvider =
+    StreamProvider.autoDispose.family<List<Task>, DateTime?>(
+  (ref, date) {
+    final db = ref.watch(databaseProvider);
+    final day = date ?? DateTime.now();
+    return db.taskDao.watchTasksByDay(day);
+  },
+);

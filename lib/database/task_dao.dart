@@ -207,4 +207,39 @@ class TaskDao {
         .get();
     return results.map((row) => row.toTask()).toList();
   }
+
+  /// Gets all tasks scheduled on a specific day
+  Future<List<Task>> getTasksByDay(DateTime day) async {
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final query = _db.select(_db.tasks)
+      ..where(
+        (t) => ((t.startTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.startTime.isSmallerOrEqualValue(endOfDay.toIso8601String())) |
+            (t.dueTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.dueTime.isSmallerOrEqualValue(endOfDay.toIso8601String()))),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.startTime)]);
+
+    final results = await query.get();
+    return results.map((row) => row.toTask()).toList();
+  }
+
+  /// Watches tasks scheduled on a specific day
+  Stream<List<Task>> watchTasksByDay(DateTime day) {
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final query = _db.select(_db.tasks)
+      ..where(
+        (t) => ((t.startTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.startTime.isSmallerOrEqualValue(endOfDay.toIso8601String())) |
+            (t.dueTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.dueTime.isSmallerOrEqualValue(endOfDay.toIso8601String()))),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.startTime)]);
+
+    return query.watch().map((rows) => rows.map((row) => row.toTask()).toList());
+  }
 }
