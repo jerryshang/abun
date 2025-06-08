@@ -12,8 +12,15 @@ class TaskCard extends ConsumerWidget {
   final Task task;
   final VoidCallback? onStartPressed;
   final VoidCallback? onCompletePressed;
+  final bool isPastDue; // New parameter
 
-  const TaskCard({super.key, required this.task, this.onStartPressed, this.onCompletePressed});
+  const TaskCard({
+    super.key, // Use super.key for Flutter 3.x and above
+    required this.task,
+    this.onStartPressed,
+    this.onCompletePressed,
+    this.isPastDue = false, // Default to false
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,153 +28,154 @@ class TaskCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header row with title and status icon
-                  Row(
-                    children: [
-                      // Status icon
-                      TaskStatus.fromString(task.status).toIcon(size: 28),
-                      const SizedBox(width: 8),
-                      // Title
-                      Expanded(
-                        child: Text(
-                          task.title,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Note if exists
-                  if (task.note != null && task.note!.isNotEmpty) ...{
-                    const SizedBox(height: 8),
-                    Text(
-                      task.note!,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  },
-
-                  if (task.dueTime != null) ...{
-                    const SizedBox(height: 8),
-                    Text(
-                      task.dueTime!,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 1,
-                    ),
-                  },
-
-                  const SizedBox(height: 8),
-                  // Sessions preview
-                  Row(
-                    children: [
-                      Expanded(
-                        child: sessionsAsync.when(
-                          data: (sessions) {
-                            if (sessions.isEmpty) return const SizedBox.shrink();
-                            return Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              children: sessions.take(5).map((session) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _formatDuration(session.duration),
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                          loading: () => const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: Padding(
-                              padding: EdgeInsets.all(4.0),
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+      child: Container(
+        // Wrap the content
+        decoration: isPastDue
+            ? BoxDecoration(
+                border: Border.all(color: Colors.red, width: 2.0),
+                borderRadius: BorderRadius.circular(4.0), // Adjust as needed
+              )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header row with title and status icon
+                    Row(
+                      children: [
+                        // Status icon
+                        TaskStatus.fromString(task.status).toIcon(size: 28),
+                        const SizedBox(width: 8),
+                        // Title
+                        Expanded(
+                          child: Text(
+                            task.title,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          error: (_, __) => const SizedBox.shrink(),
                         ),
+                      ],
+                    ),
+
+                    // Note if exists
+                    if (task.note != null && task.note!.isNotEmpty) ...{
+                      const SizedBox(height: 8),
+                      Text(
+                        task.note!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                    },
 
-            SizedBox(
-              height: 40,
-              child: VerticalDivider(
-                width: 4,
-                thickness: 1,
-                color: Theme.of(context).dividerColor,
-              ),
-            ),
+                    if (task.dueTime != null) ...{
+                      const SizedBox(height: 8),
+                      Text(task.dueTime!, style: Theme.of(context).textTheme.bodySmall, maxLines: 1),
+                    },
 
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onStartPressed != null)
+                    const SizedBox(height: 8),
+                    // Sessions preview
+                    Row(
+                      children: [
+                        Expanded(
+                          child: sessionsAsync.when(
+                            data: (sessions) {
+                              if (sessions.isEmpty) return const SizedBox.shrink();
+                              return Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: sessions.take(5).map((session) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _formatDuration(session.duration),
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                            loading: () => const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: Padding(
+                                padding: EdgeInsets.all(4.0),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(
+                height: 40,
+                child: VerticalDivider(width: 4, thickness: 1, color: Theme.of(context).dividerColor),
+              ),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onStartPressed != null)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.fact_check, size: 24, color: Colors.green),
+                          onPressed: () => _showSessionForm(context),
+                          // padding: const EdgeInsets.symmetric(horizontal: 8),
+                          constraints: const BoxConstraints(),
+                        ),
+                        // const Text('Session', style: TextStyle(fontSize: 12, color: Colors.green)),
+                      ],
+                    ),
+
+                  // Column(
+                  //   mainAxisSize: MainAxisSize.min,
+                  //   children: [
+                  //     IconButton(
+                  //       icon: const Icon(Icons.timer, size: 28, color: Colors.blue),
+                  //       onPressed: onStartPressed,
+                  //       padding: const EdgeInsets.symmetric(horizontal: 8),
+                  //       constraints: const BoxConstraints(),
+                  //     ),
+                  //     // const Text('pomo', style: TextStyle(fontSize: 12, color: Colors.blue)),
+                  //   ],
+                  // ),
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.fact_check, size: 24, color: Colors.green),
-                        onPressed: () => _showSessionForm(context),
+                        icon: const Icon(Icons.restore, size: 24, color: Colors.orange),
+                        onPressed: () async {
+                          _showPostponeDialog(context, ref);
+                        },
                         // padding: const EdgeInsets.symmetric(horizontal: 8),
                         constraints: const BoxConstraints(),
                       ),
-                      // const Text('Session', style: TextStyle(fontSize: 12, color: Colors.green)),
+                      // const Text('postpone', style: TextStyle(fontSize: 12, color: Colors.orange)),
                     ],
                   ),
-
-                // Column(
-                //   mainAxisSize: MainAxisSize.min,
-                //   children: [
-                //     IconButton(
-                //       icon: const Icon(Icons.timer, size: 28, color: Colors.blue),
-                //       onPressed: onStartPressed,
-                //       padding: const EdgeInsets.symmetric(horizontal: 8),
-                //       constraints: const BoxConstraints(),
-                //     ),
-                //     // const Text('pomo', style: TextStyle(fontSize: 12, color: Colors.blue)),
-                //   ],
-                // ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.restore, size: 24, color: Colors.orange),
-                      onPressed: () async {
-                        _showPostponeDialog(context, ref);
-                      },
-                      // padding: const EdgeInsets.symmetric(horizontal: 8),
-                      constraints: const BoxConstraints(),
-                    ),
-                    // const Text('postpone', style: TextStyle(fontSize: 12, color: Colors.orange)),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

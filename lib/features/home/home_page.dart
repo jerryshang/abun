@@ -35,7 +35,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    print("Hello from subtask");
     // Watch for date changes to trigger refresh
     final todayKey = ref.watch(currentDateProvider);
 
@@ -212,26 +211,46 @@ class _HomePageState extends ConsumerState<HomePage> {
           itemCount: tasks.length,
           itemBuilder: (context, index) {
             final task = tasks[index];
+            // Determine if the task is past due
+            // This assumes your Task model has a dueDate property that is a DateTime or can be parsed into one.
+            // And that tasks without a due date are not considered past due.
+            bool isPastDue = false;
+            if (task.dueTime != null) {
+              try {
+                final dueDate = DateTime.parse(task.dueTime!); // Or however you store/parse your due date
+                // Consider tasks due "today" not past due until the end of the day.
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                if (dueDate.isBefore(today)) {
+                  isPastDue = true;
+                }
+              } catch (e) {
+                // Handle potential parsing errors if dueDate is not a valid date string
+                print("Error parsing due date for task ${task.id}: $e");
+              }
+            }
+
             return TaskCard(
               key: ValueKey(task.id),
               task: task,
+              isPastDue: isPastDue, // Pass the flag here
               onStartPressed: task.status != 'completed'
                   ? () async {
-                      final updatedTask = task.copyWith(
-                        status: 'in_progress',
-                        updatedAt: DateTime.now().toIso8601String(),
-                      );
-                      await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-                    }
+                final updatedTask = task.copyWith(
+                  status: 'in_progress',
+                  updatedAt: DateTime.now().toIso8601String(),
+                );
+                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
+              }
                   : null,
               onCompletePressed: task.status != 'completed'
                   ? () async {
-                      final updatedTask = task.copyWith(
-                        status: 'completed',
-                        updatedAt: DateTime.now().toIso8601String(),
-                      );
-                      await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-                    }
+                final updatedTask = task.copyWith(
+                  status: 'completed',
+                  updatedAt: DateTime.now().toIso8601String(),
+                );
+                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
+              }
                   : null,
             );
           },
@@ -241,7 +260,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       error: (error, stackTrace) => Center(child: Text('Error: $error')),
     );
   }
-
   Widget _buildCompletedTasksSection(
     AsyncValue<List<Task>> completedTasks,
     AsyncValue<List<Session>> sessionsWithoutTasksStream,
