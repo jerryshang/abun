@@ -213,7 +213,7 @@ class _PlanPageState extends ConsumerState<TasksPage> {
         .read(taskNotifierProvider.notifier)
         .createTask(
           title: formData.title,
-          status: formData.status,
+          // status: formData.status,
           estimatedDuration: estimatedDuration,
           startTime: formData.startTime,
           dueTime: formData.dueTime,
