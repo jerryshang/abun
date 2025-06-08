@@ -15,9 +15,9 @@ Future<Task?> taskById(Ref ref, String id) async {
 }
 
 @riverpod
-Stream<List<Task>> watchTasks(Ref ref, {bool showCompleted = false, bool recentFirst = true}) {
+Stream<List<Task>> watchTasks(Ref ref, {bool showCompleted = false, bool recentFirst = true, bool showRoutineGenerated = false}) {
   final db = ref.watch(databaseProvider);
-  return db.taskDao.watchTasks(showCompleted: showCompleted, recentFirst: recentFirst);
+  return db.taskDao.watchTasks(showCompleted: showCompleted, recentFirst: recentFirst, showRoutineGenerated: showRoutineGenerated);
 }
 
 /// Provider for tasks by routine ID
@@ -70,3 +70,21 @@ Stream<List<Task>> completedTasksWithTodaysSessions(Ref ref) {
   ref.watch(currentDateProvider);
   return ref.watch(databaseProvider).taskDao.watchCompletedTasksWithTodaysSessions();
 }
+
+/// Provider for tasks by day
+final tasksByDayProvider = FutureProvider.autoDispose.family<List<Task>, DateTime?>(
+  (ref, date) {
+    final db = ref.watch(databaseProvider);
+    final day = date ?? DateTime.now();
+    return db.taskDao.getTasksByDay(day);
+  },
+);
+
+final watchTasksByDayProvider =
+    StreamProvider.autoDispose.family<List<Task>, DateTime?>(
+  (ref, date) {
+    final db = ref.watch(databaseProvider);
+    final day = date ?? DateTime.now();
+    return db.taskDao.watchTasksByDay(day);
+  },
+);

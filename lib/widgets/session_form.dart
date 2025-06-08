@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
@@ -11,11 +10,12 @@ import '../models/session_mood.dart';
 import '../models/session_type.dart';
 import '../models/task_status.dart';
 import '../providers/database/index.dart';
+import 'datetime_helper.dart';
 
 class SessionForm extends ConsumerStatefulWidget {
-  final String? taskId;
+  final Task? task;
 
-  const SessionForm({super.key, this.taskId});
+  const SessionForm({super.key, this.task});
 
   @override
   ConsumerState<SessionForm> createState() => _SessionFormState();
@@ -31,19 +31,43 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   final _durationController = TextEditingController(text: '${AppConstants.defaultTimeBlockMinutes}');
   DateTime? _startTime;
   DateTime? _endTime;
+  TimeOfDay _selectedTime = TimeOfDay.now();
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedTime = TimeOfDay(hour: now.hour, minute: (now.minute / 5).round() * 5);
     _endTime = DateTime.now();
-    _startTime = _startTime?.subtract(const Duration(minutes: AppConstants.defaultTimeBlockMinutes));
 
     // Only set title to empty if taskId is provided
-    if (widget.taskId != null) {
+    if (widget.task != null) {
       _titleController.text = '';
+      // Use Future.microtask to schedule the async operation after the widget is built
+      Future.microtask(() => _loadRoutineData());
     } else {
       // For sessions without a task, set a default type
       _type = SessionType.free;
+    }
+  }
+
+  Future<void> _loadRoutineData() async {
+    if (widget.task == null || widget.task!.routineId == null || !mounted) return;
+
+    try {
+      final routine = await ref.read(databaseProvider).routineDao.getRoutineById(widget.task!.routineId!);
+      if (!mounted) return;
+
+      print('Routine data loaded: $routine');
+
+      if (routine != null) {
+        setState(() {
+          _completeTask = true;
+          _durationController.text = '${routine.estimatedDuration}';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading routine data: $e');
     }
   }
 
@@ -55,35 +79,23 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     super.dispose();
   }
 
-  Future<void> _selectDateTime(BuildContext context, bool isStart) async {
-    final now = DateTime.now();
-    // final date = await showDatePicker(
-    //   context: context,
-    //   initialDate: isStart ? now : _startTime ?? now,
-    //   firstDate: DateTime(now.year - 1),
-    //   lastDate: DateTime(now.year + 1),
-    // );
-
-    // if (date == null) return;
+  Future<void> _selectDateTime(BuildContext context) async {
     if (!context.mounted) return;
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(isStart ? now : _startTime ?? now),
-    );
+    final time = await DateTimeHelper.showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
 
     if (time == null) return;
 
+    final now = DateTime.now();
     final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
 
     setState(() {
-      if (isStart) {
-        _startTime = dateTime;
-      } else {
-        _endTime = dateTime;
-      }
+      _selectedTime = time;
+      _endTime = dateTime;
     });
   }
+
+  // Time picker functionality has been moved to DateTimeHelper
 
   @override
   Widget build(BuildContext context) {
@@ -97,13 +109,14 @@ class _SessionFormState extends ConsumerState<SessionForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 16,
             children: [
+              // form title
               Text(
-                widget.taskId != null ? 'New Task Session' : 'New Free Session',
+                widget.task != null ? 'New Task Session' : 'New Free Session',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              // Only show title field if no task ID is provided
-              if (widget.taskId == null)
+              // session content. Only show when free session
+              if (widget.task == null)
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
@@ -113,13 +126,27 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a title';
+                      return 'Please fill what you did';
                     }
                     return null;
                   },
                 ),
+              // complete task? Only show when task session
+              if (widget.task != null)
+                CheckboxListTile(
+                  title: const Text('Mark task as complete'),
+                  value: _completeTask,
+                  onChanged: (value) {
+                    setState(() {
+                      _completeTask = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              // mood
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: SessionMood.values.map((mood) {
                   return GestureDetector(
                     onTap: () {
@@ -144,6 +171,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   );
                 }).toList(),
               ),
+              // time cost
               Row(
                 children: [
                   Expanded(
@@ -169,21 +197,11 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                 children: [
                   Expanded(
                     child: ListTile(
-                      title: Text(_startTime == null ? 'Start Time' : DateFormat('HH:mm').format(_startTime!)),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () => _selectDateTime(context, true),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        side: BorderSide(color: Colors.grey[300]!),
+                      title: Text(
+                        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ListTile(
-                      title: Text(_endTime == null ? 'End Time' : DateFormat('HH:mm').format(_endTime!)),
                       trailing: const Icon(Icons.access_time),
-                      onTap: () => _selectDateTime(context, false),
+                      onTap: () => _selectDateTime(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                         side: BorderSide(color: Colors.grey[300]!),
@@ -192,31 +210,8 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   ),
                 ],
               ),
-              // Show complete task checkbox only when there's a taskId
-              if (widget.taskId != null) ...[
-                const SizedBox(height: 16),
-                CheckboxListTile(
-                  title: const Text('Mark task as complete'),
-                  value: _completeTask,
-                  onChanged: (value) {
-                    setState(() {
-                      _completeTask = value ?? false;
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
 
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                  hintText: 'Any notes about this session...',
-                ),
-                maxLines: 2,
-              ),
+              // form actions
               Consumer(
                 builder: (context, ref, _) {
                   return ElevatedButton(
@@ -230,9 +225,9 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                         final now = DateTime.now().toIso8601String();
 
                         // Update task status if needed
-                        if (widget.taskId != null && _completeTask) {
+                        if (widget.task != null && _completeTask) {
                           try {
-                            final task = await database.taskDao.getTaskById(widget.taskId!);
+                            final task = await database.taskDao.getTaskById(widget.task!.id);
                             if (task != null) {
                               final updatedTask = task.copyWith(status: TaskStatus.completed.value, updatedAt: now);
                               await database.taskDao.updateTask(updatedTask);
@@ -247,26 +242,13 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                           }
                         }
 
-                        // Validate title for sessions without a task
-                        if (widget.taskId == null && _titleController.text.isEmpty) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter a title for the session'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
                         try {
                           final duration = "PT${_durationController.text}M";
 
                           final session = SessionsCompanion.insert(
                             id: Value(const Uuid().v4()),
-                            taskId: widget.taskId != null ? Value(widget.taskId!) : const Value.absent(),
-                            title: widget.taskId != null && _titleController.text.isEmpty
+                            taskId: widget.task != null ? Value(widget.task!.id) : const Value.absent(),
+                            title: widget.task != null && _titleController.text.isEmpty
                                 ? const Value.absent()
                                 : Value(_titleController.text),
                             note: _noteController.text.isNotEmpty ? Value(_noteController.text) : const Value.absent(),

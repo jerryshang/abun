@@ -85,6 +85,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Routes.navigateToTasks(context);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Future'),
+              onTap: () {
+                Navigator.pop(context);
+                Routes.navigateToFuture(context);
+              },
+            ),
           ],
         ),
       ),
@@ -128,7 +136,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           // Create Session Button (top-left in arc)
           AnimatedPositioned(
-            bottom: _isExpanded ? 140 : 0,
+            bottom: _isExpanded ? 70 : 0,
             right: 0,
             duration: const Duration(milliseconds: 200),
             child: AnimatedOpacity(
@@ -153,7 +161,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           // Create Task Button (top in arc)
           // AnimatedPositioned(
-          //   bottom: _isExpanded ? 70 : 0,
+          //   bottom: _isExpanded ? 140 : 0,
           //   right: 0,
           //   duration: const Duration(milliseconds: 200),
           //   child: AnimatedOpacity(
@@ -203,26 +211,46 @@ class _HomePageState extends ConsumerState<HomePage> {
           itemCount: tasks.length,
           itemBuilder: (context, index) {
             final task = tasks[index];
+            // Determine if the task is past due
+            // This assumes your Task model has a dueDate property that is a DateTime or can be parsed into one.
+            // And that tasks without a due date are not considered past due.
+            bool isPastDue = false;
+            if (task.dueTime != null) {
+              try {
+                final dueDate = DateTime.parse(task.dueTime!); // Or however you store/parse your due date
+                // Consider tasks due "today" not past due until the end of the day.
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                if (dueDate.isBefore(today)) {
+                  isPastDue = true;
+                }
+              } catch (e) {
+                // Handle potential parsing errors if dueDate is not a valid date string
+                print("Error parsing due date for task ${task.id}: $e");
+              }
+            }
+
             return TaskCard(
               key: ValueKey(task.id),
               task: task,
+              isPastDue: isPastDue, // Pass the flag here
               onStartPressed: task.status != 'completed'
                   ? () async {
-                      final updatedTask = task.copyWith(
-                        status: 'in_progress',
-                        updatedAt: DateTime.now().toIso8601String(),
-                      );
-                      await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-                    }
+                final updatedTask = task.copyWith(
+                  status: 'in_progress',
+                  updatedAt: DateTime.now().toIso8601String(),
+                );
+                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
+              }
                   : null,
               onCompletePressed: task.status != 'completed'
                   ? () async {
-                      final updatedTask = task.copyWith(
-                        status: 'completed',
-                        updatedAt: DateTime.now().toIso8601String(),
-                      );
-                      await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-                    }
+                final updatedTask = task.copyWith(
+                  status: 'completed',
+                  updatedAt: DateTime.now().toIso8601String(),
+                );
+                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
+              }
                   : null,
             );
           },
@@ -232,7 +260,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       error: (error, stackTrace) => Center(child: Text('Error: $error')),
     );
   }
-
   Widget _buildCompletedTasksSection(
     AsyncValue<List<Task>> completedTasks,
     AsyncValue<List<Session>> sessionsWithoutTasksStream,

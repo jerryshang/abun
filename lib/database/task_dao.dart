@@ -55,12 +55,17 @@ class TaskDao {
     return _db.select(_db.tasks).watch().map((rows) => rows.map((row) => row.toTask()).toList());
   }
 
-  Stream<List<Task>> watchTasks({bool showCompleted = false, bool recentFirst = true}) {
+  Stream<List<Task>> watchTasks({bool showCompleted = false, bool recentFirst = true, bool showRoutineGenerated = false}) {
     final query = _db.select(_db.tasks);
 
     if (!showCompleted) {
       query.where((t) => t.status.isNotIn([TaskStatus.completed.value, TaskStatus.eliminated.value]));
     }
+
+    if (!showRoutineGenerated) {
+      query.where((t) => t.routineId.isNull());
+    }
+
     query.orderBy([(t) => recentFirst ? OrderingTerm.desc(t.updatedAt) : OrderingTerm.asc(t.updatedAt)]);
 
     return query.watch().map((rows) => rows.map((row) => row.toTask()).toList());
@@ -128,6 +133,17 @@ class TaskDao {
 
       // For planned tasks, check time conditions
       if (task.status == TaskStatus.planned.value) {
+        // If task has a routine, only check if it's within the forecast window
+        if (task.routineId != null) {
+          // For routine tasks, only show if start date is today
+          if (task.startTime == null) return false;
+          final startDate = task.startTime!.toDateTime()!;
+          return startDate.year == today.year &&
+                 startDate.month == today.month &&
+                 startDate.day == today.day;
+        }
+
+        // For non-routine tasks, check both start time and forecast window
         return DateTimeUtils.isForecastWindowCoveredByStartTime(
               anchorTime: today,
               forecastDuration: Duration.zero,
@@ -181,5 +197,49 @@ class TaskDao {
       ..where((tbl) => tbl.id.isInQuery(sessionSubquery) & tbl.status.isIn(['completed', 'eliminated']));
 
     return query.watch();
+  }
+
+  /// Gets all tasks for a specific routine, ordered by due date descending
+  Future<List<Task>> getTasksByRoutineId(String routineId) async {
+    final results = await (_db.select(_db.tasks)
+      ..where((t) => t.routineId.equals(routineId))
+      ..orderBy([(t) => OrderingTerm.desc(t.dueTime)]))
+        .get();
+    return results.map((row) => row.toTask()).toList();
+  }
+
+  /// Gets all tasks scheduled on a specific day
+  Future<List<Task>> getTasksByDay(DateTime day) async {
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final query = _db.select(_db.tasks)
+      ..where(
+        (t) => ((t.startTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.startTime.isSmallerOrEqualValue(endOfDay.toIso8601String())) |
+            (t.dueTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.dueTime.isSmallerOrEqualValue(endOfDay.toIso8601String()))),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.startTime)]);
+
+    final results = await query.get();
+    return results.map((row) => row.toTask()).toList();
+  }
+
+  /// Watches tasks scheduled on a specific day
+  Stream<List<Task>> watchTasksByDay(DateTime day) {
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final query = _db.select(_db.tasks)
+      ..where(
+        (t) => ((t.startTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.startTime.isSmallerOrEqualValue(endOfDay.toIso8601String())) |
+            (t.dueTime.isBiggerOrEqualValue(startOfDay.toIso8601String()) &
+                t.dueTime.isSmallerOrEqualValue(endOfDay.toIso8601String()))),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.startTime)]);
+
+    return query.watch().map((rows) => rows.map((row) => row.toTask()).toList());
   }
 }
