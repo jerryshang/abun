@@ -29,16 +29,18 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   SessionMood _selectedMood = SessionMood.okay;
   bool _completeTask = false;
   final _durationController = TextEditingController(text: '${AppConstants.defaultTimeBlockMinutes}');
+  DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
   DateTime? _startTime;
   DateTime? _endTime;
-  TimeOfDay _selectedTime = TimeOfDay.now();
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day);
     _selectedTime = TimeOfDay(hour: now.hour, minute: (now.minute / 5).round() * 5);
-    _endTime = DateTime.now();
+    _endTime = _combineDateAndTime(_selectedDate, _selectedTime);
 
     // Only set title to empty if taskId is provided
     if (widget.task != null) {
@@ -79,23 +81,38 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     super.dispose();
   }
 
-  Future<void> _selectDateTime(BuildContext context) async {
+  DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    if (!context.mounted) return;
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+        _endTime = _combineDateAndTime(_selectedDate, _selectedTime);
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
     if (!context.mounted) return;
 
     final time = await DateTimeHelper.showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
 
     if (time == null) return;
 
-    final now = DateTime.now();
-    final dateTime = DateTime(now.year, now.month, now.day, time.hour, time.minute);
-
     setState(() {
       _selectedTime = time;
-      _endTime = dateTime;
+      _endTime = _combineDateAndTime(_selectedDate, _selectedTime);
     });
   }
-
-  // Time picker functionality has been moved to DateTimeHelper
 
   @override
   Widget build(BuildContext context) {
@@ -192,23 +209,29 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   ),
                 ],
               ),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: ListTile(
-                      title: Text(
-                        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
-                      ),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () => _selectDateTime(context),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                        side: BorderSide(color: Colors.grey[300]!),
-                      ),
-                    ),
-                  ),
-                ],
+              // Time picker
+              ListTile(
+                title: Text(
+                  '${_selectedTime.format(context)}',
+                ),
+                trailing: const Icon(Icons.access_time),
+                onTap: () => _selectTime(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              // Date picker
+              ListTile(
+                title: Text(
+                  '${_selectedDate.toLocal().toString().split(' ')[0]}',
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () => _selectDate(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
               ),
 
               // form actions
