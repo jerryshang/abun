@@ -8,6 +8,7 @@ import 'package:abun/widgets/session_form.dart';
 import 'package:abun/widgets/task_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -230,28 +231,55 @@ class _HomePageState extends ConsumerState<HomePage> {
               }
             }
 
-            return TaskCard(
-              key: ValueKey(task.id),
-              task: task,
-              isPastDue: isPastDue, // Pass the flag here
-              onStartPressed: task.status != 'completed'
-                  ? () async {
-                final updatedTask = task.copyWith(
-                  status: 'in_progress',
-                  updatedAt: DateTime.now().toIso8601String(),
-                );
-                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-              }
-                  : null,
-              onCompletePressed: task.status != 'completed'
-                  ? () async {
-                final updatedTask = task.copyWith(
-                  status: 'completed',
-                  updatedAt: DateTime.now().toIso8601String(),
-                );
-                await ref.read(databaseProvider).taskDao.updateTask(updatedTask);
-              }
-                  : null,
+            return Slidable(
+              key: ValueKey('slidable-${task.id}'),
+              startActionPane: ActionPane(
+                motion: const DrawerMotion(),
+                dismissible: DismissiblePane(onDismissed: () {
+                  _showSessionFormForTask(context, task, complete: true);
+                }),
+                children: [
+                  SlidableAction(
+                    onPressed: (_) =>
+                        _showSessionFormForTask(context, task, complete: false),
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    foregroundColor:
+                        Theme.of(context).colorScheme.onPrimaryContainer,
+                    icon: Icons.event_note,
+                    label: 'Log',
+                  ),
+                ],
+              ),
+              child: TaskCard(
+                key: ValueKey(task.id),
+                task: task,
+                isPastDue: isPastDue, // Pass the flag here
+                onStartPressed: task.status != 'completed'
+                    ? () async {
+                        final updatedTask = task.copyWith(
+                          status: 'in_progress',
+                          updatedAt: DateTime.now().toIso8601String(),
+                        );
+                        await ref
+                            .read(databaseProvider)
+                            .taskDao
+                            .updateTask(updatedTask);
+                      }
+                    : null,
+                onCompletePressed: task.status != 'completed'
+                    ? () async {
+                        final updatedTask = task.copyWith(
+                          status: 'completed',
+                          updatedAt: DateTime.now().toIso8601String(),
+                        );
+                        await ref
+                            .read(databaseProvider)
+                            .taskDao
+                            .updateTask(updatedTask);
+                      }
+                    : null,
+              ),
             );
           },
         );
@@ -478,6 +506,21 @@ class _HomePageState extends ConsumerState<HomePage> {
           hour.toString(),
           style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.normal),
         ),
+      ),
+    );
+  }
+
+  void _showSessionFormForTask(BuildContext context, Task task,
+      {required bool complete}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SessionForm(
+        task: task,
+        initialCompleteTask: complete,
       ),
     );
   }

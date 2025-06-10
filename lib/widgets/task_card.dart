@@ -246,12 +246,17 @@ class TaskCard extends ConsumerWidget {
     }
   }
 
-  void _showSessionForm(BuildContext context) {
+  void _showSessionForm(BuildContext context, {bool completeTask = false}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) => SessionForm(task: task),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SessionForm(
+        task: task,
+        initialCompleteTask: completeTask,
+      ),
     );
   }
 
