@@ -14,8 +14,9 @@ import 'datetime_helper.dart';
 
 class SessionForm extends ConsumerStatefulWidget {
   final Task? task;
+  final bool initialCompleteTask;
 
-  const SessionForm({super.key, this.task});
+  const SessionForm({super.key, this.task, this.initialCompleteTask = false});
 
   @override
   ConsumerState<SessionForm> createState() => _SessionFormState();
@@ -39,6 +40,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   @override
   void initState() {
     super.initState();
+    _completeTask = widget.initialCompleteTask;
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
     _selectedTime = TimeOfDay(
