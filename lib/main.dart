@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes.dart';
+import 'services/routine_task_service.dart';
 
 void main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Run the app with ProviderScope for Riverpod
-  runApp(const ProviderScope(child: AbunApp()));
+  // Initialize the app with ProviderScope
+  final container = ProviderContainer();
+  
+  // Initialize the routine task service
+  final routineTaskService = container.read(routineTaskServiceProvider);
+  await routineTaskService.initialize();
+
+  // Run the app
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const AbunApp(),
+    ),
+  );
 }
 
 class AbunApp extends ConsumerWidget {

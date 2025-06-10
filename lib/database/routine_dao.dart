@@ -94,58 +94,5 @@ class RoutineDao {
     return (_db.delete(_db.routines)..where((r) => r.id.equals(id))).go();
   }
 
-  /// Generates tasks from a routine, ensuring there are always 7 future tasks
-  /// Returns the number of tasks created
-  Future<int> generateTasksFromRoutine(String routineId) async {
-    // Get the routine
-    final routine = await getRoutineById(routineId);
-    if (routine == null) throw Exception('Routine not found');
-
-    // Get existing future tasks for this routine
-    final now = DateTime.now();
-    final existingTasks =
-        await (_db.select(_db.tasks)
-              ..where((t) => t.routineId.equals(routineId) & t.dueTime.isBiggerOrEqualValue(now.toIso8601String()))
-              ..orderBy([(t) => OrderingTerm(expression: t.dueTime, mode: OrderingMode.asc)]))
-            .get();
-
-    // If we already have 7 or more future tasks, no need to create more
-    if (existingTasks.length >= 7) return 0;
-
-    // Calculate how many tasks we need to create
-    final tasksToCreate = 7 - existingTasks.length;
-
-    // Get the last due date to start creating new tasks from
-    DateTime lastDueDate = existingTasks.isNotEmpty ? DateTime.parse(existingTasks.last.dueTime!) : now;
-
-    // If no existing tasks, use routine's start time if available, otherwise use now
-    if (existingTasks.isEmpty && routine.startTime != null) {
-      lastDueDate = DateTime.parse(routine.startTime!);
-    }
-
-    // Create new tasks
-    int createdCount = 0;
-    for (int i = 0; i < tasksToCreate; i++) {
-      // Create task
-      final task = TasksCompanion.insert(
-        title: routine.title,
-        routineId: drift.Value(routine.id),
-        status: drift.Value(TaskStatus.planned.value),
-        estimatedDuration: routine.estimatedDuration != null
-            ? drift.Value(routine.estimatedDuration!)
-            : const drift.Value.absent(),
-        startTime: drift.Value(lastDueDate.toIso8601String()),
-        dueTime: const drift.Value.absent(),
-        note: routine.note != null ? drift.Value(routine.note!) : const drift.Value.absent(),
-        createdAt: drift.Value(DateTime.now().toIso8601String()),
-        updatedAt: drift.Value(DateTime.now().toIso8601String()),
-      );
-
-      await _db.into(_db.tasks).insert(task);
-      createdCount++;
-      lastDueDate = lastDueDate.add(const Duration(days: 1));
-    }
-
-    return createdCount;
-  }
+  // Task generation logic has been moved to RoutineTaskService
 }

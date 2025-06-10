@@ -2,6 +2,7 @@ import 'package:abun/constants/app_constants.dart';
 import 'package:abun/database/database.dart';
 import 'package:abun/features/routines/tasks_by_routine_page.dart';
 import 'package:abun/providers/database/index.dart';
+import 'package:abun/services/routine_task_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -326,7 +327,8 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
 
       // Generate tasks for the routine
       try {
-        final count = await db.routineDao.generateTasksFromRoutine(routine.id);
+        final routineTaskService = ref.read(routineTaskServiceProvider);
+        final count = await routineTaskService.generateTasksFromRoutine(routine.id);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
