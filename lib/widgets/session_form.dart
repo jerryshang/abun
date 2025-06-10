@@ -28,7 +28,9 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   SessionType _type = SessionType.focus;
   SessionMood _selectedMood = SessionMood.okay;
   bool _completeTask = false;
-  final _durationController = TextEditingController(text: '${AppConstants.defaultTimeBlockMinutes}');
+  final _durationController = TextEditingController(
+    text: '${AppConstants.defaultTimeBlockMinutes}',
+  );
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   DateTime? _startTime;
@@ -39,7 +41,10 @@ class _SessionFormState extends ConsumerState<SessionForm> {
     super.initState();
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
-    _selectedTime = TimeOfDay(hour: now.hour, minute: (now.minute / 5).round() * 5);
+    _selectedTime = TimeOfDay(
+      hour: now.hour,
+      minute: (now.minute / 5).round() * 5,
+    );
     _endTime = _combineDateAndTime(_selectedDate, _selectedTime);
 
     // Only set title to empty if taskId is provided
@@ -54,10 +59,15 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   }
 
   Future<void> _loadRoutineData() async {
-    if (widget.task == null || widget.task!.routineId == null || !mounted) return;
+    if (widget.task == null || widget.task!.routineId == null || !mounted) {
+      return;
+    }
 
     try {
-      final routine = await ref.read(databaseProvider).routineDao.getRoutineById(widget.task!.routineId!);
+      final routine = await ref
+          .read(databaseProvider)
+          .routineDao
+          .getRoutineById(widget.task!.routineId!);
       if (!mounted) return;
 
       print('Routine data loaded: $routine');
@@ -104,7 +114,11 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   Future<void> _selectTime(BuildContext context) async {
     if (!context.mounted) return;
 
-    final time = await DateTimeHelper.showCustomTimePicker(context, initialTime: _selectedTime, title: 'End Time');
+    final time = await DateTimeHelper.showCustomTimePicker(
+      context,
+      initialTime: _selectedTime,
+      title: 'End Time',
+    );
 
     if (time == null) return;
 
@@ -117,7 +131,12 @@ class _SessionFormState extends ConsumerState<SessionForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 16),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -129,7 +148,10 @@ class _SessionFormState extends ConsumerState<SessionForm> {
               // form title
               Text(
                 widget.task != null ? 'New Task Session' : 'New Free Session',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               // session content. Only show when free session
@@ -175,15 +197,22 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                       // padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _selectedMood == mood
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.1)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: _selectedMood == mood ? Theme.of(context).colorScheme.primary : Colors.grey[300]!,
+                          color: _selectedMood == mood
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey[300]!,
                           width: _selectedMood == mood ? 1.5 : 1,
                         ),
                       ),
-                      child: Text(mood.displayName, style: const TextStyle(fontSize: 24)),
+                      child: Text(
+                        mood.displayName,
+                        style: const TextStyle(fontSize: 24),
+                      ),
                     ),
                   );
                 }).toList(),
@@ -194,7 +223,10 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _durationController,
-                      decoration: const InputDecoration(labelText: 'Time cost', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Time cost',
+                        border: OutlineInputBorder(),
+                      ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -211,9 +243,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
               ),
               // Time picker
               ListTile(
-                title: Text(
-                  '${_selectedTime.format(context)}',
-                ),
+                title: Text(_selectedTime.format(context)),
                 trailing: const Icon(Icons.access_time),
                 onTap: () => _selectTime(context),
                 shape: RoundedRectangleBorder(
@@ -223,9 +253,7 @@ class _SessionFormState extends ConsumerState<SessionForm> {
               ),
               // Date picker
               ListTile(
-                title: Text(
-                  '${_selectedDate.toLocal().toString().split(' ')[0]}',
-                ),
+                title: Text(_selectedDate.toLocal().toString().split(' ')[0]),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () => _selectDate(context),
                 shape: RoundedRectangleBorder(
@@ -250,15 +278,25 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                         // Update task status if needed
                         if (widget.task != null && _completeTask) {
                           try {
-                            final task = await database.taskDao.getTaskById(widget.task!.id);
+                            final task = await database.taskDao.getTaskById(
+                              widget.task!.id,
+                            );
                             if (task != null) {
-                              final updatedTask = task.copyWith(status: TaskStatus.completed.value, updatedAt: now);
+                              final updatedTask = task.copyWith(
+                                status: TaskStatus.completed.value,
+                                updatedAt: now,
+                              );
                               await database.taskDao.updateTask(updatedTask);
                             }
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error updating task status: $e'), backgroundColor: Colors.red),
+                                SnackBar(
+                                  content: Text(
+                                    'Error updating task status: $e',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
                             return; // Don't proceed with session creation if task update fails
@@ -270,13 +308,23 @@ class _SessionFormState extends ConsumerState<SessionForm> {
 
                           final session = SessionsCompanion.insert(
                             id: Value(const Uuid().v4()),
-                            taskId: widget.task != null ? Value(widget.task!.id) : const Value.absent(),
-                            title: widget.task != null && _titleController.text.isEmpty
+                            taskId: widget.task != null
+                                ? Value(widget.task!.id)
+                                : const Value.absent(),
+                            title:
+                                widget.task != null &&
+                                    _titleController.text.isEmpty
                                 ? const Value.absent()
                                 : Value(_titleController.text),
-                            note: _noteController.text.isNotEmpty ? Value(_noteController.text) : const Value.absent(),
-                            startTime: _startTime != null ? Value(_startTime!.toIso8601String()) : Value.absent(),
-                            endTime: _endTime != null ? Value(_endTime!.toIso8601String()) : Value.absent(),
+                            note: _noteController.text.isNotEmpty
+                                ? Value(_noteController.text)
+                                : const Value.absent(),
+                            startTime: _startTime != null
+                                ? Value(_startTime!.toIso8601String())
+                                : Value.absent(),
+                            endTime: _endTime != null
+                                ? Value(_endTime!.toIso8601String())
+                                : Value.absent(),
                             duration: duration,
                             type: Value(_type.value),
                             mood: Value(_selectedMood.value),
@@ -286,21 +334,28 @@ class _SessionFormState extends ConsumerState<SessionForm> {
                             print('Session object created: $session');
                           }
 
-                          final sessionId = await database.sessionDao.createSession(session);
+                          final sessionId = await database.sessionDao
+                              .createSession(session);
                           if (kDebugMode) {
-                            print('Session saved successfully with ID: $sessionId');
+                            print(
+                              'Session saved successfully with ID: $sessionId',
+                            );
                           }
                           if (context.mounted) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(const SnackBar(content: Text('Session saved successfully')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Session saved successfully'),
+                              ),
+                            );
                             Navigator.pop(context, true);
                           }
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(SnackBar(content: Text('Error saving session: $e')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error saving session: $e'),
+                              ),
+                            );
                           }
                         }
                       }
