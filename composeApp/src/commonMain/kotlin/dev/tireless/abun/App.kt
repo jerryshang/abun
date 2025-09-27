@@ -41,7 +41,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun App() {
   MaterialTheme {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(1) }
 
     Scaffold(
       bottomBar = {
@@ -74,7 +74,7 @@ fun App() {
       ) {
         when (selectedTab) {
           0 -> HomeScreen()
-          1 -> FinancialScreen()
+          1 -> PriceScreen()
           2 -> SettingsScreen()
         }
       }
@@ -132,27 +132,6 @@ private fun HomeScreen() {
         textAlign = TextAlign.Center,
       )
     }
-  }
-}
-
-@Composable
-private fun FinancialScreen() {
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    Text(
-      "Financial Dashboard",
-      style = MaterialTheme.typography.headlineLarge,
-      modifier = Modifier.padding(top = 32.dp)
-    )
-    Text(
-      "Your financial overview will be displayed here.",
-      style = MaterialTheme.typography.bodyMedium,
-      modifier = Modifier.padding(16.dp)
-    )
   }
 }
 
