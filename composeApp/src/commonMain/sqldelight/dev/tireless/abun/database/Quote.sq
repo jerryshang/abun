@@ -1,0 +1,38 @@
+CREATE TABLE quotes (
+  id TEXT NOT NULL PRIMARY KEY,
+  content TEXT NOT NULL,        -- quotes content
+  source TEXT,                  -- author, book, lecture, etc, optional
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+-- Insert sample quotes
+INSERT INTO quotes (id, content, source, created_at, updated_at)
+VALUES
+  ('1', 'The only way to do great work is to love what you do.', 'Steve Jobs', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('2', 'Innovation distinguishes between a leader and a follower.', 'Steve Jobs', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('3', 'Life is what happens to you while you are busy making other plans.', 'John Lennon', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('4', 'The future belongs to those who believe in the beauty of their dreams.', 'Eleanor Roosevelt', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('5', 'The only impossible journey is the one you never begin.', 'Tony Robbins', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('6', 'In the middle of difficulty lies opportunity.', 'Albert Einstein', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('7', 'Success is not final, failure is not fatal: it is the courage to continue that counts.', 'Winston Churchill', strftime('%s', 'now'), strftime('%s', 'now')),
+  ('8', 'The way to get started is to quit talking and begin doing.', 'Walt Disney', strftime('%s', 'now'), strftime('%s', 'now'));
+
+-- Queries
+selectAll:
+SELECT * FROM quotes;
+
+selectRandomQuote:
+SELECT * FROM quotes ORDER BY RANDOM() LIMIT 1;
+
+insertQuote:
+INSERT INTO quotes (id, content, source, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?);
+
+deleteQuote:
+DELETE FROM quotes WHERE id = ?;
+
+updateQuote:
+UPDATE quotes
+SET content = ?, source = ?, updated_at = ?
+WHERE id = ?;

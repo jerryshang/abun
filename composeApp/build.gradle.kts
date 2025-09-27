@@ -1,16 +1,17 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
   alias(libs.plugins.kotlinMultiplatform)
   alias(libs.plugins.androidApplication)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
+  alias(libs.plugins.sqldelight)
 }
 
 kotlin {
   androidTarget {
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_11)
+    compilations.all {
+      kotlinOptions {
+        jvmTarget = "11"
+      }
     }
   }
 
@@ -29,6 +30,7 @@ kotlin {
       implementation(compose.preview)
       implementation(libs.androidx.activity.compose)
       implementation(libs.koin.android)
+      implementation(libs.sqldelight.android)
     }
     commonMain.dependencies {
       implementation(compose.runtime)
@@ -42,6 +44,11 @@ kotlin {
       implementation(libs.koin.core)
       implementation(libs.koin.compose)
       implementation(libs.koin.composeViewModel)
+      implementation(libs.sqldelight.runtime)
+      implementation(libs.sqldelight.coroutines)
+    }
+    iosMain.dependencies {
+      implementation(libs.sqldelight.native)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
@@ -87,4 +94,12 @@ android {
 
 dependencies {
   debugImplementation(compose.uiTooling)
+}
+
+sqldelight {
+  databases {
+    create("AppDatabase") {
+      packageName.set("dev.tireless.abun.database")
+    }
+  }
 }

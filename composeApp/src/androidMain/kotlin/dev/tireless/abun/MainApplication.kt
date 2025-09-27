@@ -1,16 +1,18 @@
 package dev.tireless.abun
 
-import androidx.compose.ui.window.ComposeUIViewController
+import android.app.Application
 import dev.tireless.abun.di.allModules
 import dev.tireless.abun.di.platformModules
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
-fun MainViewController() =
-  ComposeUIViewController {
-    // Initialize Koin for iOS
+class MainApplication : Application() {
+  override fun onCreate() {
+    super.onCreate()
+
     startKoin {
+      androidContext(this@MainApplication)
       modules(allModules + platformModules)
     }
-
-    App()
   }
+}
