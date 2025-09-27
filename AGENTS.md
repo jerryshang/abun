@@ -75,6 +75,39 @@ This project uses Koin for dependency injection:
 - Use meaningful variable and function names
 - Add KDoc comments for public APIs
 
+## Kotlin Multiplatform Development Rules
+**CRITICAL**: For any functionality implemented in `commonMain` sourceSet of composeApp module:
+
+### ❌ DO NOT USE:
+- **JVM-only classes**: `System.currentTimeMillis()`, `java.util.*`, `java.time.*`
+- **Android-only APIs**: `android.graphics.Color`, `Context`, `Log.d()`, etc.
+- **Platform-specific string formatting**: `String.format()` with locale-specific parameters
+- **Platform-specific file operations**: `File()`, `FileInputStream`, etc.
+
+### ✅ DO USE:
+- **Kotlin stdlib functions**: Basic collections, string operations, math functions
+- **Compose Multiplatform APIs**: All `@Composable` functions, Material3 components
+- **KMP-compatible libraries**: SQLDelight, Koin, kotlinx.coroutines
+- **Custom utility functions**: Create your own cross-platform implementations
+
+### 🧪 MANDATORY TESTING:
+After implementing any functionality in `commonMain`, **ALWAYS** run:
+```bash
+./gradlew :composeApp:compileKotlinIosSimulatorArm64
+```
+Or for device builds:
+```bash
+./gradlew :composeApp:compileKotlinIosArm64
+```
+
+**If this task fails, the code is NOT multiplatform compatible and must be fixed before proceeding.**
+
+### 🔧 Common Fixes:
+- Replace `System.currentTimeMillis()` with simplified timestamp strings
+- Replace `android.graphics.Color.parseColor()` with custom hex parsing
+- Replace `String.format()` with manual string building or custom formatters
+- Move platform-specific code to `androidMain`/`iosMain` folders
+
 ## Testing Instructions
 - Unit tests are located in `commonTest` for shared logic
 - Platform-specific tests should be in respective test folders
