@@ -16,7 +16,7 @@ kotlin {
 
   listOf(
     iosArm64(),
-    iosSimulatorArm64()
+    iosSimulatorArm64(),
   ).forEach { iosTarget ->
     iosTarget.binaries.framework {
       baseName = "ComposeApp"
@@ -28,6 +28,7 @@ kotlin {
     androidMain.dependencies {
       implementation(compose.preview)
       implementation(libs.androidx.activity.compose)
+      implementation(libs.koin.android)
     }
     commonMain.dependencies {
       implementation(compose.runtime)
@@ -38,6 +39,9 @@ kotlin {
       implementation(compose.components.uiToolingPreview)
       implementation(libs.androidx.lifecycle.viewmodelCompose)
       implementation(libs.androidx.lifecycle.runtimeCompose)
+      implementation(libs.koin.core)
+      implementation(libs.koin.compose)
+      implementation(libs.koin.composeViewModel)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
@@ -47,12 +51,21 @@ kotlin {
 
 android {
   namespace = "dev.tireless.abun"
-  compileSdk = libs.versions.android.compileSdk.get().toInt()
+  compileSdk =
+    libs.versions.android.compileSdk
+      .get()
+      .toInt()
 
   defaultConfig {
     applicationId = "dev.tireless.abun"
-    minSdk = libs.versions.android.minSdk.get().toInt()
-    targetSdk = libs.versions.android.targetSdk.get().toInt()
+    minSdk =
+      libs.versions.android.minSdk
+        .get()
+        .toInt()
+    targetSdk =
+      libs.versions.android.targetSdk
+        .get()
+        .toInt()
     versionCode = 1
     versionName = "1.0"
   }
@@ -75,4 +88,3 @@ android {
 dependencies {
   debugImplementation(compose.uiTooling)
 }
-

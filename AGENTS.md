@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-This is a Kotlin Multiplatform project targeting Android and iOS platforms using Compose Multiplatform. The project uses Gradle as the build system.
+This is a Kotlin Multiplatform project targeting Android and iOS platforms using Compose Multiplatform. The project uses Gradle as the build system and Koin for dependency injection.
 
 ## Setup Commands
 - Build Android debug: `./gradlew :composeApp:assembleDebug`
@@ -17,9 +17,58 @@ This is a Kotlin Multiplatform project targeting Android and iOS platforms using
 - `/composeApp/src/iosMain/kotlin` - iOS-specific code
 - `/composeApp/src/commonTest/kotlin` - Shared tests
 - `/iosApp` - iOS application entry point
+- `/composeApp/src/commonMain/kotlin/dev/tireless/abun/di/` - Koin dependency injection modules
+
+## Dependency Injection with Koin
+This project uses Koin for dependency injection:
+
+### Module Structure
+- `AppModule.kt` - Contains common app-level dependencies
+- `AndroidModule.kt` - Android-specific dependencies
+- `IosModule.kt` - iOS-specific dependencies
+
+### Adding Dependencies
+1. Define your dependency in the appropriate module:
+   ```kotlin
+   val appModule = module {
+       single<YourInterface> { YourImplementation() }
+       factory { AnotherClass() }
+   }
+   ```
+
+2. Inject dependencies in Composables:
+   ```kotlin
+   @Composable
+   fun YourComposable() {
+       val dependency: YourInterface = koinInject()
+       // Use dependency
+   }
+   ```
+
+3. Inject ViewModels:
+   ```kotlin
+   val viewModelModule = module {
+       viewModel { YourViewModel(get()) }
+   }
+
+   @Composable
+   fun YourScreen() {
+       val viewModel: YourViewModel = koinViewModel()
+   }
+   ```
+
+### Platform-Specific Dependencies
+- Add Android-specific dependencies to `AndroidModule.kt`
+- Add iOS-specific dependencies to `IosModule.kt`
+- Include platform modules in the main application initialization if needed
 
 ## Code Style Guidelines
 - Follow Kotlin coding conventions
+- Use Koin annotations and DSL properly
+- Keep dependency definitions in appropriate modules (common, Android, iOS)
+- Use `single` for singletons, `factory` for new instances
+- Use `viewModel` for ViewModels in Compose
+- Prefer constructor injection over field injection
 - Use Compose Multiplatform patterns for UI
 - Keep platform-specific code in respective folders
 - Prefer composition over inheritance
@@ -31,19 +80,23 @@ This is a Kotlin Multiplatform project targeting Android and iOS platforms using
 - Platform-specific tests should be in respective test folders
 - Run `./gradlew test` to execute all tests
 - Ensure tests pass on both Android and iOS platforms
+- Test dependency injection by mocking dependencies in test modules
 
 ## Platform Considerations
 ### Android
 - Minimum SDK level and target SDK are defined in build configuration
 - Use Android-specific APIs only in `androidMain` folder
+- Android-specific Koin modules should be in `androidMain/kotlin/.../di/`
 
 ### iOS
 - iOS-specific code goes in `iosMain` folder
 - For iOS app testing, open `/iosApp` in Xcode
 - Ensure compatibility with required iOS versions
+- iOS-specific Koin modules should be in `iosMain/kotlin/.../di/`
 
 ## Security Considerations
 - Never commit sensitive information like API keys
 - Use build configuration or environment variables for secrets
 - Validate all user inputs
 - Follow platform security best practices for both Android and iOS
+- Be careful with dependency injection of sensitive data
