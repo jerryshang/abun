@@ -57,15 +57,19 @@ fun PriceScreen() {
 
   val validItems =
     priceItems.filter {
-      it.price.isNotEmpty() && it.quantity.isNotEmpty() &&
-        it.price.toDoubleOrNull() != null && it.quantity.toDoubleOrNull() != null &&
+      it.price.isNotEmpty() &&
+        it.quantity.isNotEmpty() &&
+        it.price.toDoubleOrNull() != null &&
+        it.quantity.toDoubleOrNull() != null &&
         it.quantity.toDoubleOrNull() != 0.0
     }
 
   val allInputsFilled =
     priceItems.all {
-      it.price.isNotEmpty() && it.quantity.isNotEmpty() &&
-        it.price.toDoubleOrNull() != null && it.quantity.toDoubleOrNull() != null
+      it.price.isNotEmpty() &&
+        it.quantity.isNotEmpty() &&
+        it.price.toDoubleOrNull() != null &&
+        it.quantity.toDoubleOrNull() != null
     }
 
   val minUnitPrice = validItems.minByOrNull { it.unitPrice }?.unitPrice
@@ -73,16 +77,16 @@ fun PriceScreen() {
 
   Column(
     modifier =
-      Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)
-        .padding(16.dp)
-        .clickable(
-          indication = null,
-          interactionSource = remember { MutableInteractionSource() },
-        ) {
-          focusManager.clearFocus()
-        },
+    Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background)
+      .padding(16.dp)
+      .clickable(
+        indication = null,
+        interactionSource = remember { MutableInteractionSource() },
+      ) {
+        focusManager.clearFocus()
+      },
   ) {
     Text(
       "Price Comparison",
@@ -131,39 +135,39 @@ fun PriceScreen() {
               }
           },
           onDelete =
-            if (priceItems.size > 2) {
-              {
-                priceItems =
-                  priceItems.toMutableList().apply {
-                    removeAt(index)
-                  }
-              }
-            } else {
-              null
-            },
+          if (priceItems.size > 2) {
+            {
+              priceItems =
+                priceItems.toMutableList().apply {
+                  removeAt(index)
+                }
+            }
+          } else {
+            null
+          },
           backgroundColor =
-            when {
-              validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
-                Color.Green.copy(
-                  alpha = 0.3f,
-                )
+          when {
+            validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
+              Color.Green.copy(
+                alpha = 0.3f,
+              )
 
-              validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
-                Color.Yellow.copy(
-                  alpha = 0.3f,
-                )
+            validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
+              Color.Yellow.copy(
+                alpha = 0.3f,
+              )
 
-              else -> Color.Transparent
-            },
+            else -> Color.Transparent
+          },
         )
       }
     }
 
     Row(
       modifier =
-        Modifier
-          .fillMaxWidth()
-          .padding(top = 16.dp),
+      Modifier
+        .fillMaxWidth()
+        .padding(top = 16.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       Button(
@@ -205,16 +209,16 @@ private fun PriceItemRow(
 
   Card(
     modifier =
-      Modifier
-        .fillMaxWidth()
-        .background(backgroundColor),
+    Modifier
+      .fillMaxWidth()
+      .background(backgroundColor),
   ) {
     Row(
       modifier =
-        Modifier
-          .fillMaxWidth()
-          .background(backgroundColor)
-          .padding(8.dp),
+      Modifier
+        .fillMaxWidth()
+        .background(backgroundColor)
+        .padding(8.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -228,15 +232,15 @@ private fun PriceItemRow(
         },
         placeholder = { Text("0.00") },
         keyboardOptions =
-          KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction = ImeAction.Next,
-          ),
+        KeyboardOptions(
+          keyboardType = KeyboardType.Decimal,
+          imeAction = ImeAction.Next,
+        ),
         keyboardActions =
-          KeyboardActions(
-            onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) },
-            onDone = { focusManager.clearFocus() },
-          ),
+        KeyboardActions(
+          onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) },
+          onDone = { focusManager.clearFocus() },
+        ),
         singleLine = true,
         modifier = Modifier.weight(1f),
       )
@@ -251,26 +255,26 @@ private fun PriceItemRow(
         },
         placeholder = { Text("1") },
         keyboardOptions =
-          KeyboardOptions(
-            keyboardType = KeyboardType.Decimal,
-            imeAction = ImeAction.Done,
-          ),
+        KeyboardOptions(
+          keyboardType = KeyboardType.Decimal,
+          imeAction = ImeAction.Done,
+        ),
         keyboardActions =
-          KeyboardActions(
-            onDone = { focusManager.clearFocus() },
-          ),
+        KeyboardActions(
+          onDone = { focusManager.clearFocus() },
+        ),
         singleLine = true,
         modifier = Modifier.weight(1f),
       )
 
       Text(
         text =
-          if (item.unitPrice > 0) {
-            val rounded = kotlin.math.round(item.unitPrice * 100) / 100.0
-            "$rounded"
-          } else {
-            "-"
-          },
+        if (item.unitPrice > 0) {
+          val rounded = kotlin.math.round(item.unitPrice * 100) / 100.0
+          "$rounded"
+        } else {
+          "-"
+        },
         modifier = Modifier.weight(1f),
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodyLarge,

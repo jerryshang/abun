@@ -35,16 +35,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.time.CategoryManagementScreen
-import dev.tireless.abun.mental.QuoteViewModel
-import dev.tireless.abun.material.PriceScreen
-import dev.tireless.abun.time.TimeblockScreen
-import dev.tireless.abun.finance.FinanceScreen
 import dev.tireless.abun.finance.AccountManagementScreen
-import dev.tireless.abun.finance.CategoryManagementScreen as FinanceCategoryManagementScreen
+import dev.tireless.abun.finance.FinanceScreen
+import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.time.CategoryManagementScreen
+import dev.tireless.abun.time.TimeblockScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import dev.tireless.abun.finance.CategoryManagementScreen as FinanceCategoryManagementScreen
 
 @Composable
 fun App() {
@@ -85,9 +84,9 @@ fun App() {
     ) { paddingValues ->
       Box(
         modifier =
-          Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
       ) {
         when {
           showAccountManagement -> {
@@ -129,9 +128,9 @@ private fun HomeScreen() {
 
   Column(
     modifier =
-      Modifier
-        .background(MaterialTheme.colorScheme.primaryContainer)
-        .fillMaxSize(),
+    Modifier
+      .background(MaterialTheme.colorScheme.primaryContainer)
+      .fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     Button(
@@ -181,10 +180,10 @@ private fun SettingsScreen() {
   } else {
     Column(
       modifier =
-        Modifier
-          .fillMaxSize()
-          .background(MaterialTheme.colorScheme.background)
-          .padding(16.dp),
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
       Text(

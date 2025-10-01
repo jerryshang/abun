@@ -8,11 +8,9 @@ import dev.tireless.abun.database.AppDatabase
 actual class DatabaseDriverFactory(
   private val context: Context,
 ) {
-  actual fun createDriver(): SqlDriver {
-    return AndroidSqliteDriver(
-      AppDatabase.Schema,
-      context,
-      "app.db"
-    )
-  }
+  actual fun createDriver(): SqlDriver = AndroidSqliteDriver(
+    AppDatabase.Schema,
+    context,
+    "app.db"
+  )
 }
