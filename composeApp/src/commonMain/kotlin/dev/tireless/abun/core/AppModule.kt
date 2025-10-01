@@ -10,6 +10,7 @@ import dev.tireless.abun.time.TimeblockRepository
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.time.TimeblockViewModel
 import dev.tireless.abun.time.CategoryViewModel
+import dev.tireless.abun.finance.*
 import org.koin.dsl.module
 
 val appModule =
@@ -20,10 +21,14 @@ val appModule =
       val database = AppDatabase(get())
       // Initialize default data when database is created
       val categoryRepository = CategoryRepository(database)
+      val accountRepository = AccountRepository(database)
+      val financeCategoryRepository = FinanceCategoryRepository(database)
       kotlinx.coroutines.runBlocking {
         try {
           println("Initializing default database data...")
           categoryRepository.initializeDefaultData()
+          accountRepository.initializeDefaultAccounts()
+          financeCategoryRepository.initializeDefaultCategories()
           println("Default data initialization completed")
         } catch (e: Exception) {
           println("Failed to initialize default data: ${e.message}")
@@ -37,6 +42,11 @@ val appModule =
     single { TaskRepository(get()) }
     single { TimeblockRepository(get()) }
     single { AlarmRepository(get()) }
+    // Finance repositories
+    single { AccountRepository(get()) }
+    single { TransactionRepository(get(), get()) }
+    single { FinanceCategoryRepository(get()) }
+    single { FinanceTagRepository(get()) }
   }
 
 val viewModelModule =
@@ -44,6 +54,10 @@ val viewModelModule =
     factory { QuoteViewModel(get()) }
     factory { TimeblockViewModel(get(), get(), get()) }
     factory { CategoryViewModel(get()) }
+    // Finance ViewModels
+    factory { TransactionViewModel(get(), get(), get(), get()) }
+    factory { AccountViewModel(get()) }
+    factory { FinanceCategoryViewModel(get()) }
   }
 
 val allModules =

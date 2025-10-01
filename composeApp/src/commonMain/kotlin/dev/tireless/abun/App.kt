@@ -39,6 +39,9 @@ import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.material.PriceScreen
 import dev.tireless.abun.time.TimeblockScreen
+import dev.tireless.abun.finance.FinanceScreen
+import dev.tireless.abun.finance.AccountManagementScreen
+import dev.tireless.abun.finance.CategoryManagementScreen as FinanceCategoryManagementScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -47,6 +50,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun App() {
   MaterialTheme {
     var selectedTab by remember { mutableIntStateOf(1) }
+    var showAccountManagement by remember { mutableStateOf(false) }
+    var showFinanceCategoryManagement by remember { mutableStateOf(false) }
 
     Scaffold(
       bottomBar = {
@@ -84,11 +89,28 @@ fun App() {
             .fillMaxSize()
             .padding(paddingValues),
       ) {
-        when (selectedTab) {
-          0 -> HomeScreen()
-          1 -> PriceScreen()
-          2 -> TimeblockScreen()
-          3 -> SettingsScreen()
+        when {
+          showAccountManagement -> {
+            AccountManagementScreen(
+              onNavigateBack = { showAccountManagement = false }
+            )
+          }
+          showFinanceCategoryManagement -> {
+            FinanceCategoryManagementScreen(
+              onNavigateBack = { showFinanceCategoryManagement = false }
+            )
+          }
+          else -> {
+            when (selectedTab) {
+              0 -> HomeScreen()
+              1 -> FinanceScreen(
+                onNavigateToAccounts = { showAccountManagement = true },
+                onNavigateToCategories = { showFinanceCategoryManagement = true }
+              )
+              2 -> TimeblockScreen()
+              3 -> SettingsScreen()
+            }
+          }
         }
       }
     }

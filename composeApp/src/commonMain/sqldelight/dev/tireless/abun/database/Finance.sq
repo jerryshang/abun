@@ -1,0 +1,356 @@
+-- Accounts Table
+CREATE TABLE Account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'cash', 'debit_card', 'credit_card', 'e_wallet', 'investment', 'debt'
+    initial_balance REAL NOT NULL DEFAULT 0.0,
+    current_balance REAL NOT NULL DEFAULT 0.0,
+    currency TEXT NOT NULL DEFAULT 'CNY',
+    is_active INTEGER NOT NULL DEFAULT 1, -- Boolean
+    icon_name TEXT,
+    color_hex TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Finance Categories Table (separate from time categories)
+CREATE TABLE FinanceCategory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    parent_id INTEGER, -- NULL for top-level categories
+    type TEXT NOT NULL, -- 'expense', 'income'
+    icon_name TEXT,
+    color_hex TEXT,
+    is_system INTEGER NOT NULL DEFAULT 0, -- System predefined categories
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (parent_id) REFERENCES FinanceCategory(id) ON DELETE CASCADE
+);
+
+-- Transactions Table (Double-Entry Booking)
+CREATE TABLE FinanceTransaction (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    amount REAL NOT NULL, -- Always positive, direction determined by type
+    type TEXT NOT NULL, -- 'expense', 'income', 'transfer'
+    transaction_date INTEGER NOT NULL, -- Timestamp in milliseconds
+    category_id INTEGER,
+    account_id INTEGER NOT NULL, -- The primary account affected
+    to_account_id INTEGER, -- For transfers only
+    transfer_group_id TEXT, -- UUID to link transfer pairs
+    payee TEXT, -- Merchant/Source name
+    member TEXT, -- Who this expense is for
+    notes TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
+    FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_account_id) REFERENCES Account(id) ON DELETE CASCADE
+);
+
+-- Tags Table
+CREATE TABLE FinanceTag (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    color_hex TEXT,
+    created_at INTEGER NOT NULL
+);
+
+-- Transaction-Tag Association Table (Many-to-Many)
+CREATE TABLE TransactionTag (
+    transaction_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    PRIMARY KEY (transaction_id, tag_id),
+    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES FinanceTag(id) ON DELETE CASCADE
+);
+
+-- Attachments Table
+CREATE TABLE TransactionAttachment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    transaction_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    file_type TEXT NOT NULL, -- 'image', 'pdf', etc.
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE
+);
+
+-- Linked Items Table (Cross-module linking)
+CREATE TABLE TransactionLinkedItem (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    transaction_id INTEGER NOT NULL,
+    linked_item_id INTEGER NOT NULL,
+    linked_item_type TEXT NOT NULL, -- 'note', 'task', 'timeblock', 'event', etc.
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE
+);
+
+-- Transaction Templates
+CREATE TABLE TransactionTemplate (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name TEXT NOT NULL,
+    amount REAL,
+    type TEXT NOT NULL,
+    category_id INTEGER,
+    account_id INTEGER NOT NULL,
+    payee TEXT,
+    member TEXT,
+    notes TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
+    FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE
+);
+
+-- Recurring Transactions
+CREATE TABLE RecurringTransaction (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    template_id INTEGER NOT NULL,
+    frequency TEXT NOT NULL, -- 'daily', 'weekly', 'monthly', 'yearly'
+    interval_count INTEGER NOT NULL DEFAULT 1, -- Every N days/weeks/months
+    start_date INTEGER NOT NULL,
+    end_date INTEGER, -- NULL for indefinite
+    next_occurrence INTEGER NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (template_id) REFERENCES TransactionTemplate(id) ON DELETE CASCADE
+);
+
+-- Queries for Accounts
+insertAccount:
+INSERT INTO Account (name, type, initial_balance, current_balance, currency, is_active, icon_name, color_hex, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateAccount:
+UPDATE Account
+SET name = ?, type = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, icon_name = ?, color_hex = ?, updated_at = ?
+WHERE id = ?;
+
+updateAccountBalance:
+UPDATE Account
+SET current_balance = ?, updated_at = ?
+WHERE id = ?;
+
+deleteAccount:
+DELETE FROM Account WHERE id = ?;
+
+getAccountById:
+SELECT * FROM Account WHERE id = ?;
+
+getAllAccounts:
+SELECT * FROM Account ORDER BY is_active DESC, created_at DESC;
+
+getActiveAccounts:
+SELECT * FROM Account WHERE is_active = 1 ORDER BY created_at DESC;
+
+-- Queries for Finance Categories
+insertFinanceCategory:
+INSERT INTO FinanceCategory (name, parent_id, type, icon_name, color_hex, is_system, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+updateFinanceCategory:
+UPDATE FinanceCategory
+SET name = ?, parent_id = ?, type = ?, icon_name = ?, color_hex = ?, updated_at = ?
+WHERE id = ?;
+
+deleteFinanceCategory:
+DELETE FROM FinanceCategory WHERE id = ?;
+
+getFinanceCategoryById:
+SELECT * FROM FinanceCategory WHERE id = ?;
+
+getAllFinanceCategories:
+SELECT * FROM FinanceCategory ORDER BY type, parent_id, name;
+
+getFinanceCategoriesByType:
+SELECT * FROM FinanceCategory WHERE type = ? ORDER BY parent_id, name;
+
+getTopLevelFinanceCategories:
+SELECT * FROM FinanceCategory WHERE parent_id IS NULL ORDER BY type, name;
+
+getSubCategories:
+SELECT * FROM FinanceCategory WHERE parent_id = ? ORDER BY name;
+
+-- Queries for Transactions
+insertTransaction:
+INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, payee, member, notes, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateTransaction:
+UPDATE FinanceTransaction
+SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, payee = ?, member = ?, notes = ?, updated_at = ?
+WHERE id = ?;
+
+deleteTransaction:
+DELETE FROM FinanceTransaction WHERE id = ?;
+
+getTransactionById:
+SELECT * FROM FinanceTransaction WHERE id = ?;
+
+getAllTransactions:
+SELECT * FROM FinanceTransaction ORDER BY transaction_date DESC, created_at DESC;
+
+getTransactionsByAccount:
+SELECT * FROM FinanceTransaction
+WHERE account_id = ? OR to_account_id = ?
+ORDER BY transaction_date DESC;
+
+getTransactionsByCategory:
+SELECT * FROM FinanceTransaction WHERE category_id = ? ORDER BY transaction_date DESC;
+
+getTransactionsByDateRange:
+SELECT * FROM FinanceTransaction
+WHERE transaction_date BETWEEN ? AND ?
+ORDER BY transaction_date DESC;
+
+getTransactionsByType:
+SELECT * FROM FinanceTransaction WHERE type = ? ORDER BY transaction_date DESC;
+
+getTransferPair:
+SELECT * FROM FinanceTransaction WHERE transfer_group_id = ? ORDER BY created_at;
+
+-- Queries for Tags
+insertFinanceTag:
+INSERT INTO FinanceTag (name, color_hex, created_at)
+VALUES (?, ?, ?);
+
+updateFinanceTag:
+UPDATE FinanceTag SET name = ?, color_hex = ? WHERE id = ?;
+
+deleteFinanceTag:
+DELETE FROM FinanceTag WHERE id = ?;
+
+getFinanceTagById:
+SELECT * FROM FinanceTag WHERE id = ?;
+
+getAllFinanceTags:
+SELECT * FROM FinanceTag ORDER BY name;
+
+getFinanceTagByName:
+SELECT * FROM FinanceTag WHERE name = ?;
+
+-- Queries for Transaction-Tag associations
+addTagToTransaction:
+INSERT OR IGNORE INTO TransactionTag (transaction_id, tag_id) VALUES (?, ?);
+
+removeTagFromTransaction:
+DELETE FROM TransactionTag WHERE transaction_id = ? AND tag_id = ?;
+
+getTagsForTransaction:
+SELECT t.* FROM FinanceTag t
+INNER JOIN TransactionTag tt ON t.id = tt.tag_id
+WHERE tt.transaction_id = ?
+ORDER BY t.name;
+
+getTransactionsByTag:
+SELECT ft.* FROM FinanceTransaction ft
+INNER JOIN TransactionTag tt ON ft.id = tt.transaction_id
+WHERE tt.tag_id = ?
+ORDER BY ft.transaction_date DESC;
+
+-- Queries for Attachments
+insertAttachment:
+INSERT INTO TransactionAttachment (transaction_id, file_path, file_type, created_at)
+VALUES (?, ?, ?, ?);
+
+deleteAttachment:
+DELETE FROM TransactionAttachment WHERE id = ?;
+
+getAttachmentsForTransaction:
+SELECT * FROM TransactionAttachment WHERE transaction_id = ? ORDER BY created_at;
+
+-- Queries for Linked Items
+insertLinkedItem:
+INSERT INTO TransactionLinkedItem (transaction_id, linked_item_id, linked_item_type, created_at)
+VALUES (?, ?, ?, ?);
+
+deleteLinkedItem:
+DELETE FROM TransactionLinkedItem WHERE id = ?;
+
+getLinkedItemsForTransaction:
+SELECT * FROM TransactionLinkedItem WHERE transaction_id = ? ORDER BY created_at;
+
+getTransactionsByLinkedItem:
+SELECT ft.* FROM FinanceTransaction ft
+INNER JOIN TransactionLinkedItem tli ON ft.id = tli.transaction_id
+WHERE tli.linked_item_id = ? AND tli.linked_item_type = ?
+ORDER BY ft.transaction_date DESC;
+
+-- Queries for Templates
+insertTemplate:
+INSERT INTO TransactionTemplate (name, amount, type, category_id, account_id, payee, member, notes, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateTemplate:
+UPDATE TransactionTemplate
+SET name = ?, amount = ?, type = ?, category_id = ?, account_id = ?, payee = ?, member = ?, notes = ?, updated_at = ?
+WHERE id = ?;
+
+deleteTemplate:
+DELETE FROM TransactionTemplate WHERE id = ?;
+
+getTemplateById:
+SELECT * FROM TransactionTemplate WHERE id = ?;
+
+getAllTemplates:
+SELECT * FROM TransactionTemplate ORDER BY name;
+
+-- Queries for Recurring Transactions
+insertRecurringTransaction:
+INSERT INTO RecurringTransaction (template_id, frequency, interval_count, start_date, end_date, next_occurrence, is_active, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateRecurringTransaction:
+UPDATE RecurringTransaction
+SET frequency = ?, interval_count = ?, start_date = ?, end_date = ?, next_occurrence = ?, is_active = ?, updated_at = ?
+WHERE id = ?;
+
+updateNextOccurrence:
+UPDATE RecurringTransaction SET next_occurrence = ?, updated_at = ? WHERE id = ?;
+
+deleteRecurringTransaction:
+DELETE FROM RecurringTransaction WHERE id = ?;
+
+getRecurringTransactionById:
+SELECT * FROM RecurringTransaction WHERE id = ?;
+
+getAllRecurringTransactions:
+SELECT * FROM RecurringTransaction ORDER BY next_occurrence;
+
+getActiveRecurringTransactions:
+SELECT * FROM RecurringTransaction WHERE is_active = 1 ORDER BY next_occurrence;
+
+getDueRecurringTransactions:
+SELECT * FROM RecurringTransaction WHERE is_active = 1 AND next_occurrence <= ? ORDER BY next_occurrence;
+
+-- Analytics Queries
+getTotalBalanceAllAccounts:
+SELECT SUM(current_balance) AS total FROM Account WHERE is_active = 1;
+
+getExpenseSumByCategory:
+SELECT category_id, SUM(amount) AS total
+FROM FinanceTransaction
+WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?
+GROUP BY category_id;
+
+getIncomeSumByCategory:
+SELECT category_id, SUM(amount) AS total
+FROM FinanceTransaction
+WHERE type = 'income' AND transaction_date BETWEEN ? AND ?
+GROUP BY category_id;
+
+getExpenseByDateRange:
+SELECT SUM(amount) AS total
+FROM FinanceTransaction
+WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?;
+
+getIncomeByDateRange:
+SELECT SUM(amount) AS total
+FROM FinanceTransaction
+WHERE type = 'income' AND transaction_date BETWEEN ? AND ?;
+
+getRecentPayees:
+SELECT DISTINCT payee FROM FinanceTransaction
+WHERE payee IS NOT NULL AND payee != ''
+ORDER BY transaction_date DESC
+LIMIT 20;
