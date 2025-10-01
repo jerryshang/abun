@@ -92,9 +92,13 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = null,
           transfer_group_id = null,
+          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
+          is_future = 0,
+          is_executed = 1,
+          loan_metadata = null,
           created_at = now,
           updated_at = now
         )
@@ -111,9 +115,13 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = null,
           transfer_group_id = null,
+          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
+          is_future = 0,
+          is_executed = 1,
+          loan_metadata = null,
           created_at = now,
           updated_at = now
         )
@@ -136,9 +144,13 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = input.toAccountId,
           transfer_group_id = transferGroupId,
+          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
+          is_future = 0,
+          is_executed = 1,
+          loan_metadata = null,
           created_at = now,
           updated_at = now
         )
@@ -153,13 +165,23 @@ class TransactionRepository(
           account_id = input.toAccountId,
           to_account_id = input.accountId,
           transfer_group_id = transferGroupId,
+          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = "Transfer from account ${input.accountId}",
+          is_future = 0,
+          is_executed = 1,
+          loan_metadata = null,
           created_at = now,
           updated_at = now
         )
         accountRepository.adjustAccountBalance(input.toAccountId, input.amount)
+      }
+
+      // Loans and loan payments don't affect balance immediately for future transactions
+      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
+        // Will be implemented separately for loan functionality
+        throw UnsupportedOperationException("Use createLoan() for loan transactions")
       }
     }
 
@@ -206,6 +228,10 @@ class TransactionRepository(
           }
         }
       }
+
+      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
+        // Skip balance revert for loan transactions
+      }
     }
 
     // Apply new transaction
@@ -216,9 +242,12 @@ class TransactionRepository(
       category_id = input.categoryId,
       account_id = input.accountId,
       to_account_id = input.toAccountId,
+      group_id = null,
       payee = input.payee,
       member = input.member,
       notes = input.notes,
+      is_executed = 1,
+      loan_metadata = null,
       updated_at = now,
       id = input.id
     )
@@ -237,6 +266,10 @@ class TransactionRepository(
         require(input.toAccountId != null) { "toAccountId is required for transfers" }
         accountRepository.adjustAccountBalance(input.accountId, -input.amount)
         accountRepository.adjustAccountBalance(input.toAccountId, input.amount)
+      }
+
+      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
+        // Skip balance update for loan transactions
       }
     }
 
@@ -279,6 +312,10 @@ class TransactionRepository(
             }
           }
         }
+      }
+
+      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
+        // Skip balance revert for loan transactions
       }
     }
 
@@ -360,9 +397,13 @@ class TransactionRepository(
     accountId = account_id,
     toAccountId = to_account_id,
     transferGroupId = transfer_group_id,
+    groupId = group_id,
     payee = payee,
     member = member,
     notes = notes,
+    isFuture = is_future == 1L,
+    isExecuted = is_executed == 1L,
+    loanMetadata = loan_metadata,
     createdAt = created_at,
     updatedAt = updated_at
   )

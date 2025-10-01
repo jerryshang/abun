@@ -22,7 +22,9 @@ enum class AccountType {
 enum class TransactionType {
   EXPENSE,
   INCOME,
-  TRANSFER;
+  TRANSFER,
+  LOAN,
+  LOAN_PAYMENT;
 
   companion object {
     fun fromString(value: String): TransactionType = values().find { it.name == value.uppercase() } ?: EXPENSE
@@ -52,6 +54,47 @@ enum class RecurringFrequency {
 
   companion object {
     fun fromString(value: String): RecurringFrequency = values().find { it.name == value.uppercase() } ?: MONTHLY
+  }
+}
+
+/**
+ * Transaction Group Types
+ */
+enum class TransactionGroupType {
+  LOAN,
+  INSTALLMENT,
+  SPLIT,
+  CUSTOM;
+
+  companion object {
+    fun fromString(value: String): TransactionGroupType = values().find { it.name == value.uppercase() } ?: CUSTOM
+  }
+}
+
+/**
+ * Transaction Group Status
+ */
+enum class GroupStatus {
+  ACTIVE,
+  COMPLETED,
+  CANCELLED;
+
+  companion object {
+    fun fromString(value: String): GroupStatus = values().find { it.name == value.uppercase() } ?: ACTIVE
+  }
+}
+
+/**
+ * Loan Types
+ */
+enum class LoanType {
+  INTEREST_FIRST, // 先息后本 (Interest first, principal last)
+  EQUAL_PRINCIPAL, // 等额本金 (Equal principal)
+  EQUAL_INSTALLMENT, // 等额本息 (Equal installment - principal + interest)
+  INTEREST_ONLY; // 只还利息 (Interest only, no principal repayment)
+
+  companion object {
+    fun fromString(value: String): LoanType = values().find { it.name == value.uppercase() } ?: EQUAL_INSTALLMENT
   }
 }
 
@@ -99,11 +142,50 @@ data class Transaction(
   val accountId: Long,
   val toAccountId: Long? = null,
   val transferGroupId: String? = null,
+  val groupId: Long? = null,
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
+  val isFuture: Boolean = false,
+  val isExecuted: Boolean = true,
+  val loanMetadata: String? = null,
   val createdAt: Long,
   val updatedAt: Long
+)
+
+/**
+ * Domain model for Transaction Group
+ */
+data class TransactionGroup(
+  val id: Long,
+  val name: String,
+  val groupType: TransactionGroupType,
+  val description: String? = null,
+  val totalAmount: Double? = null,
+  val status: GroupStatus = GroupStatus.ACTIVE,
+  val createdAt: Long,
+  val updatedAt: Long
+)
+
+/**
+ * Loan Metadata (stored as JSON in transaction)
+ */
+data class LoanMetadata(
+  val loanType: LoanType,
+  val totalAmount: Double,
+  // Annual interest rate (e.g., 0.05 for 5%)
+  val interestRate: Double,
+  val loanMonths: Int,
+  // Day of month to pay (1-31)
+  val paymentDay: Int,
+  // Loan creation date
+  val startDate: Long,
+  // First payment date (must be at least 1 month after start)
+  val firstPaymentDate: Long,
+  // For specific payment calculation
+  val principalAmount: Double? = null,
+  // For specific payment calculation
+  val interestAmount: Double? = null
 )
 
 /**
@@ -268,4 +350,16 @@ data class CreateCategoryInput(
 data class CreateTagInput(
   val name: String,
   val colorHex: String? = null
+)
+
+data class CreateLoanInput(
+  val amount: Double,
+  val accountId: Long, // Borrow from this account
+  val payee: String, // Lender name
+  val loanType: LoanType,
+  val interestRate: Double, // Annual interest rate (e.g., 0.05 for 5%)
+  val loanMonths: Int,
+  val paymentDay: Int, // Day of month to pay (1-31)
+  val startDate: Long, // Loan creation date
+  val notes: String? = null
 )

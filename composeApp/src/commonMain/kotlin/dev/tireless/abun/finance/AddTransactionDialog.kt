@@ -67,7 +67,7 @@ fun AddTransactionDialog(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          TransactionType.values().forEach { type ->
+          TransactionType.values().filter { it != TransactionType.LOAN && it != TransactionType.LOAN_PAYMENT }.forEach { type ->
             FilterChip(
               selected = selectedType == type,
               onClick = { selectedType = type },
@@ -77,6 +77,7 @@ fun AddTransactionDialog(
                     TransactionType.EXPENSE -> "支出"
                     TransactionType.INCOME -> "收入"
                     TransactionType.TRANSFER -> "转账"
+                    else -> type.name
                   }
                 )
               }
