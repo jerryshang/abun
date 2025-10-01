@@ -161,7 +161,6 @@ data class Transaction(
   val accountId: Long,
   val toAccountId: Long? = null,
   val transferGroupId: String? = null,
-  val groupId: Long? = null,
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,

@@ -92,7 +92,6 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = null,
           transfer_group_id = null,
-          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -113,7 +112,6 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = null,
           transfer_group_id = null,
-          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -140,7 +138,6 @@ class TransactionRepository(
           account_id = input.accountId,
           to_account_id = input.toAccountId,
           transfer_group_id = transferGroupId,
-          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -159,7 +156,6 @@ class TransactionRepository(
           account_id = input.toAccountId,
           to_account_id = input.accountId,
           transfer_group_id = transferGroupId,
-          group_id = null,
           payee = input.payee,
           member = input.member,
           notes = "Transfer from account ${input.accountId}",
@@ -234,7 +230,6 @@ class TransactionRepository(
       category_id = input.categoryId,
       account_id = input.accountId,
       to_account_id = input.toAccountId,
-      group_id = null,
       payee = input.payee,
       member = input.member,
       notes = input.notes,
@@ -388,11 +383,42 @@ class TransactionRepository(
     accountId = account_id,
     toAccountId = to_account_id,
     transferGroupId = transfer_group_id,
-    groupId = group_id,
     payee = payee,
     member = member,
     notes = notes,
     state = TransactionState.fromString(state),
+    createdAt = created_at,
+    updatedAt = updated_at
+  )
+
+  /**
+   * Add transaction to a group
+   */
+  suspend fun addTransactionToGroup(transactionId: Long, groupId: Long): Unit = withContext(Dispatchers.IO) {
+    queries.addTransactionToGroup(transactionId, groupId)
+  }
+
+  /**
+   * Remove transaction from a group
+   */
+  suspend fun removeTransactionFromGroup(transactionId: Long, groupId: Long): Unit = withContext(Dispatchers.IO) {
+    queries.removeTransactionFromGroup(transactionId, groupId)
+  }
+
+  /**
+   * Get all groups for a transaction
+   */
+  suspend fun getGroupsForTransaction(transactionId: Long): List<TransactionGroup> = withContext(Dispatchers.IO) {
+    queries.getGroupsForTransaction(transactionId).executeAsList().map { it.toDomainGroup() }
+  }
+
+  private fun dev.tireless.abun.database.TransactionGroup.toDomainGroup() = TransactionGroup(
+    id = id,
+    name = name,
+    groupType = TransactionGroupType.fromString(group_type),
+    description = description,
+    totalAmount = total_amount,
+    status = GroupStatus.fromString(status),
     createdAt = created_at,
     updatedAt = updated_at
   )

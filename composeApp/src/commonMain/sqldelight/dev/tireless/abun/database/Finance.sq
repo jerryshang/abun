@@ -52,7 +52,6 @@ CREATE TABLE FinanceTransaction (
     account_id INTEGER NOT NULL, -- The primary account affected
     to_account_id INTEGER, -- For transfers only
     transfer_group_id TEXT, -- UUID to link transfer pairs
-    group_id INTEGER, -- Reference to TransactionGroup for loan payments
     payee TEXT, -- Merchant/Source name
     member TEXT, -- Who this expense is for
     notes TEXT,
@@ -61,8 +60,16 @@ CREATE TABLE FinanceTransaction (
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
     FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (to_account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE SET NULL
+    FOREIGN KEY (to_account_id) REFERENCES Account(id) ON DELETE CASCADE
+);
+
+-- Transaction Group Membership (Many-to-Many)
+CREATE TABLE TransactionGroupMember (
+    transaction_id INTEGER NOT NULL,
+    group_id INTEGER NOT NULL,
+    PRIMARY KEY (transaction_id, group_id),
+    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
 );
 
 -- Tags Table
@@ -211,17 +218,33 @@ SELECT * FROM TransactionGroup ORDER BY created_at DESC;
 getTransactionGroupsByType:
 SELECT * FROM TransactionGroup WHERE group_type = ? ORDER BY created_at DESC;
 
+-- Queries for Transaction Group Membership
+addTransactionToGroup:
+INSERT OR IGNORE INTO TransactionGroupMember (transaction_id, group_id) VALUES (?, ?);
+
+removeTransactionFromGroup:
+DELETE FROM TransactionGroupMember WHERE transaction_id = ? AND group_id = ?;
+
+getGroupsForTransaction:
+SELECT g.* FROM TransactionGroup g
+INNER JOIN TransactionGroupMember m ON g.id = m.group_id
+WHERE m.transaction_id = ?
+ORDER BY g.created_at;
+
 getTransactionsByGroup:
-SELECT * FROM FinanceTransaction WHERE group_id = ? ORDER BY transaction_date;
+SELECT t.* FROM FinanceTransaction t
+INNER JOIN TransactionGroupMember m ON t.id = m.transaction_id
+WHERE m.group_id = ?
+ORDER BY t.transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, group_id, payee, member, notes, state, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, payee, member, notes, state, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
 UPDATE FinanceTransaction
-SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, group_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
+SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:

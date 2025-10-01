@@ -93,7 +93,6 @@ class TransactionGroupRepository(private val database: AppDatabase) {
     accountId = entity.account_id,
     toAccountId = entity.to_account_id,
     transferGroupId = entity.transfer_group_id,
-    groupId = entity.group_id,
     payee = entity.payee,
     member = entity.member,
     notes = entity.notes,
