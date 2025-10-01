@@ -1,11 +1,10 @@
 package dev.tireless.abun.material
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,16 +18,21 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,8 +54,9 @@ data class PriceItem(
   val unitPrice: Double = 0.0,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceScreen() {
+fun PriceScreen(onNavigateBack: () -> Unit = {}) {
   var priceItems by remember { mutableStateOf(listOf(PriceItem(), PriceItem())) }
   val focusManager = LocalFocusManager.current
 
@@ -75,131 +80,147 @@ fun PriceScreen() {
   val minUnitPrice = validItems.minByOrNull { it.unitPrice }?.unitPrice
   val maxUnitPrice = validItems.maxByOrNull { it.unitPrice }?.unitPrice
 
-  Column(
-    modifier =
-    Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background)
-      .padding(16.dp)
-      .clickable(
-        indication = null,
-        interactionSource = remember { MutableInteractionSource() },
-      ) {
-        focusManager.clearFocus()
-      },
-  ) {
-    Text(
-      "Price Comparison",
-      style = MaterialTheme.typography.headlineLarge,
-      modifier = Modifier.padding(bottom = 16.dp),
-    )
-
-    LazyColumn(
-      modifier = Modifier.weight(1f),
-      verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      item {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
+  Scaffold(
+    topBar = {
+      TopAppBar(
+        title = { Text("价格对比") },
+        navigationIcon = {
+          IconButton(onClick = onNavigateBack) {
+            Icon(Icons.Default.ArrowBack, "返回")
+          }
+        }
+      )
+    },
+    floatingActionButton = {
+      if (allInputsFilled) {
+        FloatingActionButton(
+          onClick = {
+            focusManager.clearFocus()
+            priceItems = priceItems + PriceItem()
+          }
         ) {
-          Text(
-            "Price",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-          )
-          Text(
-            "Quantity",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-          )
-          Text(
-            "Unit Price",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-          )
-          Box(modifier = Modifier.width(48.dp))
+          Icon(Icons.Default.Add, "添加")
         }
       }
-
-      itemsIndexed(priceItems) { index, item ->
-        PriceItemRow(
-          item = item,
-          onItemChange = { newItem ->
-            priceItems =
-              priceItems.toMutableList().apply {
-                this[index] = newItem
-              }
-          },
-          onDelete =
-          if (priceItems.size > 2) {
-            {
-              priceItems =
-                priceItems.toMutableList().apply {
-                  removeAt(index)
-                }
-            }
-          } else {
-            null
-          },
-          backgroundColor =
-          when {
-            validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
-              Color.Green.copy(
-                alpha = 0.3f,
-              )
-
-            validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
-              Color.Yellow.copy(
-                alpha = 0.3f,
-              )
-
-            else -> Color.Transparent
-          },
-        )
-      }
     }
-
-    Row(
-      modifier =
-      Modifier
-        .fillMaxWidth()
-        .padding(top = 16.dp),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
+  ) { paddingValues ->
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(paddingValues)
     ) {
-      Button(
-        onClick = {
-          focusManager.clearFocus()
-          priceItems = priceItems + PriceItem()
-        },
-        enabled = allInputsFilled,
-        modifier = Modifier.weight(1f),
+      Column(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(MaterialTheme.colorScheme.background)
       ) {
-        Icon(Icons.Default.Add, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Add Row")
-      }
+        LazyColumn(
+          modifier = Modifier.weight(1f),
+          contentPadding = PaddingValues(16.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          item {
+            Card(
+              modifier = Modifier.fillMaxWidth(),
+              colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+              )
+            ) {
+              Row(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+              ) {
+                Text(
+                  "价格",
+                  modifier = Modifier.weight(1f),
+                  style = MaterialTheme.typography.labelLarge,
+                  fontWeight = FontWeight.Bold,
+                )
+                Text(
+                  "数量",
+                  modifier = Modifier.weight(1f),
+                  style = MaterialTheme.typography.labelLarge,
+                  fontWeight = FontWeight.Bold,
+                )
+                Text(
+                  "单价",
+                  modifier = Modifier.weight(1f),
+                  style = MaterialTheme.typography.labelLarge,
+                  fontWeight = FontWeight.Bold,
+                )
+                Box(modifier = Modifier.size(48.dp))
+              }
+            }
+          }
 
-      OutlinedButton(
-        onClick = {
-          focusManager.clearFocus()
-          priceItems = listOf(PriceItem(), PriceItem())
-        },
-        modifier = Modifier.weight(1f),
-      ) {
-        Icon(Icons.Default.Clear, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Clear All")
+          itemsIndexed(priceItems) { index, item ->
+            PriceItemCard(
+              item = item,
+              onItemChange = { newItem ->
+                priceItems =
+                  priceItems.toMutableList().apply {
+                    this[index] = newItem
+                  }
+              },
+              onDelete =
+              if (priceItems.size > 2) {
+                {
+                  priceItems =
+                    priceItems.toMutableList().apply {
+                      removeAt(index)
+                    }
+                }
+              } else {
+                null
+              },
+              backgroundColor =
+              when {
+                validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
+                  Color(0xFFE8F5E9)
+
+                validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
+                  Color(0xFFFFF3E0)
+
+                else -> MaterialTheme.colorScheme.surface
+              },
+            )
+          }
+        }
+
+        Card(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Button(
+              onClick = {
+                focusManager.clearFocus()
+                priceItems = listOf(PriceItem(), PriceItem())
+              },
+              modifier = Modifier.weight(1f),
+            ) {
+              Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+              Text("清空")
+            }
+          }
+        }
       }
     }
   }
 }
 
 @Composable
-private fun PriceItemRow(
+private fun PriceItemCard(
   item: PriceItem,
   onItemChange: (PriceItem) -> Unit,
   onDelete: (() -> Unit)? = null,
@@ -208,17 +229,16 @@ private fun PriceItemRow(
   val focusManager = LocalFocusManager.current
 
   Card(
-    modifier =
-    Modifier
-      .fillMaxWidth()
-      .background(backgroundColor),
+    modifier = Modifier.fillMaxWidth(),
+    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    colors = CardDefaults.cardColors(
+      containerColor = backgroundColor
+    )
   ) {
     Row(
-      modifier =
-      Modifier
+      modifier = Modifier
         .fillMaxWidth()
-        .background(backgroundColor)
-        .padding(8.dp),
+        .padding(16.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -271,14 +291,14 @@ private fun PriceItemRow(
         text =
         if (item.unitPrice > 0) {
           val rounded = kotlin.math.round(item.unitPrice * 100) / 100.0
-          "$rounded"
+          "¥$rounded"
         } else {
           "-"
         },
         modifier = Modifier.weight(1f),
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.bodyLarge,
-        fontWeight = FontWeight.Medium,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
       )
 
       if (onDelete != null) {
@@ -289,7 +309,7 @@ private fun PriceItemRow(
           },
           modifier = Modifier.size(48.dp),
         ) {
-          Icon(Icons.Default.Delete, contentDescription = "Delete")
+          Icon(Icons.Default.Delete, contentDescription = "删除")
         }
       } else {
         Box(modifier = Modifier.size(48.dp))

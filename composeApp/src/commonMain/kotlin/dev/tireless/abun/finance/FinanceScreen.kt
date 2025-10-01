@@ -24,7 +24,8 @@ import org.koin.compose.koinInject
 fun FinanceScreen(
   viewModel: TransactionViewModel = koinInject(),
   onNavigateToAccounts: () -> Unit = {},
-  onNavigateToCategories: () -> Unit = {}
+  onNavigateToCategories: () -> Unit = {},
+  onNavigateToPriceComparison: () -> Unit = {}
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -39,6 +40,9 @@ fun FinanceScreen(
       TopAppBar(
         title = { Text("财务管理") },
         actions = {
+          IconButton(onClick = onNavigateToPriceComparison) {
+            Icon(Icons.Default.ShoppingCart, "价格对比")
+          }
           IconButton(onClick = onNavigateToAccounts) {
             Icon(Icons.Default.AccountBalanceWallet, "账户管理")
           }

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.FinanceScreen
+import dev.tireless.abun.material.PriceScreen
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
@@ -51,6 +52,7 @@ fun App() {
     var selectedTab by remember { mutableIntStateOf(1) }
     var showAccountManagement by remember { mutableStateOf(false) }
     var showFinanceCategoryManagement by remember { mutableStateOf(false) }
+    var showPriceComparison by remember { mutableStateOf(false) }
 
     Scaffold(
       bottomBar = {
@@ -99,12 +101,18 @@ fun App() {
               onNavigateBack = { showFinanceCategoryManagement = false }
             )
           }
+          showPriceComparison -> {
+            PriceScreen(
+              onNavigateBack = { showPriceComparison = false }
+            )
+          }
           else -> {
             when (selectedTab) {
               0 -> HomeScreen()
               1 -> FinanceScreen(
                 onNavigateToAccounts = { showAccountManagement = true },
-                onNavigateToCategories = { showFinanceCategoryManagement = true }
+                onNavigateToCategories = { showFinanceCategoryManagement = true },
+                onNavigateToPriceComparison = { showPriceComparison = true }
               )
               2 -> TimeblockScreen()
               3 -> SettingsScreen()
