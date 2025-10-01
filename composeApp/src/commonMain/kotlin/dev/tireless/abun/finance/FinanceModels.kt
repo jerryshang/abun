@@ -111,6 +111,12 @@ data class Account(
   val isActive: Boolean = true,
   val iconName: String? = null,
   val colorHex: String? = null,
+  // Day of month for credit card billing (1-31)
+  val billDate: Int? = null,
+  // Day of month for payment due (1-31)
+  val paymentDate: Int? = null,
+  // Credit limit for credit cards
+  val creditLimit: Double? = null,
   val createdAt: Long,
   val updatedAt: Long
 )
@@ -298,7 +304,10 @@ data class CreateAccountInput(
   val initialBalance: Double = 0.0,
   val currency: String = "CNY",
   val iconName: String? = null,
-  val colorHex: String? = null
+  val colorHex: String? = null,
+  val billDate: Int? = null,
+  val paymentDate: Int? = null,
+  val creditLimit: Double? = null
 )
 
 data class UpdateAccountInput(
@@ -309,7 +318,10 @@ data class UpdateAccountInput(
   val currency: String = "CNY",
   val isActive: Boolean = true,
   val iconName: String? = null,
-  val colorHex: String? = null
+  val colorHex: String? = null,
+  val billDate: Int? = null,
+  val paymentDate: Int? = null,
+  val creditLimit: Double? = null
 )
 
 data class CreateTransactionInput(

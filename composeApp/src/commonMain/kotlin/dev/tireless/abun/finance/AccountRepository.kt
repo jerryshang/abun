@@ -59,6 +59,9 @@ class AccountRepository(private val database: AppDatabase) {
       is_active = 1L,
       icon_name = input.iconName,
       color_hex = input.colorHex,
+      bill_date = input.billDate?.toLong(),
+      payment_date = input.paymentDate?.toLong(),
+      credit_limit = input.creditLimit,
       created_at = now,
       updated_at = now
     )
@@ -79,6 +82,9 @@ class AccountRepository(private val database: AppDatabase) {
       is_active = if (input.isActive) 1L else 0L,
       icon_name = input.iconName,
       color_hex = input.colorHex,
+      bill_date = input.billDate?.toLong(),
+      payment_date = input.paymentDate?.toLong(),
+      credit_limit = input.creditLimit,
       updated_at = now,
       id = input.id
     )
@@ -188,6 +194,9 @@ class AccountRepository(private val database: AppDatabase) {
     isActive = is_active == 1L,
     iconName = icon_name,
     colorHex = color_hex,
+    billDate = bill_date?.toInt(),
+    paymentDate = payment_date?.toInt(),
+    creditLimit = credit_limit,
     createdAt = created_at,
     updatedAt = updated_at
   )

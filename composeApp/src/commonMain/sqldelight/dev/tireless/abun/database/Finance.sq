@@ -9,6 +9,9 @@ CREATE TABLE Account (
     is_active INTEGER NOT NULL DEFAULT 1, -- Boolean
     icon_name TEXT,
     color_hex TEXT,
+    bill_date INTEGER, -- Day of month for credit card billing (1-31), NULL for non-credit accounts
+    payment_date INTEGER, -- Day of month for payment due (1-31), NULL for non-credit/debt accounts
+    credit_limit REAL, -- Credit limit for credit cards
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -135,12 +138,12 @@ CREATE TABLE RecurringTransaction (
 
 -- Queries for Accounts
 insertAccount:
-INSERT INTO Account (name, type, initial_balance, current_balance, currency, is_active, icon_name, color_hex, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Account (name, type, initial_balance, current_balance, currency, is_active, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateAccount:
 UPDATE Account
-SET name = ?, type = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, icon_name = ?, color_hex = ?, updated_at = ?
+SET name = ?, type = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
 WHERE id = ?;
 
 updateAccountBalance:
