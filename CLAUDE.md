@@ -9,6 +9,14 @@ Please refer to [AGENTS.md](./AGENTS.md) for comprehensive project setup, build 
 - Follow the project structure and coding conventions outlined in AGENTS.md
 - When making changes, ensure compatibility across both Android and iOS platforms
 
+## Git Commit Policy
+**IMPORTANT**: Do NOT automatically commit changes unless explicitly requested by the user.
+
+- Only create commits when the user explicitly asks (e.g., "commit this", "commit the changes")
+- After completing implementation tasks, inform the user that changes are ready but DO NOT commit
+- Exception: If the user's original request explicitly includes committing (e.g., "implement X and commit it"), then commit is allowed
+- Always run `spotlessApply` before committing to ensure code formatting
+
 ## Build Verification Rule
 **IMPORTANT**: After implementing each feature, always run both Android and iOS builds to verify there are no compilation errors:
 
