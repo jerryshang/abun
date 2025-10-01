@@ -85,6 +85,19 @@ enum class GroupStatus {
 }
 
 /**
+ * Transaction State
+ */
+enum class TransactionState {
+  PLANNED, // Fixed recurring payments (rent, loan payments)
+  ESTIMATED, // Variable recurring payments (utilities, electric)
+  CONFIRMED; // Manually logged transactions
+
+  companion object {
+    fun fromString(value: String): TransactionState = values().find { it.name == value.uppercase() } ?: CONFIRMED
+  }
+}
+
+/**
  * Loan Types
  */
 enum class LoanType {
@@ -152,9 +165,7 @@ data class Transaction(
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
-  val isFuture: Boolean = false,
-  val isExecuted: Boolean = true,
-  val loanMetadata: String? = null,
+  val state: TransactionState = TransactionState.CONFIRMED,
   val createdAt: Long,
   val updatedAt: Long
 )

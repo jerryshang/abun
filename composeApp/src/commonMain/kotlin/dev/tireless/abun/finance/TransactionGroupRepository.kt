@@ -97,9 +97,7 @@ class TransactionGroupRepository(private val database: AppDatabase) {
     payee = entity.payee,
     member = entity.member,
     notes = entity.notes,
-    isFuture = entity.is_future == 1L,
-    isExecuted = entity.is_executed == 1L,
-    loanMetadata = entity.loan_metadata,
+    state = TransactionState.fromString(entity.state),
     createdAt = entity.created_at,
     updatedAt = entity.updated_at
   )

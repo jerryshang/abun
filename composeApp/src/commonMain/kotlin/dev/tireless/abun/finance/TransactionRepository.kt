@@ -96,9 +96,7 @@ class TransactionRepository(
           payee = input.payee,
           member = input.member,
           notes = input.notes,
-          is_future = 0,
-          is_executed = 1,
-          loan_metadata = null,
+          state = TransactionState.CONFIRMED.name.lowercase(),
           created_at = now,
           updated_at = now
         )
@@ -119,9 +117,7 @@ class TransactionRepository(
           payee = input.payee,
           member = input.member,
           notes = input.notes,
-          is_future = 0,
-          is_executed = 1,
-          loan_metadata = null,
+          state = TransactionState.CONFIRMED.name.lowercase(),
           created_at = now,
           updated_at = now
         )
@@ -148,9 +144,7 @@ class TransactionRepository(
           payee = input.payee,
           member = input.member,
           notes = input.notes,
-          is_future = 0,
-          is_executed = 1,
-          loan_metadata = null,
+          state = TransactionState.CONFIRMED.name.lowercase(),
           created_at = now,
           updated_at = now
         )
@@ -169,9 +163,7 @@ class TransactionRepository(
           payee = input.payee,
           member = input.member,
           notes = "Transfer from account ${input.accountId}",
-          is_future = 0,
-          is_executed = 1,
-          loan_metadata = null,
+          state = TransactionState.CONFIRMED.name.lowercase(),
           created_at = now,
           updated_at = now
         )
@@ -246,8 +238,7 @@ class TransactionRepository(
       payee = input.payee,
       member = input.member,
       notes = input.notes,
-      is_executed = 1,
-      loan_metadata = null,
+      state = TransactionState.CONFIRMED.name.lowercase(),
       updated_at = now,
       id = input.id
     )
@@ -401,9 +392,7 @@ class TransactionRepository(
     payee = payee,
     member = member,
     notes = notes,
-    isFuture = is_future == 1L,
-    isExecuted = is_executed == 1L,
-    loanMetadata = loan_metadata,
+    state = TransactionState.fromString(state),
     createdAt = created_at,
     updatedAt = updated_at
   )

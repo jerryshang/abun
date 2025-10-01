@@ -56,9 +56,7 @@ CREATE TABLE FinanceTransaction (
     payee TEXT, -- Merchant/Source name
     member TEXT, -- Who this expense is for
     notes TEXT,
-    is_future INTEGER NOT NULL DEFAULT 0, -- 1 for future/scheduled transactions
-    is_executed INTEGER NOT NULL DEFAULT 1, -- 0 for future transactions not yet executed
-    loan_metadata TEXT, -- JSON metadata for loan details
+    state TEXT NOT NULL DEFAULT 'confirmed', -- 'planned', 'estimated', 'confirmed'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
@@ -218,12 +216,12 @@ SELECT * FROM FinanceTransaction WHERE group_id = ? ORDER BY transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, group_id, payee, member, notes, is_future, is_executed, loan_metadata, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, group_id, payee, member, notes, state, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
 UPDATE FinanceTransaction
-SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, group_id = ?, payee = ?, member = ?, notes = ?, is_executed = ?, loan_metadata = ?, updated_at = ?
+SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, group_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:
@@ -254,14 +252,17 @@ SELECT * FROM FinanceTransaction WHERE type = ? ORDER BY transaction_date DESC;
 getTransferPair:
 SELECT * FROM FinanceTransaction WHERE transfer_group_id = ? ORDER BY created_at;
 
-getFutureTransactions:
-SELECT * FROM FinanceTransaction WHERE is_future = 1 AND is_executed = 0 ORDER BY transaction_date;
+getPlannedTransactions:
+SELECT * FROM FinanceTransaction WHERE state = 'planned' ORDER BY transaction_date;
 
-getExecutableFutureTransactions:
-SELECT * FROM FinanceTransaction WHERE is_future = 1 AND is_executed = 0 AND transaction_date <= ? ORDER BY transaction_date;
+getEstimatedTransactions:
+SELECT * FROM FinanceTransaction WHERE state = 'estimated' ORDER BY transaction_date;
 
-markTransactionAsExecuted:
-UPDATE FinanceTransaction SET is_executed = 1, updated_at = ? WHERE id = ?;
+getTransactionsByState:
+SELECT * FROM FinanceTransaction WHERE state = ? ORDER BY transaction_date;
+
+updateTransactionState:
+UPDATE FinanceTransaction SET state = ?, updated_at = ? WHERE id = ?;
 
 -- Queries for Tags
 insertFinanceTag:
