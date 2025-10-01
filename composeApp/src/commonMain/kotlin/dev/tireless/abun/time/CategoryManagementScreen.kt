@@ -1,4 +1,4 @@
-package dev.tireless.abun.ui
+package dev.tireless.abun.time
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,10 +49,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.model.Category
-import dev.tireless.abun.model.Task
-import dev.tireless.abun.repository.TaskRepository
-import dev.tireless.abun.viewmodel.CategoryViewModel
+import dev.tireless.abun.time.Category
+import dev.tireless.abun.time.Task
+import dev.tireless.abun.time.TaskRepository
+import dev.tireless.abun.time.CategoryViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

@@ -1,10 +1,10 @@
-package dev.tireless.abun.repository
+package dev.tireless.abun.time
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.model.Timeblock
+import dev.tireless.abun.time.Timeblock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow

@@ -1,16 +1,15 @@
-package dev.tireless.abun.di
+package dev.tireless.abun.core
 
 import dev.tireless.abun.Greeting
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.database.DatabaseDriverFactory
-import dev.tireless.abun.repository.AlarmRepository
-import dev.tireless.abun.repository.CategoryRepository
-import dev.tireless.abun.repository.QuotesRepository
-import dev.tireless.abun.repository.TaskRepository
-import dev.tireless.abun.repository.TimeblockRepository
-import dev.tireless.abun.viewmodel.QuoteViewModel
-import dev.tireless.abun.viewmodel.TimeblockViewModel
-import dev.tireless.abun.viewmodel.CategoryViewModel
+import dev.tireless.abun.time.AlarmRepository
+import dev.tireless.abun.time.CategoryRepository
+import dev.tireless.abun.mental.QuotesRepository
+import dev.tireless.abun.time.TaskRepository
+import dev.tireless.abun.time.TimeblockRepository
+import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.time.TimeblockViewModel
+import dev.tireless.abun.time.CategoryViewModel
 import org.koin.dsl.module
 
 val appModule =

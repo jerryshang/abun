@@ -1,6 +1,6 @@
-package dev.tireless.abun.di
+package dev.tireless.abun.core
 
-import dev.tireless.abun.database.DatabaseDriverFactory
+import dev.tireless.abun.core.DatabaseDriverFactory
 import org.koin.core.module.Module
 import org.koin.dsl.module
 

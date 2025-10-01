@@ -1,13 +1,13 @@
-package dev.tireless.abun.viewmodel
+package dev.tireless.abun.time
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.tireless.abun.model.Category
-import dev.tireless.abun.model.Task
-import dev.tireless.abun.model.Timeblock
-import dev.tireless.abun.repository.CategoryRepository
-import dev.tireless.abun.repository.TaskRepository
-import dev.tireless.abun.repository.TimeblockRepository
+import dev.tireless.abun.time.Category
+import dev.tireless.abun.time.Task
+import dev.tireless.abun.time.Timeblock
+import dev.tireless.abun.time.CategoryRepository
+import dev.tireless.abun.time.TaskRepository
+import dev.tireless.abun.time.TimeblockRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

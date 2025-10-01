@@ -1,4 +1,4 @@
-package dev.tireless.abun.repository
+package dev.tireless.abun.mental
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList

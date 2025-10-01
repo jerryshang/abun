@@ -1,4 +1,4 @@
-package dev.tireless.abun.ui
+package dev.tireless.abun.time
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,9 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.model.Category
-import dev.tireless.abun.model.Task
-import dev.tireless.abun.viewmodel.TimeblockViewModel
+import dev.tireless.abun.time.Category
+import dev.tireless.abun.time.Task
+import dev.tireless.abun.time.TimeblockViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

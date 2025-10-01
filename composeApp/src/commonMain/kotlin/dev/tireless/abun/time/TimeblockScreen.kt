@@ -1,4 +1,4 @@
-package dev.tireless.abun
+package dev.tireless.abun.time
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,9 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.tireless.abun.model.Timeblock
-import dev.tireless.abun.ui.CreateTimeblockDialog
-import dev.tireless.abun.viewmodel.TimeblockViewModel
+import dev.tireless.abun.time.Timeblock
+import dev.tireless.abun.time.TimeblockViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 data class TimeSlot(

@@ -1,9 +1,9 @@
-package dev.tireless.abun.repository
+package dev.tireless.abun.time
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.model.Alarm
+import dev.tireless.abun.time.Alarm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow

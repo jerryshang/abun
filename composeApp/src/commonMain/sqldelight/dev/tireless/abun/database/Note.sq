@@ -1,0 +1,39 @@
+-- Notes table for quick note functionality
+CREATE TABLE notes (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Insert sample notes
+INSERT INTO notes (title, content, created_at, updated_at)
+VALUES
+  ('Sample Note', 'This is a sample quick note to test the functionality.', datetime('now'), datetime('now')),
+  ('Meeting Notes', 'Remember to discuss the quarterly goals in tomorrow meeting.', datetime('now'), datetime('now')),
+  ('Ideas', 'App feature idea: Dark mode toggle in settings.', datetime('now'), datetime('now'));
+
+-- Note queries
+selectAllNotes:
+SELECT * FROM notes ORDER BY updated_at DESC;
+
+selectNoteById:
+SELECT * FROM notes WHERE id = ?;
+
+insertNote:
+INSERT INTO notes (title, content, created_at, updated_at)
+VALUES (?, ?, ?, ?);
+
+updateNote:
+UPDATE notes
+SET title = ?, content = ?, updated_at = ?
+WHERE id = ?;
+
+deleteNote:
+DELETE FROM notes WHERE id = ?;
+
+searchNotes:
+SELECT * FROM notes
+WHERE title LIKE '%' || ? || '%' OR content LIKE '%' || ? || '%'
+ORDER BY updated_at DESC;

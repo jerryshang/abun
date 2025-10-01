@@ -1,9 +1,9 @@
-package dev.tireless.abun.viewmodel
+package dev.tireless.abun.mental
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.tireless.abun.database.Quotes
-import dev.tireless.abun.repository.QuotesRepository
+import dev.tireless.abun.mental.QuotesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

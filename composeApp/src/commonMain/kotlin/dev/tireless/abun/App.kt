@@ -35,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.ui.CategoryManagementScreen
-import dev.tireless.abun.viewmodel.QuoteViewModel
+import dev.tireless.abun.time.CategoryManagementScreen
+import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.material.PriceScreen
+import dev.tireless.abun.time.TimeblockScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel

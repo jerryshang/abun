@@ -1,4 +1,4 @@
-package dev.tireless.abun.di
+package dev.tireless.abun.core
 
 import org.koin.core.context.startKoin
 

@@ -1,4 +1,4 @@
-package dev.tireless.abun.model
+package dev.tireless.abun.time
 
 data class Category(
     val id: Long,
