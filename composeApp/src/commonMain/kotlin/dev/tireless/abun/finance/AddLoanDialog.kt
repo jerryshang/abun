@@ -14,17 +14,21 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Dialog for creating a new loan
+ *
+ * In the new double-entry model:
+ * - The system automatically creates a liability account for the loan
+ * - User only needs to select the asset account where borrowed money goes
+ * - Lender is tracked via the payee name field (not an account)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddLoanDialog(
-  accounts: List<Account>,
+  accounts: List<AccountWithBalance>,
   onDismiss: () -> Unit,
   onConfirm: (CreateLoanInput) -> Unit,
 ) {
   var amount by remember { mutableStateOf("") }
   var selectedAccountId by remember { mutableStateOf(accounts.firstOrNull()?.id ?: 0L) }
-  var selectedLenderAccountId by remember { mutableStateOf<Long?>(null) }
   var selectedLoanType by remember { mutableStateOf(LoanType.EQUAL_INSTALLMENT) }
   var interestRate by remember { mutableStateOf("8") }
   var loanMonths by remember { mutableStateOf("24") }
@@ -32,14 +36,9 @@ fun AddLoanDialog(
   var payee by remember { mutableStateOf("") }
   var notes by remember { mutableStateOf("") }
 
-  // Auto-fill payment day when lender account is selected
-  LaunchedEffect(selectedLenderAccountId) {
-    selectedLenderAccountId?.let { lenderId ->
-      val lenderAccount = accounts.find { it.id == lenderId }
-      lenderAccount?.paymentDate?.let { date ->
-        paymentDay = date.toString()
-      }
-    }
+  // Filter accounts to show only Asset accounts (where borrowed money goes)
+  val assetAccounts = accounts.filter { account ->
+    account.parentId == RootAccountIds.ASSET
   }
 
   AlertDialog(
@@ -73,14 +72,14 @@ fun AddLoanDialog(
           supportingText = { Text("借入的总金额") }
         )
 
-        // Account Selector
+        // Account Selector (only asset accounts)
         var expandedAccounts by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(
           expanded = expandedAccounts,
           onExpandedChange = { expandedAccounts = it }
         ) {
           OutlinedTextField(
-            value = accounts.find { it.id == selectedAccountId }?.name ?: "",
+            value = assetAccounts.find { it.id == selectedAccountId }?.name ?: "",
             onValueChange = {},
             readOnly = true,
             label = { Text("借入账户") },
@@ -88,13 +87,13 @@ fun AddLoanDialog(
             modifier = Modifier
               .fillMaxWidth()
               .menuAnchor(),
-            supportingText = { Text("借入资金存入的账户") }
+            supportingText = { Text("借入资金存入的资产账户（如银行卡、现金等）") }
           )
           ExposedDropdownMenu(
             expanded = expandedAccounts,
             onDismissRequest = { expandedAccounts = false }
           ) {
-            accounts.forEach { account ->
+            assetAccounts.forEach { account ->
               DropdownMenuItem(
                 text = { Text(account.name) },
                 onClick = {
@@ -106,38 +105,14 @@ fun AddLoanDialog(
           }
         }
 
-        // Payee (Lender)
-        var expandedLenderAccounts by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-          expanded = expandedLenderAccounts,
-          onExpandedChange = { expandedLenderAccounts = it }
-        ) {
-          OutlinedTextField(
-            value = accounts.find { it.id == selectedLenderAccountId }?.name ?: "",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("出借方账户") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLenderAccounts) },
-            modifier = Modifier
-              .fillMaxWidth()
-              .menuAnchor(),
-            supportingText = { Text("借钱给你的账户（可以是朋友、银行等）") }
-          )
-          ExposedDropdownMenu(
-            expanded = expandedLenderAccounts,
-            onDismissRequest = { expandedLenderAccounts = false }
-          ) {
-            accounts.filter { it.id != selectedAccountId }.forEach { account ->
-              DropdownMenuItem(
-                text = { Text(account.name) },
-                onClick = {
-                  selectedLenderAccountId = account.id
-                  expandedLenderAccounts = false
-                }
-              )
-            }
-          }
-        }
+        // Payee/Lender Name (text field, not account selector)
+        OutlinedTextField(
+          value = payee,
+          onValueChange = { payee = it },
+          label = { Text("出借方名称 *") },
+          modifier = Modifier.fillMaxWidth(),
+          supportingText = { Text("例如：朋友姓名、银行名称等（必填）") }
+        )
 
         // Loan Type Selector
         Text("还款方式", style = MaterialTheme.typography.labelLarge)
@@ -198,15 +173,6 @@ fun AddLoanDialog(
           supportingText = { Text("每月还款的日期 (1-31)") }
         )
 
-        // Payee/Lender Name
-        OutlinedTextField(
-          value = payee,
-          onValueChange = { payee = it },
-          label = { Text("出借方名称") },
-          modifier = Modifier.fillMaxWidth(),
-          supportingText = { Text("例如：朋友、银行名称等") }
-        )
-
         // Notes
         OutlinedTextField(
           value = notes,
@@ -221,16 +187,19 @@ fun AddLoanDialog(
       Button(
         onClick = {
           val amountValue = amount.toDoubleOrNull() ?: 0.0
-          val rateValue = interestRate.toDoubleOrNull() ?: 0.0 // Keep as percentage
+          val rateValue = interestRate.toDoubleOrNull() ?: 0.0
           val monthsValue = loanMonths.toIntOrNull() ?: 0
           val paymentDayValue = paymentDay.toIntOrNull() ?: 1
 
-          if (amountValue > 0 && rateValue >= 0 && monthsValue > 0 && selectedLenderAccountId != null) {
+          if (amountValue > 0 && rateValue >= 0 && monthsValue > 0 && payee.isNotBlank()) {
+            // In the new model, we don't need lenderAccountId
+            // The system creates a liability account automatically
+            // We use a dummy value (selectedAccountId) to satisfy the input requirement
             onConfirm(
               CreateLoanInput(
                 amount = amountValue,
                 accountId = selectedAccountId,
-                lenderAccountId = selectedLenderAccountId!!,
+                lenderAccountId = selectedAccountId, // Dummy value - not used in createLoan
                 loanType = selectedLoanType,
                 interestRate = rateValue,
                 loanMonths = monthsValue,
@@ -244,10 +213,11 @@ fun AddLoanDialog(
         },
         enabled = amount.toDoubleOrNull() != null &&
           amount.toDoubleOrNull()!! > 0 &&
-          selectedLenderAccountId != null &&
+          payee.isNotBlank() &&
           interestRate.toDoubleOrNull() != null &&
           loanMonths.toIntOrNull() != null &&
-          loanMonths.toIntOrNull()!! > 0
+          loanMonths.toIntOrNull()!! > 0 &&
+          assetAccounts.isNotEmpty()
       ) {
         Text("确认")
       }

@@ -28,9 +28,6 @@ sealed interface Route {
   data object AccountManagement : Route
 
   @Serializable
-  data object FinanceCategoryManagement : Route
-
-  @Serializable
   data object PriceComparison : Route
 
   @Serializable

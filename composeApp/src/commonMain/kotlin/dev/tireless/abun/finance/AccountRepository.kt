@@ -71,6 +71,19 @@ class AccountRepository(private val database: AppDatabase) {
   }
 
   /**
+   * Get all accounts with calculated balances as Flow
+   */
+  fun getAllAccountsWithBalanceFlow(): Flow<List<AccountWithBalance>> = queries.getAllAccounts().asFlow().mapToList(Dispatchers.IO).map { list ->
+    list.map { dbAccount ->
+      val account = dbAccount.toDomain()
+      AccountWithBalance(
+        account = account,
+        currentBalance = calculateAccountBalance(account.id)
+      )
+    }
+  }
+
+  /**
    * Get all accounts
    */
   suspend fun getAllAccounts(): List<Account> = withContext(Dispatchers.IO) {
@@ -80,10 +93,36 @@ class AccountRepository(private val database: AppDatabase) {
   }
 
   /**
+   * Get all accounts with calculated balances
+   */
+  suspend fun getAllAccountsWithBalance(): List<AccountWithBalance> = withContext(Dispatchers.IO) {
+    val accounts = getAllAccounts()
+    accounts.map { account ->
+      AccountWithBalance(
+        account = account,
+        currentBalance = calculateAccountBalance(account.id)
+      )
+    }
+  }
+
+  /**
    * Get active accounts only
    */
   suspend fun getActiveAccounts(): List<Account> = withContext(Dispatchers.IO) {
     queries.getActiveAccounts().executeAsList().map { it.toDomain() }
+  }
+
+  /**
+   * Get active accounts with calculated balances
+   */
+  suspend fun getActiveAccountsWithBalance(): List<AccountWithBalance> = withContext(Dispatchers.IO) {
+    val accounts = getActiveAccounts()
+    accounts.map { account ->
+      AccountWithBalance(
+        account = account,
+        currentBalance = calculateAccountBalance(account.id)
+      )
+    }
   }
 
   /**
@@ -98,19 +137,23 @@ class AccountRepository(private val database: AppDatabase) {
    */
   suspend fun createAccount(input: CreateAccountInput): Long = withContext(Dispatchers.IO) {
     val now = currentTimeMillis()
+
+    // Build config from boolean flags
+    var config = 0L
+    config = AccountConfig.setActive(config, input.isActive)
+    config = AccountConfig.setCountable(config, input.isCountable)
+    config = AccountConfig.setVisible(config, input.isVisibleInUi)
+
     queries.insertAccount(
       name = input.name,
       parent_id = input.parentId,
-      initial_balance = input.initialBalance,
-      current_balance = input.initialBalance,
       currency = input.currency,
-      is_active = 1L,
-      is_visible_in_ui = if (input.isVisibleInUi) 1L else 0L,
+      config = config,
       icon_name = input.iconName,
       color_hex = input.colorHex,
       bill_date = input.billDate?.toLong(),
       payment_date = input.paymentDate?.toLong(),
-      credit_limit = input.creditLimit,
+      credit_limit = input.getCreditLimitStorage(),
       created_at = now,
       updated_at = now
     )
@@ -123,19 +166,23 @@ class AccountRepository(private val database: AppDatabase) {
    */
   suspend fun updateAccount(input: UpdateAccountInput): Unit = withContext(Dispatchers.IO) {
     val now = currentTimeMillis()
+
+    // Build config from boolean flags
+    var config = 0L
+    config = AccountConfig.setActive(config, input.isActive)
+    config = AccountConfig.setCountable(config, input.isCountable)
+    config = AccountConfig.setVisible(config, input.isVisibleInUi)
+
     queries.updateAccount(
       name = input.name,
       parent_id = input.parentId,
-      initial_balance = input.initialBalance,
-      current_balance = input.initialBalance, // Recalculate if needed
       currency = input.currency,
-      is_active = if (input.isActive) 1L else 0L,
-      is_visible_in_ui = if (input.isVisibleInUi) 1L else 0L,
+      config = config,
       icon_name = input.iconName,
       color_hex = input.colorHex,
       bill_date = input.billDate?.toLong(),
       payment_date = input.paymentDate?.toLong(),
-      credit_limit = input.creditLimit,
+      credit_limit = input.getCreditLimitStorage(),
       updated_at = now,
       id = input.id
     )
@@ -143,31 +190,13 @@ class AccountRepository(private val database: AppDatabase) {
   }
 
   /**
-   * Update account balance (called by TransactionRepository)
+   * Calculate account balance on demand from transactions
+   * Uses debit/credit double-entry: balance = total debits - total credits
+   * Returns balance in storage format (Long), converted to display format (Double)
    */
-  suspend fun updateAccountBalance(
-    accountId: Long,
-    newBalance: Double
-  ): Unit = withContext(Dispatchers.IO) {
-    val now = currentTimeMillis()
-    queries.updateAccountBalance(
-      current_balance = newBalance,
-      updated_at = now,
-      id = accountId
-    )
-  }
-
-  /**
-   * Adjust account balance by delta amount
-   * Positive delta increases balance, negative decreases
-   */
-  suspend fun adjustAccountBalance(
-    accountId: Long,
-    delta: Double
-  ): Unit = withContext(Dispatchers.IO) {
-    val account = getAccountById(accountId) ?: return@withContext
-    val newBalance = account.currentBalance + delta
-    updateAccountBalance(accountId, newBalance)
+  suspend fun calculateAccountBalance(accountId: Long): Double = withContext(Dispatchers.IO) {
+    val balanceStorage = queries.calculateAccountBalance(accountId, accountId).executeAsOne()
+    balanceStorage.toDisplayAmount()
   }
 
   /**
@@ -175,13 +204,6 @@ class AccountRepository(private val database: AppDatabase) {
    */
   suspend fun deleteAccount(id: Long): Unit = withContext(Dispatchers.IO) {
     queries.deleteAccount(id)
-  }
-
-  /**
-   * Get total balance of all active accounts
-   */
-  suspend fun getTotalBalance(): Double = withContext(Dispatchers.IO) {
-    queries.getTotalBalanceAllAccounts().executeAsOneOrNull()?.total ?: 0.0
   }
 
   /**
@@ -217,7 +239,7 @@ class AccountRepository(private val database: AppDatabase) {
    * Used by transaction translation layer
    */
   suspend fun getOrCreateExpenseAccount(categoryId: Long, categoryName: String): Account {
-    val accountName = "${categoryName} Expense"
+    val accountName = "$categoryName Expense"
 
     // Try to find existing expense account
     val existingAccount = getAllAccounts().find {
@@ -233,8 +255,7 @@ class AccountRepository(private val database: AppDatabase) {
       CreateAccountInput(
         name = accountName,
         parentId = RootAccountIds.EXPENSE,
-        isVisibleInUi = false,
-        initialBalance = 0.0
+        isVisibleInUi = false
       )
     )
 
@@ -246,7 +267,7 @@ class AccountRepository(private val database: AppDatabase) {
    * Used by transaction translation layer
    */
   suspend fun getOrCreateRevenueAccount(categoryId: Long, categoryName: String): Account {
-    val accountName = "${categoryName} Income"
+    val accountName = "$categoryName Income"
 
     // Try to find existing revenue account
     val existingAccount = getAllAccounts().find {
@@ -262,8 +283,7 @@ class AccountRepository(private val database: AppDatabase) {
       CreateAccountInput(
         name = accountName,
         parentId = RootAccountIds.REVENUE,
-        isVisibleInUi = false,
-        initialBalance = 0.0
+        isVisibleInUi = false
       )
     )
 
@@ -289,8 +309,7 @@ class AccountRepository(private val database: AppDatabase) {
       CreateAccountInput(
         name = loanName,
         parentId = RootAccountIds.LIABILITY,
-        isVisibleInUi = false,
-        initialBalance = 0.0
+        isVisibleInUi = false
       )
     )
 
@@ -311,16 +330,13 @@ class AccountRepository(private val database: AppDatabase) {
     id = id,
     name = name,
     parentId = parent_id,
-    initialBalance = initial_balance,
-    currentBalance = current_balance,
     currency = currency,
-    isActive = is_active == 1L,
-    isVisibleInUi = is_visible_in_ui == 1L,
+    config = config,
     iconName = icon_name,
     colorHex = color_hex,
     billDate = bill_date?.toInt(),
     paymentDate = payment_date?.toInt(),
-    creditLimit = credit_limit,
+    creditLimitStorage = credit_limit,
     createdAt = created_at,
     updatedAt = updated_at
   )

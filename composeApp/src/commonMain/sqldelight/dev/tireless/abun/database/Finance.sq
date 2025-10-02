@@ -2,47 +2,33 @@
 -- Hierarchy-based: 5 root accounts with FIXED IDs
 -- All other accounts are descendants of these 5 roots
 -- Account type is determined by traversing parent_id to the root
+-- Initial balance is recorded as equity transaction, current balance calculated on-demand
+-- IMPORTANT: All amounts are stored as INTEGER (actual value * 10000) to avoid floating point precision loss
 CREATE TABLE Account (
     id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     parent_id INTEGER, -- NULL for root accounts, or FK to parent account
-    initial_balance REAL NOT NULL DEFAULT 0.0,
-    current_balance REAL NOT NULL DEFAULT 0.0,
     currency TEXT NOT NULL DEFAULT 'CNY',
-    is_active INTEGER NOT NULL DEFAULT 1, -- Boolean
-    is_visible_in_ui INTEGER NOT NULL DEFAULT 1, -- Hide root accounts from users
+    config INTEGER NOT NULL DEFAULT 3, -- Bitwise: bit0=active, bit1=countable, bit2=visible
     icon_name TEXT,
     color_hex TEXT,
-    bill_date INTEGER, -- Day of month for credit card billing (1-31), NULL for non-credit accounts
-    payment_date INTEGER, -- Day of month for payment due (1-31), NULL for non-credit/debt accounts
-    credit_limit REAL, -- Credit limit for credit cards
+    bill_date INTEGER CHECK (bill_date IS NULL OR (bill_date >= 1 AND bill_date <= 28)), -- Day of month 1-28 (compatible with Feb)
+    payment_date INTEGER CHECK (payment_date IS NULL OR (payment_date >= 1 AND payment_date <= 28)), -- Day of month 1-28
+    credit_limit INTEGER NOT NULL DEFAULT -1, -- Credit limit * 10000, -1 for non-liability accounts
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (parent_id) REFERENCES Account(id) ON DELETE SET NULL
 );
 
 -- Initialize 5 fundamental accounts with fixed IDs (must match RootAccountIds constants)
-INSERT INTO Account (id, name, parent_id, initial_balance, current_balance, currency, is_active, is_visible_in_ui, created_at, updated_at)
+-- config = 3 means: bit0=1 (active), bit1=1 (countable), bit2=0 (invisible to UI)
+INSERT INTO Account (id, name, parent_id, currency, config, created_at, updated_at)
 VALUES
-  (1, 'Asset', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),      -- RootAccountIds.ASSET
-  (2, 'Liability', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),  -- RootAccountIds.LIABILITY
-  (3, 'Equity', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),     -- RootAccountIds.EQUITY
-  (4, 'Revenue', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),    -- RootAccountIds.REVENUE
-  (5, 'Expense', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0);    -- RootAccountIds.EXPENSE
-
--- Finance Categories Table (separate from time categories)
-CREATE TABLE FinanceCategory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name TEXT NOT NULL,
-    parent_id INTEGER, -- NULL for top-level categories
-    type TEXT NOT NULL, -- 'expense', 'income'
-    icon_name TEXT,
-    color_hex TEXT,
-    is_system INTEGER NOT NULL DEFAULT 0, -- System predefined categories
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY (parent_id) REFERENCES FinanceCategory(id) ON DELETE CASCADE
-);
+  (1, 'Asset', NULL, 'CNY', 3, 0, 0),      -- RootAccountIds.ASSET
+  (2, 'Liability', NULL, 'CNY', 3, 0, 0),  -- RootAccountIds.LIABILITY
+  (3, 'Equity', NULL, 'CNY', 3, 0, 0),     -- RootAccountIds.EQUITY
+  (4, 'Revenue', NULL, 'CNY', 3, 0, 0),    -- RootAccountIds.REVENUE
+  (5, 'Expense', NULL, 'CNY', 3, 0, 0);    -- RootAccountIds.EXPENSE
 
 -- Transaction Groups Table (for grouping related transactions like loans)
 CREATE TABLE TransactionGroup (
@@ -50,21 +36,21 @@ CREATE TABLE TransactionGroup (
     name TEXT NOT NULL,
     group_type TEXT NOT NULL, -- 'loan', 'installment', 'split', 'custom'
     description TEXT,
-    total_amount REAL,
+    total_amount INTEGER, -- Amount * 10000
     status TEXT NOT NULL DEFAULT 'active', -- 'active', 'completed', 'cancelled'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
 
 -- Transactions Table (Pure Double-Entry Booking)
+-- IMPORTANT: All amounts are stored as INTEGER (actual value * 10000) to avoid floating point precision loss
 CREATE TABLE `Transaction` (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    amount REAL NOT NULL, -- Always positive
+    amount INTEGER NOT NULL, -- Always positive, actual amount * 10000 (supports up to .4f precision)
     debit_account_id INTEGER NOT NULL, -- Account being debited
     credit_account_id INTEGER NOT NULL, -- Account being credited
     transaction_date INTEGER NOT NULL, -- Timestamp in milliseconds
     transfer_group_id TEXT, -- UUID to link transfer pairs (for UI grouping)
-    category_id INTEGER, -- User-facing category (for display only, maps to expense/revenue accounts)
     payee TEXT, -- Merchant/Source name
     member TEXT, -- Who this expense is for
     notes TEXT,
@@ -72,8 +58,7 @@ CREATE TABLE `Transaction` (
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
     FOREIGN KEY (debit_account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (credit_account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL
+    FOREIGN KEY (credit_account_id) REFERENCES Account(id) ON DELETE CASCADE
 );
 
 -- Transaction Group Membership (Many-to-Many)
@@ -127,17 +112,12 @@ CREATE TABLE TransactionLinkedItem (
 
 -- Queries for Accounts
 insertAccount:
-INSERT INTO Account (name, parent_id, initial_balance, current_balance, currency, is_active, is_visible_in_ui, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Account (name, parent_id, currency, config, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateAccount:
 UPDATE Account
-SET name = ?, parent_id = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, is_visible_in_ui = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
-WHERE id = ?;
-
-updateAccountBalance:
-UPDATE Account
-SET current_balance = ?, updated_at = ?
+SET name = ?, parent_id = ?, currency = ?, config = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
 WHERE id = ?;
 
 deleteAccount:
@@ -147,54 +127,26 @@ getAccountById:
 SELECT * FROM Account WHERE id = ?;
 
 getAllAccounts:
-SELECT * FROM Account ORDER BY is_active DESC, created_at DESC;
+SELECT * FROM Account ORDER BY (config & 1) DESC, created_at DESC;  -- bit0 = active
 
 getActiveAccounts:
-SELECT * FROM Account WHERE is_active = 1 ORDER BY created_at DESC;
+SELECT * FROM Account WHERE (config & 1) = 1 ORDER BY created_at DESC;  -- bit0 = active
 
 -- Get all expense categories (sub-accounts of Expense root, id=5)
 getExpenseCategories:
-SELECT * FROM Account WHERE parent_id = 5 AND is_active = 1 ORDER BY name;
+SELECT * FROM Account WHERE parent_id = 5 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all revenue categories (sub-accounts of Revenue root, id=4)
 getRevenueCategories:
-SELECT * FROM Account WHERE parent_id = 4 AND is_active = 1 ORDER BY name;
+SELECT * FROM Account WHERE parent_id = 4 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all asset accounts (sub-accounts of Asset root, id=1)
 getAssetAccounts:
-SELECT * FROM Account WHERE parent_id = 1 AND is_active = 1 ORDER BY name;
+SELECT * FROM Account WHERE parent_id = 1 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all liability accounts (sub-accounts of Liability root, id=2)
 getLiabilityAccounts:
-SELECT * FROM Account WHERE parent_id = 2 AND is_active = 1 ORDER BY name;
-
--- Queries for Finance Categories
-insertFinanceCategory:
-INSERT INTO FinanceCategory (name, parent_id, type, icon_name, color_hex, is_system, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-
-updateFinanceCategory:
-UPDATE FinanceCategory
-SET name = ?, parent_id = ?, type = ?, icon_name = ?, color_hex = ?, updated_at = ?
-WHERE id = ?;
-
-deleteFinanceCategory:
-DELETE FROM FinanceCategory WHERE id = ?;
-
-getFinanceCategoryById:
-SELECT * FROM FinanceCategory WHERE id = ?;
-
-getAllFinanceCategories:
-SELECT * FROM FinanceCategory ORDER BY type, parent_id, name;
-
-getFinanceCategoriesByType:
-SELECT * FROM FinanceCategory WHERE type = ? ORDER BY parent_id, name;
-
-getTopLevelFinanceCategories:
-SELECT * FROM FinanceCategory WHERE parent_id IS NULL ORDER BY type, name;
-
-getSubCategories:
-SELECT * FROM FinanceCategory WHERE parent_id = ? ORDER BY name;
+SELECT * FROM Account WHERE parent_id = 2 AND (config & 1) = 1 ORDER BY name;
 
 -- Queries for Transaction Groups
 insertTransactionGroup:
@@ -239,12 +191,12 @@ ORDER BY t.transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO `Transaction` (amount, debit_account_id, credit_account_id, transaction_date, transfer_group_id, category_id, payee, member, notes, state, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO `Transaction` (amount, debit_account_id, credit_account_id, transaction_date, transfer_group_id, payee, member, notes, state, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
 UPDATE `Transaction`
-SET amount = ?, debit_account_id = ?, credit_account_id = ?, transaction_date = ?, transfer_group_id = ?, category_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
+SET amount = ?, debit_account_id = ?, credit_account_id = ?, transaction_date = ?, transfer_group_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:
@@ -260,9 +212,6 @@ getTransactionsByAccount:
 SELECT * FROM `Transaction`
 WHERE debit_account_id = ? OR credit_account_id = ?
 ORDER BY transaction_date DESC;
-
-getTransactionsByCategory:
-SELECT * FROM `Transaction` WHERE category_id = ? ORDER BY transaction_date DESC;
 
 getTransactionsByDateRange:
 SELECT * FROM `Transaction`
@@ -357,32 +306,15 @@ ORDER BY ft.transaction_date DESC;
 -- Will be re-implemented after full migration to debit/credit model
 
 -- Analytics Queries
-getTotalBalanceAllAccounts:
-SELECT SUM(current_balance) AS total FROM Account WHERE is_active = 1;
-
--- Note: Expense/Income sum queries now require joining with root account to determine type
--- These will be moved to repository layer for proper hierarchy traversal
-getExpenseSumByCategory:
-SELECT t.category_id, SUM(t.amount) AS total
-FROM `Transaction` t
-WHERE t.transaction_date BETWEEN ? AND ?
-GROUP BY t.category_id;
-
-getIncomeSumByCategory:
-SELECT t.category_id, SUM(t.amount) AS total
-FROM `Transaction` t
-WHERE t.transaction_date BETWEEN ? AND ?
-GROUP BY t.category_id;
-
-getExpenseByDateRange:
-SELECT SUM(t.amount) AS total
-FROM `Transaction` t
-WHERE t.transaction_date BETWEEN ? AND ?;
-
-getIncomeByDateRange:
-SELECT SUM(t.amount) AS total
-FROM `Transaction` t
-WHERE t.transaction_date BETWEEN ? AND ?;
+-- Calculate account balance by summing all transaction debits minus credits
+-- Returns INTEGER (amount * 10000)
+calculateAccountBalance:
+SELECT
+  COALESCE(
+    (SELECT SUM(amount) FROM `Transaction` WHERE debit_account_id = ?) -
+    (SELECT SUM(amount) FROM `Transaction` WHERE credit_account_id = ?),
+    0
+  ) AS balance;
 
 getRecentPayees:
 SELECT DISTINCT payee FROM `Transaction`

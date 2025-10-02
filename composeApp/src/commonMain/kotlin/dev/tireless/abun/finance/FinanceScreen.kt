@@ -24,8 +24,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.Remove
@@ -34,6 +35,8 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -46,10 +49,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +66,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import dev.tireless.abun.navigation.Route
 import org.koin.compose.koinInject
+
+/**
+ * UI state for dialog management
+ */
+sealed interface DialogState {
+  data object None : DialogState
+  data object Expense : DialogState
+  data object Income : DialogState
+  data object Transfer : DialogState
+  data object Loan : DialogState
+  data class Transaction(val transactionWithDetails: TransactionWithDetails?) : DialogState
+}
 
 /**
  * Main Finance Screen with transaction list
@@ -75,11 +92,36 @@ fun FinanceScreen(
   val accounts by viewModel.accounts.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
   val error by viewModel.error.collectAsState()
+  val selectedAccountId by viewModel.selectedAccountId.collectAsState()
 
-  var showAddTransactionDialog by remember { mutableStateOf(false) }
-  var selectedTransaction by remember { mutableStateOf<TransactionWithDetails?>(null) }
+  var dialogState by remember { mutableStateOf<DialogState>(DialogState.None) }
   var isFabExpanded by remember { mutableStateOf(false) }
-  var showAddLoanDialog by remember { mutableStateOf(false) }
+  var showAccountSelector by remember { mutableStateOf(false) }
+  var expandedAssets by remember { mutableStateOf(true) }
+  var expandedLiabilities by remember { mutableStateOf(true) }
+  var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
+  val scope = rememberCoroutineScope()
+
+  // Filter accounts to show only Assets and Liabilities
+  val selectableAccounts = accounts.filter { account ->
+    account.parentId == RootAccountIds.ASSET || account.parentId == RootAccountIds.LIABILITY
+  }
+
+  // Update filtered transactions when selection changes
+  LaunchedEffect(selectedAccountId, transactions) {
+    filteredTransactions = if (selectedAccountId == null) {
+      transactions
+    } else {
+      transactions.filter {
+        it.transaction.debitAccountId == selectedAccountId || it.transaction.creditAccountId == selectedAccountId
+      }
+    }
+  }
+
+  // Get selected account name
+  val selectedAccount = selectedAccountId?.let { id ->
+    accounts.find { it.id == id }
+  }
 
   // Calculate predicted balance (placeholder logic)
   val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
@@ -88,16 +130,160 @@ fun FinanceScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("财务管理") },
+        title = {
+          Box {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              modifier = Modifier.clickable { showAccountSelector = !showAccountSelector }
+            ) {
+              IconButton(onClick = {
+                if (selectedAccountId != null) {
+                  viewModel.setSelectedAccount(null)
+                } else {
+                  showAccountSelector = !showAccountSelector
+                }
+              }) {
+                Icon(
+                  imageVector = if (selectedAccountId != null) Icons.Default.Close else Icons.Default.AttachMoney,
+                  contentDescription = if (selectedAccountId != null) "清除筛选" else "选择账户"
+                )
+              }
+              if (selectedAccount != null) {
+                Text(
+                  text = selectedAccount.name,
+                  style = MaterialTheme.typography.titleLarge
+                )
+              } else {
+                Text(
+                  text = "全部 (All)",
+                  style = MaterialTheme.typography.titleLarge
+                )
+              }
+              Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "展开账户选择",
+                modifier = Modifier.size(24.dp)
+              )
+            }
+
+            DropdownMenu(
+              expanded = showAccountSelector,
+              onDismissRequest = { showAccountSelector = false }
+            ) {
+              // Group accounts by parent (Asset or Liability)
+              val assetAccounts = selectableAccounts.filter { it.parentId == RootAccountIds.ASSET }
+              val liabilityAccounts = selectableAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
+
+              // "All" option
+              DropdownMenuItem(
+                text = {
+                  Text(
+                    "全部 (All)",
+                    fontWeight = if (selectedAccountId == null) FontWeight.Bold else FontWeight.Normal
+                  )
+                },
+                onClick = {
+                  viewModel.setSelectedAccount(null)
+                  showAccountSelector = false
+                }
+              )
+
+              // Assets section with expandable children
+              if (assetAccounts.isNotEmpty()) {
+                DropdownMenuItem(
+                  text = {
+                    Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.CenterVertically
+                    ) {
+                      Text(
+                        "资产 (Assets)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Icon(
+                        imageVector = if (expandedAssets) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
+                        contentDescription = if (expandedAssets) "收起" else "展开",
+                        modifier = Modifier
+                          .size(20.dp)
+                          .rotate(if (expandedAssets) 0f else -90f)
+                      )
+                    }
+                  },
+                  onClick = { expandedAssets = !expandedAssets }
+                )
+
+                if (expandedAssets) {
+                  assetAccounts.forEach { account ->
+                    DropdownMenuItem(
+                      text = {
+                        Text(
+                          "  • ${account.name}",
+                          fontWeight = if (selectedAccountId == account.id) FontWeight.Bold else FontWeight.Normal
+                        )
+                      },
+                      onClick = {
+                        viewModel.setSelectedAccount(account.id)
+                        showAccountSelector = false
+                      }
+                    )
+                  }
+                }
+              }
+
+              // Liabilities section with expandable children
+              if (liabilityAccounts.isNotEmpty()) {
+                DropdownMenuItem(
+                  text = {
+                    Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.CenterVertically
+                    ) {
+                      Text(
+                        "负债 (Liabilities)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                      )
+                      Icon(
+                        imageVector = if (expandedLiabilities) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
+                        contentDescription = if (expandedLiabilities) "收起" else "展开",
+                        modifier = Modifier
+                          .size(20.dp)
+                          .rotate(if (expandedLiabilities) 0f else -90f)
+                      )
+                    }
+                  },
+                  onClick = { expandedLiabilities = !expandedLiabilities }
+                )
+
+                if (expandedLiabilities) {
+                  liabilityAccounts.forEach { account ->
+                    DropdownMenuItem(
+                      text = {
+                        Text(
+                          "  • ${account.name}",
+                          fontWeight = if (selectedAccountId == account.id) FontWeight.Bold else FontWeight.Normal
+                        )
+                      },
+                      onClick = {
+                        viewModel.setSelectedAccount(account.id)
+                        showAccountSelector = false
+                      }
+                    )
+                  }
+                }
+              }
+            }
+          }
+        },
         actions = {
           IconButton(onClick = { navController.navigate(Route.PriceComparison) }) {
             Icon(Icons.Default.ShoppingCart, "价格对比")
           }
           IconButton(onClick = { navController.navigate(Route.AccountManagement) }) {
             Icon(Icons.Default.AccountBalanceWallet, "账户管理")
-          }
-          IconButton(onClick = { navController.navigate(Route.FinanceCategoryManagement) }) {
-            Icon(Icons.Default.Category, "分类管理")
           }
         },
       )
@@ -106,13 +292,24 @@ fun FinanceScreen(
       FanOutFAB(
         isExpanded = isFabExpanded,
         onExpandChange = { isFabExpanded = it },
+        onAddExpense = {
+          dialogState = DialogState.Expense
+          isFabExpanded = false
+        },
+        onAddIncome = {
+          dialogState = DialogState.Income
+          isFabExpanded = false
+        },
+        onAddTransfer = {
+          dialogState = DialogState.Transfer
+          isFabExpanded = false
+        },
         onAddTransaction = {
-          selectedTransaction = null
-          showAddTransactionDialog = true
+          dialogState = DialogState.Transaction(null)
           isFabExpanded = false
         },
         onCreateLoan = {
-          showAddLoanDialog = true
+          dialogState = DialogState.Loan
           isFabExpanded = false
         },
       )
@@ -133,23 +330,23 @@ fun FinanceScreen(
           modifier = Modifier.fillMaxSize(),
           verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-          // Total Assets Summary with Financial Prediction
+          // Show either account summary or total assets summary
           item {
-            AccountsSummaryCard(
-              accounts = accounts,
-              predictedBalance = predictedBalance,
-              daysAhead = 30,
-              onViewFuture = { navController.navigate(Route.FutureView) },
-            )
-          }
-
-          // Account List Section (Collapsible)
-          item {
-            AccountListSection(
-              accounts = accounts,
-              onManageAccounts = { navController.navigate(Route.AccountManagement) },
-              onAccountClick = { accountId -> navController.navigate(Route.AccountDetails(accountId)) },
-            )
+            if (selectedAccount != null) {
+              // Account-specific summary
+              AccountDetailSummaryCard(
+                account = selectedAccount,
+                onViewDetails = { navController.navigate(Route.AccountDetails(selectedAccount.id)) }
+              )
+            } else {
+              // Total Assets Summary with Financial Prediction
+              AccountsSummaryCard(
+                accounts = accounts,
+                predictedBalance = predictedBalance,
+                daysAhead = 30,
+                onViewFuture = { navController.navigate(Route.FutureView) },
+              )
+            }
           }
 
           // Recent Transactions Section
@@ -162,23 +359,26 @@ fun FinanceScreen(
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Text(
-                text = "最近交易 (Recent Transactions)",
+                text = if (selectedAccount != null) {
+                  "${selectedAccount.name} 交易记录"
+                } else {
+                  "最近交易 (Recent Transactions)"
+                },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
               )
-              TextButton(onClick = { navController.navigate(Route.AccountDetails(null)) }) {
+              TextButton(onClick = { navController.navigate(Route.AccountDetails(selectedAccountId)) }) {
                 Text("查看全部 >")
               }
             }
           }
 
           // Recent Transaction Items (limited to 10)
-          items(transactions.take(10)) { transactionWithDetails ->
+          items(filteredTransactions.take(10)) { transactionWithDetails ->
             TransactionCard(
               transactionWithDetails = transactionWithDetails,
               onClick = {
-                selectedTransaction = transactionWithDetails
-                showAddTransactionDialog = true
+                dialogState = DialogState.Transaction(transactionWithDetails)
               },
               onDelete = {
                 viewModel.deleteTransaction(transactionWithDetails.transaction.id)
@@ -206,51 +406,82 @@ fun FinanceScreen(
     }
   }
 
-  if (showAddTransactionDialog) {
-    AddTransactionDialog(
-      transactionWithDetails = selectedTransaction,
-      accounts = accounts,
-      onDismiss = {
-        showAddTransactionDialog = false
-        selectedTransaction = null
-      },
-      onConfirm = { input ->
-        if (selectedTransaction == null) {
-          viewModel.createTransaction(input)
-        } else {
-          viewModel.updateTransaction(
-            UpdateTransactionInput(
-              id = selectedTransaction!!.transaction.id,
-              amount = input.amount,
-              type = input.type,
-              transactionDate = input.transactionDate,
-              categoryId = input.categoryId,
-              accountId = input.accountId,
-              toAccountId = input.toAccountId,
-              payee = input.payee,
-              member = input.member,
-              notes = input.notes,
-              tagIds = input.tagIds,
-            ),
-          )
-        }
-        showAddTransactionDialog = false
-        selectedTransaction = null
-      },
-    )
-  }
+  // Dialog Management
+  when (val state = dialogState) {
+    DialogState.None -> { /* No dialog */ }
 
-  if (showAddLoanDialog) {
-    AddLoanDialog(
-      accounts = accounts,
-      onDismiss = {
-        showAddLoanDialog = false
-      },
-      onConfirm = { input ->
-        viewModel.createLoan(input)
-        showAddLoanDialog = false
-      },
-    )
+    DialogState.Expense -> {
+      AddExpenseDialog(
+        accounts = accounts,
+        onDismiss = { dialogState = DialogState.None },
+        onConfirm = { input ->
+          viewModel.createTransaction(input)
+          dialogState = DialogState.None
+        }
+      )
+    }
+
+    DialogState.Income -> {
+      AddIncomeDialog(
+        accounts = accounts,
+        onDismiss = { dialogState = DialogState.None },
+        onConfirm = { input ->
+          viewModel.createTransaction(input)
+          dialogState = DialogState.None
+        }
+      )
+    }
+
+    DialogState.Transfer -> {
+      AddTransferDialog(
+        accounts = accounts,
+        onDismiss = { dialogState = DialogState.None },
+        onConfirm = { input ->
+          viewModel.createTransaction(input)
+          dialogState = DialogState.None
+        }
+      )
+    }
+
+    DialogState.Loan -> {
+      AddLoanDialog(
+        accounts = accounts,
+        onDismiss = { dialogState = DialogState.None },
+        onConfirm = { input ->
+          viewModel.createLoan(input)
+          dialogState = DialogState.None
+        }
+      )
+    }
+
+    is DialogState.Transaction -> {
+      AddTransactionDialog(
+        transactionWithDetails = state.transactionWithDetails,
+        accounts = accounts,
+        onDismiss = { dialogState = DialogState.None },
+        onConfirm = { input ->
+          if (state.transactionWithDetails == null) {
+            viewModel.createTransaction(input)
+          } else {
+            viewModel.updateTransaction(
+              UpdateTransactionInput(
+                id = state.transactionWithDetails.transaction.id,
+                amount = input.amount,
+                type = input.type,
+                transactionDate = input.transactionDate,
+                accountId = input.accountId,
+                toAccountId = input.toAccountId,
+                payee = input.payee,
+                member = input.member,
+                notes = input.notes,
+                tagIds = input.tagIds,
+              ),
+            )
+          }
+          dialogState = DialogState.None
+        },
+      )
+    }
   }
 }
 
@@ -259,7 +490,7 @@ fun FinanceScreen(
  */
 @Composable
 fun AccountListSection(
-  accounts: List<Account>,
+  accounts: List<AccountWithBalance>,
   onManageAccounts: () -> Unit,
   onAccountClick: (Long) -> Unit,
 ) {
@@ -355,7 +586,7 @@ fun AccountListSection(
  */
 @Composable
 fun AccountsSummaryCard(
-  accounts: List<Account>,
+  accounts: List<AccountWithBalance>,
   predictedBalance: Double,
   daysAhead: Int = 30,
   onViewFuture: () -> Unit,
@@ -544,7 +775,7 @@ fun TransactionCard(
           )
           Spacer(modifier = Modifier.width(4.dp))
           Text(
-            text = transaction.payee ?: transactionWithDetails.category?.name ?: transactionType.name,
+            text = transaction.payee ?: transactionType.name,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
           )
@@ -601,15 +832,185 @@ fun TransactionCard(
 }
 
 /**
- * Format amount with 2 decimal places
+ * Account detail summary card showing account-specific information
+ * - For debit cards (assets): Shows current balance
+ * - For credit cards (liabilities): Shows debt amount and available credit
  */
-fun formatAmount(amount: Double): String = "%.2f"
-  .replace("%.", amount.toString().substringBefore('.') + ".")
-  .let { pattern ->
-    val intPart = amount.toLong()
-    val decPart = ((amount - intPart) * 100).toLong().toString().padStart(2, '0')
-    "$intPart.$decPart"
+@Composable
+fun AccountDetailSummaryCard(
+  account: AccountWithBalance,
+  onViewDetails: () -> Unit,
+) {
+  val isLiability = account.parentId == RootAccountIds.LIABILITY
+  val isAsset = account.parentId == RootAccountIds.ASSET
+
+  Card(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(20.dp),
+    ) {
+      // Header
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Text(
+          text = account.name,
+          style = MaterialTheme.typography.titleLarge,
+          fontWeight = FontWeight.Bold,
+        )
+        IconButton(
+          onClick = onViewDetails,
+          modifier = Modifier.size(32.dp),
+        ) {
+          Icon(
+            imageVector = Icons.Default.Add,
+            contentDescription = "查看详情",
+            modifier = Modifier.size(16.dp).rotate(90f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(16.dp))
+
+      when {
+        isLiability -> {
+          // Credit card or loan: Show debt and available credit
+          val debtAmount = kotlin.math.abs(account.currentBalance) // Liability balance is typically negative
+          val creditLimit = account.creditLimit ?: 0.0
+          val availableCredit = creditLimit - debtAmount
+
+          // Debt amount
+          Text(
+            text = "欠款金额",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Spacer(modifier = Modifier.height(4.dp))
+          Text(
+            text = "¥${formatAmount(debtAmount)}",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = if (debtAmount > 0) Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary,
+          )
+
+          if (creditLimit > 0) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Divider
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Available credit
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+              Column {
+                Text(
+                  text = "可用额度",
+                  style = MaterialTheme.typography.labelMedium,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = "¥${formatAmount(availableCredit.coerceAtLeast(0.0))}",
+                  style = MaterialTheme.typography.titleLarge,
+                  fontWeight = FontWeight.SemiBold,
+                  color = if (availableCredit > 0) Color(0xFF388E3C) else Color(0xFFD32F2F),
+                )
+              }
+
+              Column(horizontalAlignment = Alignment.End) {
+                Text(
+                  text = "总额度",
+                  style = MaterialTheme.typography.labelMedium,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                  text = "¥${formatAmount(creditLimit)}",
+                  style = MaterialTheme.typography.titleLarge,
+                  fontWeight = FontWeight.SemiBold,
+                )
+              }
+            }
+
+            // Credit usage indicator
+            Spacer(modifier = Modifier.height(12.dp))
+            val usagePercent = if (creditLimit > 0) (debtAmount / creditLimit * 100).toInt() else 0
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              androidx.compose.material3.LinearProgressIndicator(
+                progress = { (debtAmount / creditLimit).toFloat().coerceIn(0f, 1f) },
+                modifier = Modifier.weight(1f).height(8.dp),
+                color = when {
+                  usagePercent >= 90 -> Color(0xFFD32F2F)
+                  usagePercent >= 70 -> Color(0xFFF57C00)
+                  else -> Color(0xFF388E3C)
+                },
+              )
+              Spacer(modifier = Modifier.width(8.dp))
+              Text(
+                text = "$usagePercent%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+        }
+
+        isAsset -> {
+          // Debit card or asset: Show current balance
+          Text(
+            text = "当前余额",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Spacer(modifier = Modifier.height(4.dp))
+          Text(
+            text = "¥${formatAmount(account.currentBalance)}",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = if (account.currentBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFD32F2F),
+          )
+        }
+
+        else -> {
+          // Other account types: Just show balance
+          Text(
+            text = "余额",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Spacer(modifier = Modifier.height(4.dp))
+          Text(
+            text = "¥${formatAmount(account.currentBalance)}",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+          )
+        }
+      }
+    }
   }
+}
 
 /**
  * Format timestamp to date string (KMP-compatible)
@@ -669,6 +1070,9 @@ private fun isLeapYear(year: Int): Boolean = (year % 4 == 0 && year % 100 != 0) 
 fun FanOutFAB(
   isExpanded: Boolean,
   onExpandChange: (Boolean) -> Unit,
+  onAddExpense: () -> Unit,
+  onAddIncome: () -> Unit,
+  onAddTransfer: () -> Unit,
   onAddTransaction: () -> Unit,
   onCreateLoan: () -> Unit,
   modifier: Modifier = Modifier,
@@ -704,6 +1108,27 @@ fun FanOutFAB(
             icon = Icons.Default.AttachMoney,
             label = "添加交易",
             onClick = onAddTransaction,
+          )
+
+          // Add Transfer button
+          FabMenuItem(
+            icon = Icons.Default.SwapHoriz,
+            label = "添加转账",
+            onClick = onAddTransfer,
+          )
+
+          // Add Income button
+          FabMenuItem(
+            icon = Icons.Default.Add,
+            label = "添加收入",
+            onClick = onAddIncome,
+          )
+
+          // Add Expense button
+          FabMenuItem(
+            icon = Icons.Default.Remove,
+            label = "添加支出",
+            onClick = onAddExpense,
           )
         }
       }

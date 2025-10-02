@@ -23,8 +23,7 @@ import dev.tireless.abun.database.Transaction as DbTransaction
  */
 class TransactionRepository(
   private val database: AppDatabase,
-  private val accountRepository: AccountRepository,
-  private val categoryRepository: FinanceCategoryRepository
+  private val accountRepository: AccountRepository
 ) {
   private val queries = database.financeQueries
 
@@ -57,13 +56,6 @@ class TransactionRepository(
   }
 
   /**
-   * Get transactions by category
-   */
-  suspend fun getTransactionsByCategory(categoryId: Long): List<Transaction> = withContext(Dispatchers.IO) {
-    queries.getTransactionsByCategory(categoryId).executeAsList().map { it.toDomain() }
-  }
-
-  /**
    * Get transactions by date range
    */
   suspend fun getTransactionsByDateRange(
@@ -76,6 +68,10 @@ class TransactionRepository(
   /**
    * Create a new transaction with double-entry booking
    * Translates user-facing transaction types to debit/credit entries
+   *
+   * For EXPENSE: accountId = expense account (Food, Transport, etc.), toAccountId = payment source (Cash, Bank, etc.)
+   * For INCOME: accountId = revenue account (Salary, Investment, etc.), toAccountId = receiving account (Bank, Cash, etc.)
+   * For TRANSFER: accountId = source account, toAccountId = destination account
    */
   @OptIn(ExperimentalUuidApi::class)
   suspend fun createTransaction(input: CreateTransactionInput): Long = withContext(Dispatchers.IO) {
@@ -88,17 +84,14 @@ class TransactionRepository(
         // - Debit: Coffee Expense $100
         // - Credit: Cash $100
 
-        require(input.categoryId != null) { "categoryId is required for expenses" }
-        val category = categoryRepository.getCategoryById(input.categoryId)!!
-        val expenseAccount = accountRepository.getOrCreateExpenseAccount(input.categoryId, category.name)
+        require(input.toAccountId != null) { "toAccountId (payment source) is required for expenses" }
 
         queries.insertTransaction(
-          amount = input.amount,
-          debit_account_id = expenseAccount.id,
-          credit_account_id = input.accountId,
+          amount = input.amount.toStorageAmount(),
+          debit_account_id = input.accountId, // Expense account
+          credit_account_id = input.toAccountId, // Payment source (asset)
           transaction_date = input.transactionDate,
           transfer_group_id = null,
-          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -107,9 +100,7 @@ class TransactionRepository(
           updated_at = now
         )
 
-        // Update balances
-        accountRepository.adjustAccountBalance(expenseAccount.id, input.amount)  // Debit increases expense
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)   // Credit decreases asset
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.INCOME -> {
@@ -118,17 +109,14 @@ class TransactionRepository(
         // - Debit: Bank $1000
         // - Credit: Salary Revenue $1000
 
-        require(input.categoryId != null) { "categoryId is required for income" }
-        val category = categoryRepository.getCategoryById(input.categoryId)!!
-        val revenueAccount = accountRepository.getOrCreateRevenueAccount(input.categoryId, category.name)
+        require(input.toAccountId != null) { "toAccountId (receiving account) is required for income" }
 
         queries.insertTransaction(
-          amount = input.amount,
-          debit_account_id = input.accountId,
-          credit_account_id = revenueAccount.id,
+          amount = input.amount.toStorageAmount(),
+          debit_account_id = input.toAccountId, // Receiving account (asset)
+          credit_account_id = input.accountId, // Revenue account
           transaction_date = input.transactionDate,
           transfer_group_id = null,
-          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -137,9 +125,7 @@ class TransactionRepository(
           updated_at = now
         )
 
-        // Update balances
-        accountRepository.adjustAccountBalance(input.accountId, input.amount)    // Debit increases asset
-        accountRepository.adjustAccountBalance(revenueAccount.id, -input.amount) // Credit decreases revenue (negative revenue = income)
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.TRANSFER -> {
@@ -154,12 +140,11 @@ class TransactionRepository(
         val transferGroupId = Uuid.random().toString()
 
         queries.insertTransaction(
-          amount = input.amount,
+          amount = input.amount.toStorageAmount(),
           debit_account_id = input.toAccountId,
           credit_account_id = input.accountId,
           transaction_date = input.transactionDate,
           transfer_group_id = transferGroupId,
-          category_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -168,9 +153,7 @@ class TransactionRepository(
           updated_at = now
         )
 
-        // Update balances
-        accountRepository.adjustAccountBalance(input.toAccountId, input.amount)  // Debit increases destination
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)   // Credit decreases source
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
@@ -220,12 +203,11 @@ class TransactionRepository(
     // 2. Create initial loan transaction
     // Borrowing: Debit asset (receive money), Credit liability (owe money)
     queries.insertTransaction(
-      amount = input.amount,
+      amount = input.amount.toStorageAmount(),
       debit_account_id = input.accountId,
       credit_account_id = liabilityAccount.id,
       transaction_date = input.startDate,
       transfer_group_id = null,
-      category_id = null,
       payee = input.payee,
       member = null,
       notes = input.notes,
@@ -236,9 +218,7 @@ class TransactionRepository(
 
     val loanTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
 
-    // Update balances for initial loan
-    accountRepository.adjustAccountBalance(input.accountId, input.amount)       // Debit increases asset
-    accountRepository.adjustAccountBalance(liabilityAccount.id, -input.amount)  // Credit increases liability (negative balance = owe money)
+    // Balance is calculated on demand from transactions - no manual adjustment needed
 
     // 3. Create transaction group for the loan
     val groupId = transactionGroupRepository.createTransactionGroup(
@@ -265,12 +245,11 @@ class TransactionRepository(
 
       // Payment: Debit liability (reduce debt), Credit asset (pay money)
       queries.insertTransaction(
-        amount = payment.total,
+        amount = payment.total.toStorageAmount(),
         debit_account_id = liabilityAccount.id,
         credit_account_id = input.accountId,
         transaction_date = paymentDate,
         transfer_group_id = null,
-        category_id = null,
         payee = input.payee,
         member = null,
         notes = "Payment ${index + 1}/${input.loanMonths}: Principal ¥${payment.principal}, Interest ¥${payment.interest}",
@@ -368,8 +347,7 @@ class TransactionRepository(
     val oldDebitAccount = accountRepository.getAccountById(oldTransaction.debitAccountId)!!
     val oldCreditAccount = accountRepository.getAccountById(oldTransaction.creditAccountId)!!
 
-    accountRepository.adjustAccountBalance(oldTransaction.debitAccountId, -oldTransaction.amount)  // Reverse debit
-    accountRepository.adjustAccountBalance(oldTransaction.creditAccountId, oldTransaction.amount)  // Reverse credit
+    // Balance is calculated on demand from transactions - no need to reverse old balances
 
     // Delete paired transfer transaction if exists
     oldTransaction.transferGroupId?.let { groupId ->
@@ -384,17 +362,14 @@ class TransactionRepository(
     // Apply new transaction based on type
     when (input.type) {
       TransactionType.EXPENSE -> {
-        require(input.categoryId != null) { "categoryId is required for expenses" }
-        val category = categoryRepository.getCategoryById(input.categoryId)!!
-        val expenseAccount = accountRepository.getOrCreateExpenseAccount(input.categoryId, category.name)
+        require(input.toAccountId != null) { "toAccountId (payment source) is required for expenses" }
 
         queries.updateTransaction(
-          amount = input.amount,
-          debit_account_id = expenseAccount.id,
-          credit_account_id = input.accountId,
+          amount = input.amount.toStorageAmount(),
+          debit_account_id = input.accountId, // Expense account
+          credit_account_id = input.toAccountId, // Payment source (asset)
           transaction_date = input.transactionDate,
           transfer_group_id = null,
-          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -403,22 +378,18 @@ class TransactionRepository(
           id = input.id
         )
 
-        accountRepository.adjustAccountBalance(expenseAccount.id, input.amount)
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.INCOME -> {
-        require(input.categoryId != null) { "categoryId is required for income" }
-        val category = categoryRepository.getCategoryById(input.categoryId)!!
-        val revenueAccount = accountRepository.getOrCreateRevenueAccount(input.categoryId, category.name)
+        require(input.toAccountId != null) { "toAccountId (receiving account) is required for income" }
 
         queries.updateTransaction(
-          amount = input.amount,
-          debit_account_id = input.accountId,
-          credit_account_id = revenueAccount.id,
+          amount = input.amount.toStorageAmount(),
+          debit_account_id = input.toAccountId, // Receiving account (asset)
+          credit_account_id = input.accountId, // Revenue account
           transaction_date = input.transactionDate,
           transfer_group_id = null,
-          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -427,20 +398,18 @@ class TransactionRepository(
           id = input.id
         )
 
-        accountRepository.adjustAccountBalance(input.accountId, input.amount)
-        accountRepository.adjustAccountBalance(revenueAccount.id, -input.amount)
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.TRANSFER -> {
         require(input.toAccountId != null) { "toAccountId is required for transfers" }
 
         queries.updateTransaction(
-          amount = input.amount,
+          amount = input.amount.toStorageAmount(),
           debit_account_id = input.toAccountId,
           credit_account_id = input.accountId,
           transaction_date = input.transactionDate,
           transfer_group_id = oldTransaction.transferGroupId, // Keep existing group ID
-          category_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -449,8 +418,7 @@ class TransactionRepository(
           id = input.id
         )
 
-        accountRepository.adjustAccountBalance(input.toAccountId, input.amount)
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
+        // Balance is calculated on demand from transactions - no manual adjustment needed
       }
 
       TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
@@ -468,14 +436,13 @@ class TransactionRepository(
   }
 
   /**
-   * Delete a transaction and revert its effect on account balance
+   * Delete a transaction
+   * Balance is calculated on demand, so no manual reversal needed
    */
   suspend fun deleteTransaction(id: Long): Unit = withContext(Dispatchers.IO) {
     val transaction = getTransactionById(id) ?: return@withContext
 
-    // Revert account balance changes
-    accountRepository.adjustAccountBalance(transaction.debitAccountId, -transaction.amount)  // Reverse debit
-    accountRepository.adjustAccountBalance(transaction.creditAccountId, transaction.amount)  // Reverse credit
+    // Balance is calculated on demand from transactions - no need to reverse balances
 
     // Delete paired transfer transaction if exists
     transaction.transferGroupId?.let { groupId ->
@@ -505,48 +472,6 @@ class TransactionRepository(
   }
 
   /**
-   * Get expense summary by category for date range
-   */
-  suspend fun getExpenseSummary(
-    startDate: Long,
-    endDate: Long
-  ): Map<Long?, Double> = withContext(Dispatchers.IO) {
-    queries.getExpenseSumByCategory(startDate, endDate).executeAsList()
-      .associate { it.category_id to (it.total ?: 0.0) }
-  }
-
-  /**
-   * Get income summary by category for date range
-   */
-  suspend fun getIncomeSummary(
-    startDate: Long,
-    endDate: Long
-  ): Map<Long?, Double> = withContext(Dispatchers.IO) {
-    queries.getIncomeSumByCategory(startDate, endDate).executeAsList()
-      .associate { it.category_id to (it.total ?: 0.0) }
-  }
-
-  /**
-   * Get total expense for date range
-   */
-  suspend fun getTotalExpense(
-    startDate: Long,
-    endDate: Long
-  ): Double = withContext(Dispatchers.IO) {
-    queries.getExpenseByDateRange(startDate, endDate).executeAsOneOrNull()?.total ?: 0.0
-  }
-
-  /**
-   * Get total income for date range
-   */
-  suspend fun getTotalIncome(
-    startDate: Long,
-    endDate: Long
-  ): Double = withContext(Dispatchers.IO) {
-    queries.getIncomeByDateRange(startDate, endDate).executeAsOneOrNull()?.total ?: 0.0
-  }
-
-  /**
    * Get recent payees for autocomplete
    */
   suspend fun getRecentPayees(): List<String> = withContext(Dispatchers.IO) {
@@ -558,12 +483,11 @@ class TransactionRepository(
    */
   private fun DbTransaction.toDomain() = Transaction(
     id = id,
-    amount = amount,
+    amountStorage = amount,
     debitAccountId = debit_account_id,
     creditAccountId = credit_account_id,
     transactionDate = transaction_date,
     transferGroupId = transfer_group_id,
-    categoryId = category_id,
     payee = payee,
     member = member,
     notes = notes,
@@ -598,7 +522,7 @@ class TransactionRepository(
     name = name,
     groupType = TransactionGroupType.fromString(group_type),
     description = description,
-    totalAmount = total_amount,
+    totalAmountStorage = total_amount,
     status = GroupStatus.fromString(status),
     createdAt = created_at,
     updatedAt = updated_at
@@ -618,7 +542,6 @@ class TransactionRepository(
     val transaction = getTransactionById(id) ?: return@withContext null
     val debitAccount = accountRepository.getAccountById(transaction.debitAccountId) ?: return@withContext null
     val creditAccount = accountRepository.getAccountById(transaction.creditAccountId) ?: return@withContext null
-    val category = transaction.categoryId?.let { categoryRepository.getCategoryById(it) }
     val tags = getTagsForTransaction(id)
 
     // Get account types from cache
@@ -627,7 +550,6 @@ class TransactionRepository(
 
     TransactionWithDetails(
       transaction = transaction,
-      category = category,
       debitAccount = debitAccount,
       creditAccount = creditAccount,
       tags = tags,
@@ -645,7 +567,6 @@ class TransactionRepository(
       val creditAccount = accountRepository.getAccountById(transaction.creditAccountId)
       if (debitAccount == null || creditAccount == null) return@mapNotNull null
 
-      val category = transaction.categoryId?.let { categoryRepository.getCategoryById(it) }
       val tags = getTagsForTransaction(transaction.id)
 
       // Get account types from cache
@@ -654,7 +575,6 @@ class TransactionRepository(
 
       TransactionWithDetails(
         transaction = transaction,
-        category = category,
         debitAccount = debitAccount,
         creditAccount = creditAccount,
         tags = tags,

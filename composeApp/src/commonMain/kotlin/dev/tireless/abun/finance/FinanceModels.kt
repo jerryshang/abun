@@ -1,6 +1,25 @@
 package dev.tireless.abun.finance
 
 /**
+ * Account configuration flags (bitwise)
+ */
+object AccountConfig {
+  const val ACTIVE = 1 shl 0 // bit0: 1=active, 0=inactive
+  const val COUNTABLE = 1 shl 1 // bit1: 1=include in summary, 0=not in summary
+  const val VISIBLE = 1 shl 2 // bit2: 1=visible in UI, 0=invisible
+
+  fun isActive(config: Long): Boolean = (config and ACTIVE.toLong()) != 0L
+  fun isCountable(config: Long): Boolean = (config and COUNTABLE.toLong()) != 0L
+  fun isVisible(config: Long): Boolean = (config and VISIBLE.toLong()) != 0L
+
+  fun setActive(config: Long, active: Boolean): Long = if (active) config or ACTIVE.toLong() else config and ACTIVE.toLong().inv()
+
+  fun setCountable(config: Long, countable: Boolean): Long = if (countable) config or COUNTABLE.toLong() else config and COUNTABLE.toLong().inv()
+
+  fun setVisible(config: Long, visible: Boolean): Long = if (visible) config or VISIBLE.toLong() else config and VISIBLE.toLong().inv()
+}
+
+/**
  * Fixed IDs for the 5 fundamental accounts in the chart of accounts
  * These are initialized by SQLDelight and must never change
  */
@@ -16,11 +35,11 @@ object RootAccountIds {
  * Account Types for Chart of Accounts (Double-Entry Accounting)
  */
 enum class AccountType {
-  ASSET,      // Resources owned (cash, bank, investments)
-  LIABILITY,  // Debts owed (loans, credit cards)
-  EQUITY,     // Owner's stake
-  REVENUE,    // Income streams (salary, sales)
-  EXPENSE;    // Costs incurred (food, rent, utilities)
+  ASSET, // Resources owned (cash, bank, investments)
+  LIABILITY, // Debts owed (loans, credit cards)
+  EQUITY, // Owner's stake
+  REVENUE, // Income streams (salary, sales)
+  EXPENSE; // Costs incurred (food, rent, utilities)
 
   companion object {
     fun fromString(value: String): AccountType = values().find { it.name == value.uppercase() } ?: ASSET
@@ -50,18 +69,6 @@ enum class TransactionType {
 
   companion object {
     fun fromString(value: String): TransactionType = values().find { it.name == value.uppercase() } ?: EXPENSE
-  }
-}
-
-/**
- * Category Types (for categorizing transactions)
- */
-enum class CategoryType {
-  EXPENSE,
-  INCOME;
-
-  companion object {
-    fun fromString(value: String): CategoryType = values().find { it.name == value.uppercase() } ?: EXPENSE
   }
 }
 
@@ -136,27 +143,52 @@ enum class LoanType {
 /**
  * Domain model for Account (Chart of Accounts)
  * Account type is derived from hierarchy: traverse parent_id until reaching root account
+ * Balance is calculated on-demand from transactions, not stored
+ *
+ * Note: creditLimit is stored as Long (actual * 10000), -1 for non-liability accounts
  */
 data class Account(
   val id: Long,
   val name: String,
-  val parentId: Long? = null,           // NULL for root accounts (Asset, Liability, Equity, Revenue, Expense)
-  val initialBalance: Double,
-  val currentBalance: Double,
+  val parentId: Long? = null, // NULL for root accounts (Asset, Liability, Equity, Revenue, Expense)
   val currency: String = "CNY",
-  val isActive: Boolean = true,
-  val isVisibleInUi: Boolean = true,    // Hide accounting accounts from users
+  val config: Long = 7L, // Bitwise: bit0=active, bit1=countable, bit2=visible (default: all on)
   val iconName: String? = null,
   val colorHex: String? = null,
-  // Day of month for credit card billing (1-31)
+  // Day of month for credit card billing (1-28, compatible with Feb)
   val billDate: Int? = null,
-  // Day of month for payment due (1-31)
+  // Day of month for payment due (1-28, compatible with Feb)
   val paymentDate: Int? = null,
-  // Credit limit for credit cards
-  val creditLimit: Double? = null,
+  // Credit limit stored as Long (actual * 10000), -1 for non-liability accounts
+  val creditLimitStorage: Long = -1L,
   val createdAt: Long,
   val updatedAt: Long
 ) {
+  /**
+   * Check if account is active
+   */
+  val isActive: Boolean
+    get() = AccountConfig.isActive(config)
+
+  /**
+   * Check if account should be counted in summaries
+   */
+  val isCountable: Boolean
+    get() = AccountConfig.isCountable(config)
+
+  /**
+   * Check if account is visible in UI
+   */
+  val isVisibleInUi: Boolean
+    get() = AccountConfig.isVisible(config)
+
+  /**
+   * Get credit limit as display amount (Double)
+   * Returns null if not a liability account
+   */
+  val creditLimit: Double?
+    get() = if (creditLimitStorage < 0) null else creditLimitStorage.toDisplayAmount()
+
   /**
    * Check if this is a root account (one of the 5 fundamental account types)
    */
@@ -172,52 +204,76 @@ data class Account(
 }
 
 /**
- * Domain model for Finance Category
+ * Account with calculated balance
+ * Used for display purposes where balance is needed
  */
-data class FinanceCategory(
-  val id: Long,
-  val name: String,
-  val parentId: Long? = null,
-  val type: CategoryType,
-  val iconName: String? = null,
-  val colorHex: String? = null,
-  val isSystem: Boolean = false,
-  val createdAt: Long,
-  val updatedAt: Long
-)
+data class AccountWithBalance(
+  val account: Account,
+  val currentBalance: Double
+) {
+  // Delegate properties
+  val id get() = account.id
+  val name get() = account.name
+  val parentId get() = account.parentId
+  val currency get() = account.currency
+  val config get() = account.config
+  val isActive get() = account.isActive
+  val isCountable get() = account.isCountable
+  val isVisibleInUi get() = account.isVisibleInUi
+  val iconName get() = account.iconName
+  val colorHex get() = account.colorHex
+  val billDate get() = account.billDate
+  val paymentDate get() = account.paymentDate
+  val creditLimit get() = account.creditLimit
+  val createdAt get() = account.createdAt
+  val updatedAt get() = account.updatedAt
+}
 
 /**
  * Domain model for Transaction (Pure Double-Entry)
+ * Note: amount is stored as Long (actual * 10000) for precision
  */
 data class Transaction(
   val id: Long,
-  val amount: Double,                   // Always positive
-  val debitAccountId: Long,              // Account being debited
-  val creditAccountId: Long,             // Account being credited
+  val amountStorage: Long, // Always positive, stored as actual * 10000
+  val debitAccountId: Long, // Account being debited
+  val creditAccountId: Long, // Account being credited
   val transactionDate: Long,
-  val transferGroupId: String? = null,   // UUID to link transfer pairs (for UI grouping)
-  val categoryId: Long? = null,          // User-facing category (for display only)
+  val transferGroupId: String? = null, // UUID to link transfer pairs (for UI grouping)
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
   val state: TransactionState = TransactionState.CONFIRMED,
   val createdAt: Long,
   val updatedAt: Long
-)
+) {
+  /**
+   * Get amount as display value (Double)
+   */
+  val amount: Double
+    get() = amountStorage.toDisplayAmount()
+}
 
 /**
  * Domain model for Transaction Group
+ * Note: totalAmount is stored as Long (actual * 10000) for precision
  */
 data class TransactionGroup(
   val id: Long,
   val name: String,
   val groupType: TransactionGroupType,
   val description: String? = null,
-  val totalAmount: Double? = null,
+  val totalAmountStorage: Long? = null, // Stored as actual * 10000
   val status: GroupStatus = GroupStatus.ACTIVE,
   val createdAt: Long,
   val updatedAt: Long
-)
+) {
+  /**
+   * Get total amount as display value (Double)
+   */
+  val totalAmount: Double?
+    get() = totalAmountStorage?.toDisplayAmount()
+}
 
 /**
  * Loan Metadata (stored as JSON in transaction)
@@ -306,11 +362,10 @@ data class RecurringTransaction(
 )
 
 /**
- * Rich transaction model with category and account details
+ * Rich transaction model with account details
  */
 data class TransactionWithDetails(
   val transaction: Transaction,
-  val category: FinanceCategory? = null,
   val debitAccount: Account,
   val creditAccount: Account,
   val tags: List<FinanceTag> = emptyList(),
@@ -321,73 +376,51 @@ data class TransactionWithDetails(
   /**
    * Infer user-facing transaction type from debit/credit accounts
    */
-  fun inferType(): TransactionType {
-    return when {
-      // Transfer: Both accounts are assets
-      debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
-      // Expense: Debit is expense account
-      debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
-      // Income: Credit is revenue account
-      creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
-      // Loan-related
-      debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
-      else -> TransactionType.EXPENSE // Default fallback
-    }
+  fun inferType(): TransactionType = when {
+    // Transfer: Both accounts are assets
+    debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+    // Expense: Debit is expense account
+    debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+    // Income: Credit is revenue account
+    creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+    // Loan-related
+    debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+    else -> TransactionType.EXPENSE // Default fallback
   }
 
   /**
    * Get the primary user-facing account (asset account for expense/income, source for transfer)
    */
-  fun getPrimaryAccount(): Account {
-    return when (inferType()) {
-      TransactionType.EXPENSE -> creditAccount // The account paying (asset being credited)
-      TransactionType.INCOME -> debitAccount   // The account receiving (asset being debited)
-      TransactionType.TRANSFER -> creditAccount // Source account
-      else -> debitAccount
-    }
+  fun getPrimaryAccount(): Account = when (inferType()) {
+    TransactionType.EXPENSE -> creditAccount // The account paying (asset being credited)
+    TransactionType.INCOME -> debitAccount // The account receiving (asset being debited)
+    TransactionType.TRANSFER -> creditAccount // Source account
+    else -> debitAccount
   }
 
   /**
    * Get the secondary account (null for expense/income, destination for transfer)
    */
-  fun getSecondaryAccount(): Account? {
-    return when (inferType()) {
-      TransactionType.TRANSFER -> debitAccount // Destination account
-      else -> null
-    }
+  fun getSecondaryAccount(): Account? = when (inferType()) {
+    TransactionType.TRANSFER -> debitAccount // Destination account
+    else -> null
   }
 }
 
 /**
  * Helper extension to infer transaction type from account types
  */
-fun Transaction.inferTypeFromAccountTypes(debitAccountType: AccountType, creditAccountType: AccountType): TransactionType {
-  return when {
-    debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
-    debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
-    creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
-    debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
-    else -> TransactionType.EXPENSE
-  }
+fun Transaction.inferTypeFromAccountTypes(debitAccountType: AccountType, creditAccountType: AccountType): TransactionType = when {
+  debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+  debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+  creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+  debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+  else -> TransactionType.EXPENSE
 }
-
-/**
- * Category with subcategories
- */
-data class CategoryWithSubcategories(
-  val category: FinanceCategory,
-  val subcategories: List<FinanceCategory> = emptyList()
-)
 
 /**
  * Statistics data models
  */
-data class CategorySummary(
-  val category: FinanceCategory,
-  val total: Double,
-  val transactionCount: Int = 0
-)
-
 data class PeriodSummary(
   val totalIncome: Double,
   val totalExpense: Double,
@@ -402,41 +435,65 @@ data class PeriodSummary(
 data class CreateAccountInput(
   val name: String,
   val parentId: Long? = null,
-  val initialBalance: Double = 0.0,
   val currency: String = "CNY",
+  val isActive: Boolean = true,
+  val isCountable: Boolean = true,
   val isVisibleInUi: Boolean = true,
   val iconName: String? = null,
   val colorHex: String? = null,
   val billDate: Int? = null,
   val paymentDate: Int? = null,
+  // User provides as Double, will be converted to storage
   val creditLimit: Double? = null
-)
+) {
+  init {
+    require(billDate == null || billDate in 1..28) { "billDate must be between 1 and 28" }
+    require(paymentDate == null || paymentDate in 1..28) { "paymentDate must be between 1 and 28" }
+  }
+
+  /**
+   * Convert credit limit to storage format
+   * Returns -1 for non-liability accounts (null input)
+   */
+  fun getCreditLimitStorage(): Long = creditLimit?.toStorageAmount() ?: -1L
+}
 
 data class UpdateAccountInput(
   val id: Long,
   val name: String,
   val parentId: Long? = null,
-  val initialBalance: Double,
   val currency: String = "CNY",
   val isActive: Boolean = true,
+  val isCountable: Boolean = true,
   val isVisibleInUi: Boolean = true,
   val iconName: String? = null,
   val colorHex: String? = null,
   val billDate: Int? = null,
   val paymentDate: Int? = null,
+  // User provides as Double, will be converted to storage
   val creditLimit: Double? = null
-)
+) {
+  init {
+    require(billDate == null || billDate in 1..28) { "billDate must be between 1 and 28" }
+    require(paymentDate == null || paymentDate in 1..28) { "paymentDate must be between 1 and 28" }
+  }
+
+  /**
+   * Convert credit limit to storage format
+   * Returns -1 for non-liability accounts (null input)
+   */
+  fun getCreditLimitStorage(): Long = creditLimit?.toStorageAmount() ?: -1L
+}
 
 /**
  * User-facing transaction input (will be translated to debit/credit internally)
  */
 data class CreateTransactionInput(
   val amount: Double,
-  val type: TransactionType,         // UI-level type: EXPENSE, INCOME, TRANSFER
+  val type: TransactionType, // UI-level type: EXPENSE, INCOME, TRANSFER
   val transactionDate: Long,
-  val categoryId: Long? = null,      // For EXPENSE/INCOME only
-  val accountId: Long,               // Primary account
-  val toAccountId: Long? = null,     // For TRANSFER only
+  val accountId: Long, // Primary account
+  val toAccountId: Long? = null, // For TRANSFER only
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
@@ -446,23 +503,14 @@ data class CreateTransactionInput(
 data class UpdateTransactionInput(
   val id: Long,
   val amount: Double,
-  val type: TransactionType,         // UI-level type: EXPENSE, INCOME, TRANSFER
+  val type: TransactionType, // UI-level type: EXPENSE, INCOME, TRANSFER
   val transactionDate: Long,
-  val categoryId: Long? = null,
   val accountId: Long,
   val toAccountId: Long? = null,
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
   val tagIds: List<Long> = emptyList()
-)
-
-data class CreateCategoryInput(
-  val name: String,
-  val parentId: Long? = null,
-  val type: CategoryType,
-  val iconName: String? = null,
-  val colorHex: String? = null
 )
 
 data class CreateTagInput(

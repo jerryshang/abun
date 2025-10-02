@@ -87,7 +87,7 @@ fun FutureViewScreen(
     daysAhead = selectedDaysAhead,
     accountId = selectedAccountId
   )
-  */
+   */
 
   val predictedBalance = currentBalance // Simplified - trend calculation disabled
 
@@ -169,7 +169,7 @@ fun FutureViewScreen(
                     .fillMaxWidth()
                     .height(200.dp)
                 )
-                */
+                 */
                 Text(
                   text = "余额趋势图功能暂时禁用",
                   style = MaterialTheme.typography.bodyMedium,
@@ -363,7 +363,7 @@ private fun UpcomingTransactionCard(
           }
           Spacer(modifier = Modifier.size(8.dp))
           Text(
-            text = transaction.payee ?: transactionWithDetails.category?.name ?: transactionType.name,
+            text = transaction.payee ?: transactionType.name,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
           )

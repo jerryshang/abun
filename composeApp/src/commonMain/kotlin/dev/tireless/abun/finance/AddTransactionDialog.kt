@@ -20,11 +20,10 @@ import org.koin.compose.koinInject
 @Composable
 fun AddTransactionDialog(
   transactionWithDetails: TransactionWithDetails? = null,
-  accounts: List<Account>,
-  categories: List<FinanceCategory> = emptyList(),
+  accounts: List<AccountWithBalance>,
   onDismiss: () -> Unit,
   onConfirm: (CreateTransactionInput) -> Unit,
-  categoryViewModel: FinanceCategoryViewModel = koinInject()
+  accountRepository: AccountRepository = koinInject()
 ) {
   val transaction = transactionWithDetails?.transaction
   val inferredType = transactionWithDetails?.inferType()
@@ -35,15 +34,44 @@ fun AddTransactionDialog(
   var selectedType by remember { mutableStateOf(inferredType ?: TransactionType.EXPENSE) }
   var selectedAccountId by remember { mutableStateOf(primaryAccount?.id ?: accounts.firstOrNull()?.id ?: 0L) }
   var selectedToAccountId by remember { mutableStateOf<Long?>(secondaryAccount?.id) }
-  var selectedCategoryId by remember { mutableStateOf<Long?>(transaction?.categoryId) }
+  var selectedExpenseRevenueAccountId by remember { mutableStateOf<Long?>(null) }
   var payee by remember { mutableStateOf(transaction?.payee ?: "") }
   var member by remember { mutableStateOf(transaction?.member ?: "") }
   var notes by remember { mutableStateOf(transaction?.notes ?: "") }
 
-  val allCategories by categoryViewModel.categories.collectAsState()
+  // Filter accounts based on transaction type
+  val filteredAccounts = remember(selectedType, accounts) {
+    when (selectedType) {
+      TransactionType.EXPENSE -> {
+        // For expenses, show Asset/Liability accounts for payment source
+        accounts.filter { account ->
+          val parentId = account.parentId
+          parentId == RootAccountIds.ASSET || parentId == RootAccountIds.LIABILITY
+        }
+      }
+      TransactionType.INCOME -> {
+        // For income, show Asset accounts for receiving money
+        accounts.filter { account ->
+          account.parentId == RootAccountIds.ASSET
+        }
+      }
+      TransactionType.TRANSFER -> {
+        // For transfers, show only Asset accounts
+        accounts.filter { account ->
+          account.parentId == RootAccountIds.ASSET
+        }
+      }
+      else -> accounts
+    }
+  }
 
-  LaunchedEffect(Unit) {
-    categoryViewModel.loadCategories()
+  // Filter expense/revenue accounts for categorization
+  val expenseOrRevenueAccounts = remember(selectedType, accounts) {
+    when (selectedType) {
+      TransactionType.EXPENSE -> accounts.filter { it.parentId == RootAccountIds.EXPENSE }
+      TransactionType.INCOME -> accounts.filter { it.parentId == RootAccountIds.REVENUE }
+      else -> emptyList()
+    }
   }
 
   AlertDialog(
@@ -107,10 +135,19 @@ fun AddTransactionDialog(
           onExpandedChange = { expandedAccounts = it }
         ) {
           OutlinedTextField(
-            value = accounts.find { it.id == selectedAccountId }?.name ?: "",
+            value = filteredAccounts.find { it.id == selectedAccountId }?.name ?: "",
             onValueChange = {},
             readOnly = true,
-            label = { Text("账户") },
+            label = {
+              Text(
+                when (selectedType) {
+                  TransactionType.EXPENSE -> "支出账户"
+                  TransactionType.INCOME -> "收入账户"
+                  TransactionType.TRANSFER -> "源账户"
+                  else -> "账户"
+                }
+              )
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccounts) },
             modifier = Modifier
               .fillMaxWidth()
@@ -120,7 +157,7 @@ fun AddTransactionDialog(
             expanded = expandedAccounts,
             onDismissRequest = { expandedAccounts = false }
           ) {
-            accounts.forEach { account ->
+            filteredAccounts.forEach { account ->
               DropdownMenuItem(
                 text = { Text(account.name) },
                 onClick = {
@@ -140,7 +177,7 @@ fun AddTransactionDialog(
             onExpandedChange = { expandedToAccounts = it }
           ) {
             OutlinedTextField(
-              value = accounts.find { it.id == selectedToAccountId }?.name ?: "",
+              value = filteredAccounts.find { it.id == selectedToAccountId }?.name ?: "",
               onValueChange = {},
               readOnly = true,
               label = { Text("转入账户") },
@@ -153,7 +190,7 @@ fun AddTransactionDialog(
               expanded = expandedToAccounts,
               onDismissRequest = { expandedToAccounts = false }
             ) {
-              accounts.filter { it.id != selectedAccountId }.forEach { account ->
+              filteredAccounts.filter { it.id != selectedAccountId }.forEach { account ->
                 DropdownMenuItem(
                   text = { Text(account.name) },
                   onClick = {
@@ -166,52 +203,39 @@ fun AddTransactionDialog(
           }
         }
 
-        // Category Selector (not for transfers)
-        if (selectedType != TransactionType.TRANSFER) {
-          var expandedCategories by remember { mutableStateOf(false) }
-          val filteredCategories = allCategories.filter {
-            it.category.type.name == selectedType.name
-          }
+        // Expense/Revenue Account Selector (for categorization - not for transfers)
+        if (selectedType != TransactionType.TRANSFER && expenseOrRevenueAccounts.isNotEmpty()) {
+          var expandedExpenseRevenue by remember { mutableStateOf(false) }
 
           ExposedDropdownMenuBox(
-            expanded = expandedCategories,
-            onExpandedChange = { expandedCategories = it }
+            expanded = expandedExpenseRevenue,
+            onExpandedChange = { expandedExpenseRevenue = it }
           ) {
             OutlinedTextField(
-              value = filteredCategories
-                .flatMap { listOf(it.category) + it.subcategories }
-                .find { it.id == selectedCategoryId }?.name ?: "",
+              value = expenseOrRevenueAccounts.find { it.id == selectedExpenseRevenueAccountId }?.name ?: "",
               onValueChange = {},
               readOnly = true,
-              label = { Text("分类") },
-              trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategories) },
+              label = { Text(if (selectedType == TransactionType.EXPENSE) "支出类别" else "收入类别") },
+              trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExpenseRevenue) },
               modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+              supportingText = {
+                Text(if (selectedType == TransactionType.EXPENSE) "花在什么上面" else "收入来源")
+              }
             )
             ExposedDropdownMenu(
-              expanded = expandedCategories,
-              onDismissRequest = { expandedCategories = false }
+              expanded = expandedExpenseRevenue,
+              onDismissRequest = { expandedExpenseRevenue = false }
             ) {
-              filteredCategories.forEach { categoryWithSubs ->
-                // Parent category
+              expenseOrRevenueAccounts.forEach { account ->
                 DropdownMenuItem(
-                  text = { Text(categoryWithSubs.category.name) },
+                  text = { Text(account.name) },
                   onClick = {
-                    selectedCategoryId = categoryWithSubs.category.id
-                    expandedCategories = false
+                    selectedExpenseRevenueAccountId = account.id
+                    expandedExpenseRevenue = false
                   }
                 )
-                // Subcategories
-                categoryWithSubs.subcategories.forEach { subCategory ->
-                  DropdownMenuItem(
-                    text = { Text("  ${subCategory.name}") },
-                    onClick = {
-                      selectedCategoryId = subCategory.id
-                      expandedCategories = false
-                    }
-                  )
-                }
               }
             }
           }
@@ -248,14 +272,30 @@ fun AddTransactionDialog(
         onClick = {
           val amountValue = amount.toDoubleOrNull() ?: 0.0
           if (amountValue > 0) {
+            // Determine correct accountId and toAccountId based on type
+            val (finalAccountId, finalToAccountId) = when (selectedType) {
+              TransactionType.EXPENSE -> {
+                // For expenses: accountId = expense account, toAccountId = payment source
+                Pair(selectedExpenseRevenueAccountId ?: selectedAccountId, selectedAccountId)
+              }
+              TransactionType.INCOME -> {
+                // For income: accountId = revenue account, toAccountId = receiving account
+                Pair(selectedExpenseRevenueAccountId ?: selectedAccountId, selectedAccountId)
+              }
+              TransactionType.TRANSFER -> {
+                // For transfers: accountId = source, toAccountId = destination
+                Pair(selectedAccountId, selectedToAccountId)
+              }
+              else -> Pair(selectedAccountId, selectedToAccountId)
+            }
+
             onConfirm(
               CreateTransactionInput(
                 amount = amountValue,
                 type = selectedType,
                 transactionDate = 1704067200000L, // 2024-01-01 00:00:00 UTC - Simplified for KMP
-                categoryId = selectedCategoryId,
-                accountId = selectedAccountId,
-                toAccountId = selectedToAccountId,
+                accountId = finalAccountId,
+                toAccountId = finalToAccountId,
                 payee = payee.ifBlank { null },
                 member = member.ifBlank { null },
                 notes = notes.ifBlank { null },

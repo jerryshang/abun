@@ -28,7 +28,7 @@ class TransactionGroupRepository(
       name = name,
       group_type = groupType.name.lowercase(),
       description = description,
-      total_amount = totalAmount,
+      total_amount = totalAmount?.toStorageAmount(),
       status = GroupStatus.ACTIVE.name.lowercase(),
       created_at = now,
       updated_at = now
@@ -86,7 +86,7 @@ class TransactionGroupRepository(
     name = entity.name,
     groupType = TransactionGroupType.fromString(entity.group_type),
     description = entity.description,
-    totalAmount = entity.total_amount,
+    totalAmountStorage = entity.total_amount,
     status = GroupStatus.fromString(entity.status),
     createdAt = entity.created_at,
     updatedAt = entity.updated_at
@@ -94,12 +94,11 @@ class TransactionGroupRepository(
 
   private fun mapToTransaction(entity: dev.tireless.abun.database.Transaction): Transaction = Transaction(
     id = entity.id,
-    amount = entity.amount,
+    amountStorage = entity.amount,
     debitAccountId = entity.debit_account_id,
     creditAccountId = entity.credit_account_id,
     transactionDate = entity.transaction_date,
     transferGroupId = entity.transfer_group_id,
-    categoryId = entity.category_id,
     payee = entity.payee,
     member = entity.member,
     notes = entity.notes,

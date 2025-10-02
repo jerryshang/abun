@@ -118,7 +118,7 @@ fun AccountManagementScreen(
  */
 @Composable
 fun AccountCard(
-  account: Account,
+  account: AccountWithBalance,
   onEdit: () -> Unit,
   onDelete: () -> Unit
 ) {
@@ -198,8 +198,7 @@ fun AddAccountDialog(
         onClick = {
           onConfirm(
             CreateAccountInput(
-              name = name,
-              initialBalance = initialBalance.toDoubleOrNull() ?: 0.0
+              name = name
             )
           )
         },

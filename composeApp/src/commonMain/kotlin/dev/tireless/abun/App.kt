@@ -51,7 +51,6 @@ import dev.tireless.abun.time.TimeblockScreen
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import dev.tireless.abun.finance.CategoryManagementScreen as FinanceCategoryManagementScreen
 
 @Composable
 fun App() {
@@ -90,9 +89,6 @@ fun App() {
           // Finance sub-screens
           composable<Route.AccountManagement> {
             AccountManagementScreen(navController)
-          }
-          composable<Route.FinanceCategoryManagement> {
-            FinanceCategoryManagementScreen(navController)
           }
           composable<Route.PriceComparison> {
             PriceScreen(navController)
