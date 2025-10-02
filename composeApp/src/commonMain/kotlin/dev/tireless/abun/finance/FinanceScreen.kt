@@ -1,5 +1,11 @@
 package dev.tireless.abun.finance
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +25,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -32,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,7 +53,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
@@ -67,6 +78,8 @@ fun FinanceScreen(
 
   var showAddTransactionDialog by remember { mutableStateOf(false) }
   var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
+  var isFabExpanded by remember { mutableStateOf(false) }
+  var showAddLoanDialog by remember { mutableStateOf(false) }
 
   Scaffold(
     topBar = {
@@ -86,14 +99,19 @@ fun FinanceScreen(
       )
     },
     floatingActionButton = {
-      FloatingActionButton(
-        onClick = {
+      FanOutFAB(
+        isExpanded = isFabExpanded,
+        onExpandChange = { isFabExpanded = it },
+        onAddTransaction = {
           selectedTransaction = null
           showAddTransactionDialog = true
+          isFabExpanded = false
         },
-      ) {
-        Icon(Icons.Default.Add, "添加交易")
-      }
+        onCreateLoan = {
+          showAddLoanDialog = true
+          isFabExpanded = false
+        },
+      )
     },
   ) { paddingValues ->
     Box(
@@ -182,6 +200,19 @@ fun FinanceScreen(
         }
         showAddTransactionDialog = false
         selectedTransaction = null
+      },
+    )
+  }
+
+  if (showAddLoanDialog) {
+    AddLoanDialog(
+      accounts = accounts,
+      onDismiss = {
+        showAddLoanDialog = false
+      },
+      onConfirm = { input ->
+        viewModel.createLoan(input)
+        showAddLoanDialog = false
       },
     )
   }
@@ -365,8 +396,153 @@ fun formatAmount(amount: Double): String = "%.2f"
 
 /**
  * Format timestamp to date string (KMP-compatible)
+ * Uses simple calculation to convert milliseconds to date
  */
 fun formatDate(timestamp: Long): String {
-  // Simplified for KMP - returns a fixed date string
-  return "2024-01-01"
+  // Calculate days since epoch (Jan 1, 1970)
+  val days = timestamp / (24 * 60 * 60 * 1000)
+
+  // Simple approximation: calculate year, month, day
+  // This is simplified - doesn't account for leap years perfectly
+  var remainingDays = days
+  var year = 1970
+
+  // Rough year calculation
+  while (remainingDays >= 365) {
+    val daysInYear = if (isLeapYear(year)) 366 else 365
+    if (remainingDays >= daysInYear) {
+      remainingDays -= daysInYear
+      year++
+    } else {
+      break
+    }
+  }
+
+  // Month calculation
+  val daysInMonths = if (isLeapYear(year)) {
+    listOf(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  } else {
+    listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+  }
+
+  var month = 1
+  for (daysInMonth in daysInMonths) {
+    if (remainingDays >= daysInMonth) {
+      remainingDays -= daysInMonth
+      month++
+    } else {
+      break
+    }
+  }
+
+  val day = remainingDays + 1 // +1 because days are 1-indexed
+
+  return "$year-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}"
+}
+
+/**
+ * Check if a year is a leap year
+ */
+private fun isLeapYear(year: Int): Boolean = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+
+/**
+ * Fan-out FAB with multiple action buttons
+ */
+@Composable
+fun FanOutFAB(
+  isExpanded: Boolean,
+  onExpandChange: (Boolean) -> Unit,
+  onAddTransaction: () -> Unit,
+  onCreateLoan: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val rotation by animateFloatAsState(
+    targetValue = if (isExpanded) 45f else 0f,
+  )
+
+  Box(modifier = modifier) {
+    Column(
+      horizontalAlignment = Alignment.End,
+      verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      // Action buttons
+      AnimatedVisibility(
+        visible = isExpanded,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut(),
+      ) {
+        Column(
+          horizontalAlignment = Alignment.End,
+          verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+          // Create Loan button
+          FabMenuItem(
+            icon = Icons.Default.MoneyOff,
+            label = "创建借贷",
+            onClick = onCreateLoan,
+          )
+
+          // Add Transaction button
+          FabMenuItem(
+            icon = Icons.Default.AttachMoney,
+            label = "添加交易",
+            onClick = onAddTransaction,
+          )
+        }
+      }
+
+      // Main FAB
+      FloatingActionButton(
+        onClick = { onExpandChange(!isExpanded) },
+      ) {
+        Icon(
+          imageVector = Icons.Default.Add,
+          contentDescription = if (isExpanded) "关闭" else "添加",
+          modifier = Modifier.rotate(rotation),
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Individual FAB menu item
+ */
+@Composable
+fun FabMenuItem(
+  icon: ImageVector,
+  label: String,
+  onClick: () -> Unit,
+) {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(16.dp),
+  ) {
+    // Label
+    Card(
+      colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface,
+      ),
+      elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+      Text(
+        text = label,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        style = MaterialTheme.typography.bodyMedium,
+      )
+    }
+
+    // Small FAB
+    SmallFloatingActionButton(
+      onClick = onClick,
+      containerColor = MaterialTheme.colorScheme.secondaryContainer,
+      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+      Icon(
+        imageVector = icon,
+        contentDescription = label,
+        modifier = Modifier.size(20.dp),
+      )
+    }
+  }
 }

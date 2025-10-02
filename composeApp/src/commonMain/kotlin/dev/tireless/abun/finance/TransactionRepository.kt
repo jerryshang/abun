@@ -8,6 +8,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlin.math.pow
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import dev.tireless.abun.database.FinanceTransaction as DbTransaction
@@ -255,7 +256,8 @@ class TransactionRepository(
       }
 
       TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
-        // Skip balance update for loan transactions
+        // Loan transactions are managed separately via createLoan()
+        // Skip balance updates here
       }
     }
 
@@ -403,6 +405,214 @@ class TransactionRepository(
    */
   suspend fun removeTransactionFromGroup(transactionId: Long, groupId: Long): Unit = withContext(Dispatchers.IO) {
     queries.removeTransactionFromGroup(transactionId, groupId)
+  }
+
+  /**
+   * Calculate monthly payment for different loan types
+   */
+  private fun calculateLoanPayment(
+    loanAmount: Double,
+    annualRate: Double,
+    months: Int,
+    loanType: LoanType,
+    monthNumber: Int
+  ): Pair<Double, Double> {
+    val monthlyRate = annualRate / 12.0
+
+    return when (loanType) {
+      LoanType.EQUAL_INSTALLMENT -> {
+        // 等额本息: Equal monthly payment (principal + interest)
+        if (monthlyRate == 0.0) {
+          val principal = loanAmount / months
+          Pair(principal, 0.0)
+        } else {
+          val payment = loanAmount * monthlyRate * (1 + monthlyRate).pow(months.toDouble()) /
+            ((1 + monthlyRate).pow(months.toDouble()) - 1)
+          val remainingPrincipal = loanAmount * (
+            (1 + monthlyRate).pow(months.toDouble()) -
+              (1 + monthlyRate).pow((monthNumber - 1).toDouble())
+            ) /
+            ((1 + monthlyRate).pow(months.toDouble()) - 1)
+          val interest = remainingPrincipal * monthlyRate
+          val principal = payment - interest
+          Pair(principal, interest)
+        }
+      }
+
+      LoanType.EQUAL_PRINCIPAL -> {
+        // 等额本金: Equal principal, decreasing interest
+        val principal = loanAmount / months
+        val remainingPrincipal = loanAmount - (principal * (monthNumber - 1))
+        val interest = remainingPrincipal * monthlyRate
+        Pair(principal, interest)
+      }
+
+      LoanType.INTEREST_FIRST -> {
+        // 先息后本: Interest only until last month, then principal
+        if (monthNumber < months) {
+          Pair(0.0, loanAmount * monthlyRate)
+        } else {
+          Pair(loanAmount, loanAmount * monthlyRate)
+        }
+      }
+
+      LoanType.INTEREST_ONLY -> {
+        // 只还利息: Interest only, no principal repayment
+        Pair(0.0, loanAmount * monthlyRate)
+      }
+    }
+  }
+
+  /**
+   * Calculate payment date for a given month
+   * Adds approximately monthsToAdd months to startDate (uses 30.44 days per month average)
+   */
+  private fun calculatePaymentDate(startDate: Long, monthsToAdd: Int, paymentDay: Int): Long {
+    // Use average days per month (365.25 / 12 = 30.4375) for better accuracy
+    val avgDaysPerMonth = 30.4375
+    val daysToAdd = (monthsToAdd * avgDaysPerMonth).toLong()
+    val millisToAdd = daysToAdd * 24L * 60L * 60L * 1000L
+    return startDate + millisToAdd
+  }
+
+  /**
+   * Create a loan with initial transaction and future payment transactions
+   * This creates:
+   * 1. A transaction group to track the loan
+   * 2. The initial LOAN transaction (receiving the money)
+   * 3. Future LOAN_PAYMENT transactions (planned state)
+   * 4. Links all transactions to the group
+   */
+  suspend fun createLoan(
+    input: CreateLoanInput,
+    transactionGroupRepository: TransactionGroupRepository
+  ): Pair<Long, Long> = withContext(Dispatchers.IO) {
+    val now = currentTimeMillis()
+
+    // Get lender account name for display
+    val lenderAccount = accountRepository.getAccountById(input.lenderAccountId)
+    val lenderName = lenderAccount?.name ?: "Unknown"
+
+    // 1. Create transaction group for the loan
+    val groupId = transactionGroupRepository.createTransactionGroup(
+      name = "借贷 - $lenderName",
+      groupType = TransactionGroupType.LOAN,
+      description = "借贷金额: ¥${input.amount}, 期限: ${input.loanMonths}个月, 利率: ${(input.interestRate * 100)}%",
+      totalAmount = input.amount
+    )
+
+    // 2. Create the initial LOAN transaction (receiving the money)
+    // This increases the account balance as money comes in
+    queries.insertTransaction(
+      amount = input.amount,
+      type = TransactionType.LOAN.name.lowercase(),
+      transaction_date = input.startDate,
+      category_id = null,
+      account_id = input.accountId,
+      to_account_id = input.lenderAccountId,
+      transfer_group_id = null,
+      payee = lenderName,
+      member = null,
+      notes = buildLoanNotes(input, lenderName),
+      state = TransactionState.CONFIRMED.name.lowercase(),
+      created_at = now,
+      updated_at = now
+    )
+
+    val loanTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+
+    // 3. Update account balances
+    // Borrower account receives money (increase)
+    accountRepository.adjustAccountBalance(input.accountId, input.amount)
+    // Lender account gives money (decrease)
+    accountRepository.adjustAccountBalance(input.lenderAccountId, -input.amount)
+
+    // 4. Link loan transaction to group
+    queries.addTransactionToGroup(loanTransactionId, groupId)
+
+    // 5. Create future LOAN_PAYMENT transactions (in PLANNED state)
+    for (monthNumber in 1..input.loanMonths) {
+      val (principal, interest) = calculateLoanPayment(
+        loanAmount = input.amount,
+        annualRate = input.interestRate,
+        months = input.loanMonths,
+        loanType = input.loanType,
+        monthNumber = monthNumber
+      )
+
+      val paymentAmount = principal + interest
+      val paymentDate = calculatePaymentDate(input.startDate, monthNumber, input.paymentDay)
+
+      // Create payment transaction in PLANNED state
+      queries.insertTransaction(
+        amount = paymentAmount,
+        type = TransactionType.LOAN_PAYMENT.name.lowercase(),
+        transaction_date = paymentDate,
+        category_id = null,
+        account_id = input.accountId,
+        to_account_id = input.lenderAccountId,
+        transfer_group_id = null,
+        payee = lenderName,
+        member = null,
+        notes = buildPaymentNotes(monthNumber, input.loanMonths, principal, interest),
+        state = TransactionState.PLANNED.name.lowercase(),
+        created_at = now,
+        updated_at = now
+      )
+
+      val paymentTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+
+      // Link payment transaction to group
+      queries.addTransactionToGroup(paymentTransactionId, groupId)
+    }
+
+    Pair(loanTransactionId, groupId)
+  }
+
+  /**
+   * Build loan notes with metadata for future processing
+   */
+  private fun buildLoanNotes(input: CreateLoanInput, lenderName: String): String {
+    val loanTypeText = when (input.loanType) {
+      LoanType.INTEREST_FIRST -> "先息后本"
+      LoanType.EQUAL_PRINCIPAL -> "等额本金"
+      LoanType.EQUAL_INSTALLMENT -> "等额本息"
+      LoanType.INTEREST_ONLY -> "只还利息"
+    }
+
+    val baseNotes = "借贷类型: $loanTypeText | 年利率: ${(input.interestRate * 100)}% | 期限: ${input.loanMonths}个月 | 还款日: 每月${input.paymentDay}日"
+
+    return if (input.notes != null) {
+      "$baseNotes | ${input.notes}"
+    } else {
+      baseNotes
+    }
+  }
+
+  /**
+   * Build payment notes for loan payment transactions
+   */
+  private fun buildPaymentNotes(
+    monthNumber: Int,
+    totalMonths: Int,
+    principal: Double,
+    interest: Double
+  ): String {
+    val formattedPrincipal = "%.2f".replace("%.", principal.toString().substringBefore('.') + ".")
+      .let { pattern ->
+        val intPart = principal.toLong()
+        val decPart = ((principal - intPart) * 100).toLong().toString().padStart(2, '0')
+        "$intPart.$decPart"
+      }
+
+    val formattedInterest = "%.2f".replace("%.", interest.toString().substringBefore('.') + ".")
+      .let { pattern ->
+        val intPart = interest.toLong()
+        val decPart = ((interest - intPart) * 100).toLong().toString().padStart(2, '0')
+        "$intPart.$decPart"
+      }
+
+    return "第$monthNumber/${totalMonths}期 | 本金: ¥$formattedPrincipal | 利息: ¥$formattedInterest"
   }
 
   /**

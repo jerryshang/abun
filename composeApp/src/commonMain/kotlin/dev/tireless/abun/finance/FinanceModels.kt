@@ -376,8 +376,8 @@ data class CreateTagInput(
 
 data class CreateLoanInput(
   val amount: Double,
-  val accountId: Long, // Borrow from this account
-  val payee: String, // Lender name
+  val accountId: Long, // Borrower account (where money goes)
+  val lenderAccountId: Long, // Lender account (who is lending)
   val loanType: LoanType,
   val interestRate: Double, // Annual interest rate (e.g., 0.05 for 5%)
   val loanMonths: Int,

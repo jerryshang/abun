@@ -14,7 +14,8 @@ class TransactionViewModel(
   private val transactionRepository: TransactionRepository,
   private val accountRepository: AccountRepository,
   private val categoryRepository: FinanceCategoryRepository,
-  private val tagRepository: FinanceTagRepository
+  private val tagRepository: FinanceTagRepository,
+  private val transactionGroupRepository: TransactionGroupRepository
 ) : ViewModel() {
 
   private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
@@ -104,6 +105,21 @@ class TransactionViewModel(
         refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to delete transaction: ${e.message}"
+      } finally {
+        _isLoading.value = false
+      }
+    }
+  }
+
+  fun createLoan(input: CreateLoanInput) {
+    viewModelScope.launch {
+      try {
+        _isLoading.value = true
+        transactionRepository.createLoan(input, transactionGroupRepository)
+        refreshTransactions()
+        refreshAccounts()
+      } catch (e: Exception) {
+        _error.value = "Failed to create loan: ${e.message}"
       } finally {
         _isLoading.value = false
       }
