@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -70,6 +71,8 @@ fun FinanceScreen(
   onNavigateToAccounts: () -> Unit = {},
   onNavigateToCategories: () -> Unit = {},
   onNavigateToPriceComparison: () -> Unit = {},
+  onNavigateToFutureView: () -> Unit = {},
+  onNavigateToAccountDetails: (Long?) -> Unit = {},
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -80,6 +83,10 @@ fun FinanceScreen(
   var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAddLoanDialog by remember { mutableStateOf(false) }
+
+  // Calculate predicted balance (placeholder logic)
+  val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
+  val predictedBalance = totalBalance + 4500.0 // TODO: Calculate based on planned transactions
 
   Scaffold(
     topBar = {
@@ -125,29 +132,62 @@ fun FinanceScreen(
           modifier = Modifier.align(Alignment.Center),
         )
       } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-          // Summary Card
-          AccountsSummaryCard(accounts)
+        LazyColumn(
+          modifier = Modifier.fillMaxSize(),
+          verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+          // Total Assets Summary with Financial Prediction
+          item {
+            AccountsSummaryCard(
+              accounts = accounts,
+              predictedBalance = predictedBalance,
+              daysAhead = 30,
+              onViewFuture = onNavigateToFutureView,
+            )
+          }
 
-          // Transaction List
-          LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-          ) {
-            items(transactions) { transaction ->
-              TransactionCard(
-                transaction = transaction,
-                accounts = accounts,
-                onClick = {
-                  selectedTransaction = transaction
-                  showAddTransactionDialog = true
-                },
-                onDelete = {
-                  viewModel.deleteTransaction(transaction.id)
-                },
+          // Account List Section (Collapsible)
+          item {
+            AccountListSection(
+              accounts = accounts,
+              onManageAccounts = onNavigateToAccounts,
+              onAccountClick = { accountId -> onNavigateToAccountDetails(accountId) },
+            )
+          }
+
+          // Recent Transactions Section
+          item {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = "最近交易 (Recent Transactions)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
               )
+              TextButton(onClick = { onNavigateToAccountDetails(null) }) {
+                Text("查看全部 >")
+              }
             }
+          }
+
+          // Recent Transaction Items (limited to 10)
+          items(transactions.take(10)) { transaction ->
+            TransactionCard(
+              transaction = transaction,
+              accounts = accounts,
+              onClick = {
+                selectedTransaction = transaction
+                showAddTransactionDialog = true
+              },
+              onDelete = {
+                viewModel.deleteTransaction(transaction.id)
+              },
+            )
           }
         }
       }
@@ -219,11 +259,117 @@ fun FinanceScreen(
 }
 
 /**
- * Accounts summary card showing total balance
+ * Account list section showing all accounts (collapsible)
  */
 @Composable
-fun AccountsSummaryCard(accounts: List<Account>) {
+fun AccountListSection(
+  accounts: List<Account>,
+  onManageAccounts: () -> Unit,
+  onAccountClick: (Long) -> Unit,
+) {
+  var isExpanded by remember { mutableStateOf(false) }
+  val rotation by animateFloatAsState(
+    targetValue = if (isExpanded) 180f else 0f,
+  )
+
+  Column(
+    modifier =
+    Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp),
+  ) {
+    // Section header with expand/collapse button
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .clickable { isExpanded = !isExpanded },
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          imageVector = Icons.Default.KeyboardArrowDown,
+          contentDescription = if (isExpanded) "收起" else "展开",
+          modifier = Modifier
+            .size(20.dp)
+            .rotate(rotation),
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+          text = "账户列表 (Accounts)",
+          style = MaterialTheme.typography.titleMedium,
+          fontWeight = FontWeight.SemiBold,
+        )
+      }
+      TextButton(onClick = onManageAccounts) {
+        Text("管理 >")
+      }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Collapsible account items
+    AnimatedVisibility(
+      visible = isExpanded,
+      enter = expandVertically() + fadeIn(),
+      exit = shrinkVertically() + fadeOut(),
+    ) {
+      Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+      ) {
+        Column {
+          accounts.filter { it.isActive }.forEach { account ->
+            Row(
+              modifier =
+              Modifier
+                .fillMaxWidth()
+                .clickable { onAccountClick(account.id) }
+                .padding(16.dp),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = account.name,
+                style = MaterialTheme.typography.bodyLarge,
+              )
+              Text(
+                text = "${if (account.currentBalance < 0) "-" else ""}¥${formatAmount(account.currentBalance.coerceAtLeast(0.0))}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color =
+                if (account.currentBalance < 0) {
+                  Color(0xFFD32F2F)
+                } else {
+                  MaterialTheme.colorScheme.onSurface
+                },
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Accounts summary card showing total balance with visibility toggle and prediction
+ */
+@Composable
+fun AccountsSummaryCard(
+  accounts: List<Account>,
+  predictedBalance: Double,
+  daysAhead: Int = 30,
+  onViewFuture: () -> Unit,
+) {
+  var isBalanceVisible by remember { mutableStateOf(true) }
   val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
+
+  // TODO: Calculate month-over-month change from historical data
+  val monthlyChange = 2500.0 // Placeholder
+  val isPositiveChange = monthlyChange >= 0
 
   Card(
     modifier =
@@ -236,38 +382,103 @@ fun AccountsSummaryCard(accounts: List<Account>) {
       modifier =
       Modifier
         .fillMaxWidth()
-        .padding(16.dp),
+        .padding(20.dp),
     ) {
-      Text(
-        text = "总资产",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-      Spacer(modifier = Modifier.height(4.dp))
-      Text(
-        text = "¥${formatAmount(totalBalance)}",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-      )
-      Spacer(modifier = Modifier.height(16.dp))
-
+      // Header with toggle
       Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
       ) {
-        accounts.take(3).forEach { account ->
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+          text = "总资产 (Total Assets)",
+          style = MaterialTheme.typography.titleMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        IconButton(
+          onClick = { isBalanceVisible = !isBalanceVisible },
+          modifier = Modifier.size(32.dp),
+        ) {
+          Text(
+            text = if (isBalanceVisible) "👁️" else "👁️‍🗨️",
+            style = MaterialTheme.typography.titleMedium,
+          )
+        }
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      // Large balance display
+      Text(
+        text = if (isBalanceVisible) "¥${formatAmount(totalBalance)}" else "¥****.**",
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+
+      // Month-over-month comparison
+      if (isBalanceVisible) {
+        Text(
+          text = "(较上月 ${if (isPositiveChange) "+" else ""}¥${formatAmount(monthlyChange)})",
+          style = MaterialTheme.typography.bodySmall,
+          color = if (isPositiveChange) Color(0xFF388E3C) else Color(0xFFD32F2F),
+        )
+      }
+
+      Spacer(modifier = Modifier.height(16.dp))
+
+      // Divider
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(1.dp)
+          .background(MaterialTheme.colorScheme.outlineVariant)
+      )
+
+      Spacer(modifier = Modifier.height(16.dp))
+
+      // Financial Prediction Section
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable(onClick = onViewFuture),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Column(modifier = Modifier.weight(1f)) {
+          Text(
+            text = "财务预测",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Spacer(modifier = Modifier.height(4.dp))
+          if (isBalanceVisible) {
             Text(
-              text = account.name,
-              style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-              text = "¥${formatAmount(account.currentBalance)}",
+              text = "${daysAhead}日后预计: ¥${formatAmount(predictedBalance)}",
               style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.Medium,
+              color = if (predictedBalance >= totalBalance) {
+                Color(0xFF388E3C)
+              } else {
+                Color(0xFFF57C00)
+              }
+            )
+          } else {
+            Text(
+              text = "${daysAhead}日后预计: ¥****.**",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         }
+        Icon(
+          imageVector = Icons.Default.Add,
+          contentDescription = "查看未来",
+          modifier = Modifier.size(16.dp).rotate(90f),
+          tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
       }
     }
   }
@@ -297,6 +508,7 @@ fun TransactionCard(
     modifier =
     Modifier
       .fillMaxWidth()
+      .padding(horizontal = 16.dp)
       .clickable(onClick = onClick),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
   ) {

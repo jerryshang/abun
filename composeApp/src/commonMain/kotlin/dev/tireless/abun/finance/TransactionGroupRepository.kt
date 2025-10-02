@@ -84,7 +84,7 @@ class TransactionGroupRepository(private val database: AppDatabase) {
     updatedAt = entity.updated_at
   )
 
-  private fun mapToTransaction(entity: dev.tireless.abun.database.FinanceTransaction): Transaction = Transaction(
+  private fun mapToTransaction(entity: dev.tireless.abun.database.Transaction): Transaction = Transaction(
     id = entity.id,
     amount = entity.amount,
     type = TransactionType.fromString(entity.type),

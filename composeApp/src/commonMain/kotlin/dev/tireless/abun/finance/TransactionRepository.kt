@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.pow
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import dev.tireless.abun.database.FinanceTransaction as DbTransaction
+import dev.tireless.abun.database.Transaction as DbTransaction
 
 /**
  * Repository for managing financial transactions

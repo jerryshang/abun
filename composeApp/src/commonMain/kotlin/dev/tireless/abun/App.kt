@@ -37,6 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.FinanceScreen
+import dev.tireless.abun.finance.AccountDetailsScreen
+import dev.tireless.abun.finance.FutureViewScreen
 import dev.tireless.abun.material.PriceScreen
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.time.CategoryManagementScreen
@@ -53,6 +55,8 @@ fun App() {
     var showAccountManagement by remember { mutableStateOf(false) }
     var showFinanceCategoryManagement by remember { mutableStateOf(false) }
     var showPriceComparison by remember { mutableStateOf(false) }
+    var showFutureView by remember { mutableStateOf(false) }
+    var showAccountDetails by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
       bottomBar = {
@@ -106,13 +110,26 @@ fun App() {
               onNavigateBack = { showPriceComparison = false }
             )
           }
+          showFutureView -> {
+            FutureViewScreen(
+              onNavigateBack = { showFutureView = false }
+            )
+          }
+          showAccountDetails != null -> {
+            AccountDetailsScreen(
+              accountId = showAccountDetails,
+              onNavigateBack = { showAccountDetails = null }
+            )
+          }
           else -> {
             when (selectedTab) {
               0 -> HomeScreen()
               1 -> FinanceScreen(
                 onNavigateToAccounts = { showAccountManagement = true },
                 onNavigateToCategories = { showFinanceCategoryManagement = true },
-                onNavigateToPriceComparison = { showPriceComparison = true }
+                onNavigateToPriceComparison = { showPriceComparison = true },
+                onNavigateToFutureView = { showFutureView = true },
+                onNavigateToAccountDetails = { accountId -> showAccountDetails = accountId }
               )
               2 -> TimeblockScreen()
               3 -> SettingsScreen()

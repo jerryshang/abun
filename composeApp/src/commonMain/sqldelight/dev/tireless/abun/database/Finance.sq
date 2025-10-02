@@ -43,7 +43,7 @@ CREATE TABLE TransactionGroup (
 );
 
 -- Transactions Table (Double-Entry Booking)
-CREATE TABLE FinanceTransaction (
+CREATE TABLE `Transaction` (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     amount REAL NOT NULL, -- Always positive, direction determined by type
     type TEXT NOT NULL, -- 'expense', 'income', 'transfer', 'loan', 'loan_payment'
@@ -68,7 +68,7 @@ CREATE TABLE TransactionGroupMember (
     transaction_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
     PRIMARY KEY (transaction_id, group_id),
-    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE,
+    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
 );
 
@@ -85,7 +85,7 @@ CREATE TABLE TransactionTag (
     transaction_id INTEGER NOT NULL,
     tag_id INTEGER NOT NULL,
     PRIMARY KEY (transaction_id, tag_id),
-    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE,
+    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES FinanceTag(id) ON DELETE CASCADE
 );
 
@@ -96,7 +96,7 @@ CREATE TABLE TransactionAttachment (
     file_path TEXT NOT NULL,
     file_type TEXT NOT NULL, -- 'image', 'pdf', etc.
     created_at INTEGER NOT NULL,
-    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE
+    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE
 );
 
 -- Linked Items Table (Cross-module linking)
@@ -106,7 +106,7 @@ CREATE TABLE TransactionLinkedItem (
     linked_item_id INTEGER NOT NULL,
     linked_item_type TEXT NOT NULL, -- 'note', 'task', 'timeblock', 'event', etc.
     created_at INTEGER NOT NULL,
-    FOREIGN KEY (transaction_id) REFERENCES FinanceTransaction(id) ON DELETE CASCADE
+    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE
 );
 
 -- Transaction Templates
@@ -232,60 +232,60 @@ WHERE m.transaction_id = ?
 ORDER BY g.created_at;
 
 getTransactionsByGroup:
-SELECT t.* FROM FinanceTransaction t
+SELECT t.* FROM `Transaction` t
 INNER JOIN TransactionGroupMember m ON t.id = m.transaction_id
 WHERE m.group_id = ?
 ORDER BY t.transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO FinanceTransaction (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, payee, member, notes, state, created_at, updated_at)
+INSERT INTO `Transaction` (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, payee, member, notes, state, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
-UPDATE FinanceTransaction
+UPDATE `Transaction`
 SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:
-DELETE FROM FinanceTransaction WHERE id = ?;
+DELETE FROM `Transaction` WHERE id = ?;
 
 getTransactionById:
-SELECT * FROM FinanceTransaction WHERE id = ?;
+SELECT * FROM `Transaction` WHERE id = ?;
 
 getAllTransactions:
-SELECT * FROM FinanceTransaction ORDER BY transaction_date DESC, created_at DESC;
+SELECT * FROM `Transaction` ORDER BY transaction_date DESC, created_at DESC;
 
 getTransactionsByAccount:
-SELECT * FROM FinanceTransaction
+SELECT * FROM `Transaction`
 WHERE account_id = ? OR to_account_id = ?
 ORDER BY transaction_date DESC;
 
 getTransactionsByCategory:
-SELECT * FROM FinanceTransaction WHERE category_id = ? ORDER BY transaction_date DESC;
+SELECT * FROM `Transaction` WHERE category_id = ? ORDER BY transaction_date DESC;
 
 getTransactionsByDateRange:
-SELECT * FROM FinanceTransaction
+SELECT * FROM `Transaction`
 WHERE transaction_date BETWEEN ? AND ?
 ORDER BY transaction_date DESC;
 
 getTransactionsByType:
-SELECT * FROM FinanceTransaction WHERE type = ? ORDER BY transaction_date DESC;
+SELECT * FROM `Transaction` WHERE type = ? ORDER BY transaction_date DESC;
 
 getTransferPair:
-SELECT * FROM FinanceTransaction WHERE transfer_group_id = ? ORDER BY created_at;
+SELECT * FROM `Transaction` WHERE transfer_group_id = ? ORDER BY created_at;
 
 getPlannedTransactions:
-SELECT * FROM FinanceTransaction WHERE state = 'planned' ORDER BY transaction_date;
+SELECT * FROM `Transaction` WHERE state = 'planned' ORDER BY transaction_date;
 
 getEstimatedTransactions:
-SELECT * FROM FinanceTransaction WHERE state = 'estimated' ORDER BY transaction_date;
+SELECT * FROM `Transaction` WHERE state = 'estimated' ORDER BY transaction_date;
 
 getTransactionsByState:
-SELECT * FROM FinanceTransaction WHERE state = ? ORDER BY transaction_date;
+SELECT * FROM `Transaction` WHERE state = ? ORDER BY transaction_date;
 
 updateTransactionState:
-UPDATE FinanceTransaction SET state = ?, updated_at = ? WHERE id = ?;
+UPDATE `Transaction` SET state = ?, updated_at = ? WHERE id = ?;
 
 -- Queries for Tags
 insertFinanceTag:
@@ -321,7 +321,7 @@ WHERE tt.transaction_id = ?
 ORDER BY t.name;
 
 getTransactionsByTag:
-SELECT ft.* FROM FinanceTransaction ft
+SELECT ft.* FROM `Transaction` ft
 INNER JOIN TransactionTag tt ON ft.id = tt.transaction_id
 WHERE tt.tag_id = ?
 ORDER BY ft.transaction_date DESC;
@@ -349,7 +349,7 @@ getLinkedItemsForTransaction:
 SELECT * FROM TransactionLinkedItem WHERE transaction_id = ? ORDER BY created_at;
 
 getTransactionsByLinkedItem:
-SELECT ft.* FROM FinanceTransaction ft
+SELECT ft.* FROM `Transaction` ft
 INNER JOIN TransactionLinkedItem tli ON ft.id = tli.transaction_id
 WHERE tli.linked_item_id = ? AND tli.linked_item_type = ?
 ORDER BY ft.transaction_date DESC;
@@ -407,28 +407,28 @@ SELECT SUM(current_balance) AS total FROM Account WHERE is_active = 1;
 
 getExpenseSumByCategory:
 SELECT category_id, SUM(amount) AS total
-FROM FinanceTransaction
+FROM `Transaction`
 WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?
 GROUP BY category_id;
 
 getIncomeSumByCategory:
 SELECT category_id, SUM(amount) AS total
-FROM FinanceTransaction
+FROM `Transaction`
 WHERE type = 'income' AND transaction_date BETWEEN ? AND ?
 GROUP BY category_id;
 
 getExpenseByDateRange:
 SELECT SUM(amount) AS total
-FROM FinanceTransaction
+FROM `Transaction`
 WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?;
 
 getIncomeByDateRange:
 SELECT SUM(amount) AS total
-FROM FinanceTransaction
+FROM `Transaction`
 WHERE type = 'income' AND transaction_date BETWEEN ? AND ?;
 
 getRecentPayees:
-SELECT DISTINCT payee FROM FinanceTransaction
+SELECT DISTINCT payee FROM `Transaction`
 WHERE payee IS NOT NULL AND payee != ''
 ORDER BY transaction_date DESC
 LIMIT 20;
