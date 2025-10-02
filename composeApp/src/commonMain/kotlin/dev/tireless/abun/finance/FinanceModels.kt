@@ -1,18 +1,40 @@
 package dev.tireless.abun.finance
 
 /**
- * Account Types for financial accounts
+ * Fixed IDs for the 5 fundamental accounts in the chart of accounts
+ * These are initialized by SQLDelight and must never change
+ */
+object RootAccountIds {
+  const val ASSET = 1L
+  const val LIABILITY = 2L
+  const val EQUITY = 3L
+  const val REVENUE = 4L
+  const val EXPENSE = 5L
+}
+
+/**
+ * Account Types for Chart of Accounts (Double-Entry Accounting)
  */
 enum class AccountType {
-  CASH,
-  DEBIT_CARD,
-  CREDIT_CARD,
-  E_WALLET,
-  INVESTMENT,
-  DEBT;
+  ASSET,      // Resources owned (cash, bank, investments)
+  LIABILITY,  // Debts owed (loans, credit cards)
+  EQUITY,     // Owner's stake
+  REVENUE,    // Income streams (salary, sales)
+  EXPENSE;    // Costs incurred (food, rent, utilities)
 
   companion object {
-    fun fromString(value: String): AccountType = values().find { it.name == value.uppercase() } ?: CASH
+    fun fromString(value: String): AccountType = values().find { it.name == value.uppercase() } ?: ASSET
+
+    /**
+     * Get the root account ID for this account type
+     */
+    fun AccountType.getRootId(): Long = when (this) {
+      ASSET -> RootAccountIds.ASSET
+      LIABILITY -> RootAccountIds.LIABILITY
+      EQUITY -> RootAccountIds.EQUITY
+      REVENUE -> RootAccountIds.REVENUE
+      EXPENSE -> RootAccountIds.EXPENSE
+    }
   }
 }
 
@@ -112,16 +134,18 @@ enum class LoanType {
 }
 
 /**
- * Domain model for Account
+ * Domain model for Account (Chart of Accounts)
+ * Account type is derived from hierarchy: traverse parent_id until reaching root account
  */
 data class Account(
   val id: Long,
   val name: String,
-  val type: AccountType,
+  val parentId: Long? = null,           // NULL for root accounts (Asset, Liability, Equity, Revenue, Expense)
   val initialBalance: Double,
   val currentBalance: Double,
   val currency: String = "CNY",
   val isActive: Boolean = true,
+  val isVisibleInUi: Boolean = true,    // Hide accounting accounts from users
   val iconName: String? = null,
   val colorHex: String? = null,
   // Day of month for credit card billing (1-31)
@@ -132,7 +156,20 @@ data class Account(
   val creditLimit: Double? = null,
   val createdAt: Long,
   val updatedAt: Long
-)
+) {
+  /**
+   * Check if this is a root account (one of the 5 fundamental account types)
+   */
+  fun isRootAccount(): Boolean = parentId == null
+
+  /**
+   * Get the account type from the name if this is a root account
+   */
+  fun getRootAccountType(): AccountType? {
+    if (!isRootAccount()) return null
+    return AccountType.fromString(name)
+  }
+}
 
 /**
  * Domain model for Finance Category
@@ -150,17 +187,16 @@ data class FinanceCategory(
 )
 
 /**
- * Domain model for Transaction
+ * Domain model for Transaction (Pure Double-Entry)
  */
 data class Transaction(
   val id: Long,
-  val amount: Double,
-  val type: TransactionType,
+  val amount: Double,                   // Always positive
+  val debitAccountId: Long,              // Account being debited
+  val creditAccountId: Long,             // Account being credited
   val transactionDate: Long,
-  val categoryId: Long? = null,
-  val accountId: Long,
-  val toAccountId: Long? = null,
-  val transferGroupId: String? = null,
+  val transferGroupId: String? = null,   // UUID to link transfer pairs (for UI grouping)
+  val categoryId: Long? = null,          // User-facing category (for display only)
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
@@ -275,10 +311,65 @@ data class RecurringTransaction(
 data class TransactionWithDetails(
   val transaction: Transaction,
   val category: FinanceCategory? = null,
-  val account: Account,
-  val toAccount: Account? = null,
-  val tags: List<FinanceTag> = emptyList()
-)
+  val debitAccount: Account,
+  val creditAccount: Account,
+  val tags: List<FinanceTag> = emptyList(),
+  // Cached account types for performance (computed from hierarchy in repository)
+  val debitAccountType: AccountType,
+  val creditAccountType: AccountType
+) {
+  /**
+   * Infer user-facing transaction type from debit/credit accounts
+   */
+  fun inferType(): TransactionType {
+    return when {
+      // Transfer: Both accounts are assets
+      debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+      // Expense: Debit is expense account
+      debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+      // Income: Credit is revenue account
+      creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+      // Loan-related
+      debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+      else -> TransactionType.EXPENSE // Default fallback
+    }
+  }
+
+  /**
+   * Get the primary user-facing account (asset account for expense/income, source for transfer)
+   */
+  fun getPrimaryAccount(): Account {
+    return when (inferType()) {
+      TransactionType.EXPENSE -> creditAccount // The account paying (asset being credited)
+      TransactionType.INCOME -> debitAccount   // The account receiving (asset being debited)
+      TransactionType.TRANSFER -> creditAccount // Source account
+      else -> debitAccount
+    }
+  }
+
+  /**
+   * Get the secondary account (null for expense/income, destination for transfer)
+   */
+  fun getSecondaryAccount(): Account? {
+    return when (inferType()) {
+      TransactionType.TRANSFER -> debitAccount // Destination account
+      else -> null
+    }
+  }
+}
+
+/**
+ * Helper extension to infer transaction type from account types
+ */
+fun Transaction.inferTypeFromAccountTypes(debitAccountType: AccountType, creditAccountType: AccountType): TransactionType {
+  return when {
+    debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+    debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+    creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+    debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+    else -> TransactionType.EXPENSE
+  }
+}
 
 /**
  * Category with subcategories
@@ -310,9 +401,10 @@ data class PeriodSummary(
  */
 data class CreateAccountInput(
   val name: String,
-  val type: AccountType,
+  val parentId: Long? = null,
   val initialBalance: Double = 0.0,
   val currency: String = "CNY",
+  val isVisibleInUi: Boolean = true,
   val iconName: String? = null,
   val colorHex: String? = null,
   val billDate: Int? = null,
@@ -323,10 +415,11 @@ data class CreateAccountInput(
 data class UpdateAccountInput(
   val id: Long,
   val name: String,
-  val type: AccountType,
+  val parentId: Long? = null,
   val initialBalance: Double,
   val currency: String = "CNY",
   val isActive: Boolean = true,
+  val isVisibleInUi: Boolean = true,
   val iconName: String? = null,
   val colorHex: String? = null,
   val billDate: Int? = null,
@@ -334,13 +427,16 @@ data class UpdateAccountInput(
   val creditLimit: Double? = null
 )
 
+/**
+ * User-facing transaction input (will be translated to debit/credit internally)
+ */
 data class CreateTransactionInput(
   val amount: Double,
-  val type: TransactionType,
+  val type: TransactionType,         // UI-level type: EXPENSE, INCOME, TRANSFER
   val transactionDate: Long,
-  val categoryId: Long? = null,
-  val accountId: Long,
-  val toAccountId: Long? = null,
+  val categoryId: Long? = null,      // For EXPENSE/INCOME only
+  val accountId: Long,               // Primary account
+  val toAccountId: Long? = null,     // For TRANSFER only
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null,
@@ -350,7 +446,7 @@ data class CreateTransactionInput(
 data class UpdateTransactionInput(
   val id: Long,
   val amount: Double,
-  val type: TransactionType,
+  val type: TransactionType,         // UI-level type: EXPENSE, INCOME, TRANSFER
   val transactionDate: Long,
   val categoryId: Long? = null,
   val accountId: Long,
@@ -383,5 +479,15 @@ data class CreateLoanInput(
   val loanMonths: Int,
   val paymentDay: Int, // Day of month to pay (1-31)
   val startDate: Long, // Loan creation date
+  val payee: String? = null,
   val notes: String? = null
+)
+
+/**
+ * Loan payment breakdown
+ */
+data class LoanPayment(
+  val principal: Double,
+  val interest: Double,
+  val total: Double
 )

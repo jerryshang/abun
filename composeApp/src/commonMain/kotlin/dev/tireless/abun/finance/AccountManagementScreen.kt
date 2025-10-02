@@ -139,12 +139,6 @@ fun AccountCard(
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-          text = account.type.name.lowercase().replace('_', ' '),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
       }
 
       Column(horizontalAlignment = Alignment.End) {
@@ -174,7 +168,6 @@ fun AddAccountDialog(
   onConfirm: (CreateAccountInput) -> Unit
 ) {
   var name by remember { mutableStateOf("") }
-  var selectedType by remember { mutableStateOf(AccountType.CASH) }
   var initialBalance by remember { mutableStateOf("0") }
 
   AlertDialog(
@@ -191,21 +184,6 @@ fun AddAccountDialog(
           modifier = Modifier.fillMaxWidth()
         )
 
-        Text("账户类型", style = MaterialTheme.typography.labelLarge)
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-          AccountType.values().forEach { type ->
-            FilterChip(
-              selected = selectedType == type,
-              onClick = { selectedType = type },
-              label = {
-                Text(
-                  type.name.lowercase().replace('_', ' ')
-                )
-              }
-            )
-          }
-        }
-
         OutlinedTextField(
           value = initialBalance,
           onValueChange = { initialBalance = it },
@@ -221,7 +199,6 @@ fun AddAccountDialog(
           onConfirm(
             CreateAccountInput(
               name = name,
-              type = selectedType,
               initialBalance = initialBalance.toDoubleOrNull() ?: 0.0
             )
           )

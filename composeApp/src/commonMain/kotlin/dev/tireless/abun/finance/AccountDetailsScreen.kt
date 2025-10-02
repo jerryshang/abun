@@ -68,18 +68,18 @@ fun AccountDetailsScreen(
   // Filter transactions by account if specified
   val filteredTransactions = if (selectedAccountId != null) {
     transactions.filter {
-      it.accountId == selectedAccountId || it.toAccountId == selectedAccountId
+      it.debitAccount.id == selectedAccountId || it.creditAccount.id == selectedAccountId
     }
   } else {
     transactions
   }
 
   // Group transactions by date
-  val groupedTransactions = filteredTransactions.groupBy { transaction ->
-    val date = formatDate(transaction.transactionDate)
+  val groupedTransactions = filteredTransactions.groupBy { transactionWithDetails ->
+    val date = formatDate(transactionWithDetails.transaction.transactionDate)
     when {
-      isToday(transaction.transactionDate) -> "今天"
-      isYesterday(transaction.transactionDate) -> "昨天"
+      isToday(transactionWithDetails.transaction.transactionDate) -> "今天"
+      isYesterday(transactionWithDetails.transaction.transactionDate) -> "昨天"
       else -> date
     }
   }
@@ -179,10 +179,10 @@ fun AccountDetailsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                   )
-                  val dailyTotal = transactionsForDate.sumOf {
-                    when (it.type) {
-                      TransactionType.INCOME -> it.amount
-                      TransactionType.EXPENSE -> -it.amount
+                  val dailyTotal = transactionsForDate.sumOf { transactionWithDetails ->
+                    when (transactionWithDetails.inferType()) {
+                      TransactionType.INCOME -> transactionWithDetails.transaction.amount
+                      TransactionType.EXPENSE -> -transactionWithDetails.transaction.amount
                       else -> 0.0
                     }
                   }
@@ -197,15 +197,14 @@ fun AccountDetailsScreen(
               }
 
               // Transactions for this date
-              items(transactionsForDate) { transaction ->
+              items(transactionsForDate) { transactionWithDetails ->
                 TransactionCard(
-                  transaction = transaction,
-                  accounts = accounts,
+                  transactionWithDetails = transactionWithDetails,
                   onClick = {
                     // TODO: Show edit dialog
                   },
                   onDelete = {
-                    viewModel.deleteTransaction(transaction.id)
+                    viewModel.deleteTransaction(transactionWithDetails.transaction.id)
                   }
                 )
               }

@@ -77,7 +77,7 @@ fun FinanceScreen(
   val error by viewModel.error.collectAsState()
 
   var showAddTransactionDialog by remember { mutableStateOf(false) }
-  var selectedTransaction by remember { mutableStateOf<Transaction?>(null) }
+  var selectedTransaction by remember { mutableStateOf<TransactionWithDetails?>(null) }
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAddLoanDialog by remember { mutableStateOf(false) }
 
@@ -173,16 +173,15 @@ fun FinanceScreen(
           }
 
           // Recent Transaction Items (limited to 10)
-          items(transactions.take(10)) { transaction ->
+          items(transactions.take(10)) { transactionWithDetails ->
             TransactionCard(
-              transaction = transaction,
-              accounts = accounts,
+              transactionWithDetails = transactionWithDetails,
               onClick = {
-                selectedTransaction = transaction
+                selectedTransaction = transactionWithDetails
                 showAddTransactionDialog = true
               },
               onDelete = {
-                viewModel.deleteTransaction(transaction.id)
+                viewModel.deleteTransaction(transactionWithDetails.transaction.id)
               },
             )
           }
@@ -209,7 +208,7 @@ fun FinanceScreen(
 
   if (showAddTransactionDialog) {
     AddTransactionDialog(
-      transaction = selectedTransaction,
+      transactionWithDetails = selectedTransaction,
       accounts = accounts,
       onDismiss = {
         showAddTransactionDialog = false
@@ -221,7 +220,7 @@ fun FinanceScreen(
         } else {
           viewModel.updateTransaction(
             UpdateTransactionInput(
-              id = selectedTransaction!!.id,
+              id = selectedTransaction!!.transaction.id,
               amount = input.amount,
               type = input.type,
               transactionDate = input.transactionDate,
@@ -486,14 +485,17 @@ fun AccountsSummaryCard(
  */
 @Composable
 fun TransactionCard(
-  transaction: Transaction,
-  accounts: List<Account>,
+  transactionWithDetails: TransactionWithDetails,
   onClick: () -> Unit,
   onDelete: () -> Unit,
 ) {
-  val account = accounts.find { it.id == transaction.accountId }
+  val transaction = transactionWithDetails.transaction
+  val transactionType = transactionWithDetails.inferType()
+  val primaryAccount = transactionWithDetails.getPrimaryAccount()
+  val secondaryAccount = transactionWithDetails.getSecondaryAccount()
+
   val backgroundColor =
-    when (transaction.type) {
+    when (transactionType) {
       TransactionType.EXPENSE -> Color(0xFFFFF3E0)
       TransactionType.INCOME -> Color(0xFFE8F5E9)
       TransactionType.TRANSFER -> Color(0xFFE3F2FD)
@@ -522,7 +524,7 @@ fun TransactionCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
           Icon(
             imageVector =
-            when (transaction.type) {
+            when (transactionType) {
               TransactionType.EXPENSE -> Icons.Default.Remove
               TransactionType.INCOME -> Icons.Default.Add
               TransactionType.TRANSFER -> Icons.Default.SwapHoriz
@@ -532,7 +534,7 @@ fun TransactionCard(
             contentDescription = null,
             modifier = Modifier.size(16.dp),
             tint =
-            when (transaction.type) {
+            when (transactionType) {
               TransactionType.EXPENSE -> Color(0xFFF57C00)
               TransactionType.INCOME -> Color(0xFF388E3C)
               TransactionType.TRANSFER -> Color(0xFF1976D2)
@@ -542,7 +544,7 @@ fun TransactionCard(
           )
           Spacer(modifier = Modifier.width(4.dp))
           Text(
-            text = transaction.payee ?: transaction.type.name,
+            text = transaction.payee ?: transactionWithDetails.category?.name ?: transactionType.name,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
           )
@@ -551,7 +553,13 @@ fun TransactionCard(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-          text = "${account?.name ?: "未知账户"} • ${formatDate(transaction.transactionDate)}",
+          text = buildString {
+            append(primaryAccount.name)
+            if (secondaryAccount != null) {
+              append(" → ${secondaryAccount.name}")
+            }
+            append(" • ${formatDate(transaction.transactionDate)}")
+          },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -569,7 +577,7 @@ fun TransactionCard(
       Column(horizontalAlignment = Alignment.End) {
         Text(
           text =
-          when (transaction.type) {
+          when (transactionType) {
             TransactionType.EXPENSE -> "-¥${formatAmount(transaction.amount)}"
             TransactionType.INCOME -> "+¥${formatAmount(transaction.amount)}"
             TransactionType.TRANSFER -> "¥${formatAmount(transaction.amount)}"
@@ -579,7 +587,7 @@ fun TransactionCard(
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold,
           color =
-          when (transaction.type) {
+          when (transactionType) {
             TransactionType.EXPENSE -> Color(0xFFF57C00)
             TransactionType.INCOME -> Color(0xFF388E3C)
             TransactionType.TRANSFER -> Color(0xFF1976D2)

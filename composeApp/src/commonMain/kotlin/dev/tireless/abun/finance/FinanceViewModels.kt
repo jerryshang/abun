@@ -18,8 +18,8 @@ class TransactionViewModel(
   private val transactionGroupRepository: TransactionGroupRepository
 ) : ViewModel() {
 
-  private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-  val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+  private val _transactions = MutableStateFlow<List<TransactionWithDetails>>(emptyList())
+  val transactions: StateFlow<List<TransactionWithDetails>> = _transactions.asStateFlow()
 
   private val _accounts = MutableStateFlow<List<Account>>(emptyList())
   val accounts: StateFlow<List<Account>> = _accounts.asStateFlow()
@@ -44,7 +44,7 @@ class TransactionViewModel(
     viewModelScope.launch {
       try {
         _isLoading.value = true
-        _transactions.value = transactionRepository.getAllTransactions()
+        _transactions.value = transactionRepository.getAllTransactionsWithDetails()
         _accounts.value = accountRepository.getActiveAccounts()
         _categories.value = categoryRepository.getAllCategories()
         _tags.value = tagRepository.getAllTags()
@@ -59,7 +59,7 @@ class TransactionViewModel(
   fun refreshTransactions() {
     viewModelScope.launch {
       try {
-        _transactions.value = transactionRepository.getAllTransactions()
+        _transactions.value = transactionRepository.getAllTransactionsWithDetails()
       } catch (e: Exception) {
         _error.value = "Failed to refresh transactions: ${e.message}"
       }
@@ -111,6 +111,9 @@ class TransactionViewModel(
     }
   }
 
+  /**
+   * Create a loan with scheduled payments
+   */
   fun createLoan(input: CreateLoanInput) {
     viewModelScope.launch {
       try {
@@ -126,23 +129,25 @@ class TransactionViewModel(
     }
   }
 
-  fun getTransactionsByAccount(accountId: Long) {
-    viewModelScope.launch {
-      try {
-        _transactions.value = transactionRepository.getTransactionsByAccount(accountId)
-      } catch (e: Exception) {
-        _error.value = "Failed to load transactions: ${e.message}"
+  suspend fun getTransactionsByAccountWithDetails(accountId: Long): List<TransactionWithDetails> {
+    return try {
+      transactionRepository.getTransactionsByAccount(accountId).mapNotNull { transaction ->
+        transactionRepository.getTransactionWithDetails(transaction.id)
       }
+    } catch (e: Exception) {
+      _error.value = "Failed to load transactions: ${e.message}"
+      emptyList()
     }
   }
 
-  fun getTransactionsByDateRange(startDate: Long, endDate: Long) {
-    viewModelScope.launch {
-      try {
-        _transactions.value = transactionRepository.getTransactionsByDateRange(startDate, endDate)
-      } catch (e: Exception) {
-        _error.value = "Failed to load transactions: ${e.message}"
+  suspend fun getTransactionsByDateRangeWithDetails(startDate: Long, endDate: Long): List<TransactionWithDetails> {
+    return try {
+      transactionRepository.getTransactionsByDateRange(startDate, endDate).mapNotNull { transaction ->
+        transactionRepository.getTransactionWithDetails(transaction.id)
       }
+    } catch (e: Exception) {
+      _error.value = "Failed to load transactions: ${e.message}"
+      emptyList()
     }
   }
 
@@ -198,11 +203,26 @@ class AccountViewModel(
     }
   }
 
+  /**
+   * Get account type for a given account ID
+   */
+  suspend fun getAccountType(accountId: Long): AccountType {
+    return accountRepository.getAccountType(accountId)
+  }
+
   fun createAccount(input: CreateAccountInput) {
     viewModelScope.launch {
       try {
         _isLoading.value = true
-        accountRepository.createAccount(input)
+
+        // If no parent is specified, use Asset root (id=1) as default for user accounts
+        val finalInput = if (input.parentId == null) {
+          input.copy(parentId = RootAccountIds.ASSET)
+        } else {
+          input
+        }
+
+        accountRepository.createAccount(finalInput)
         loadAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to create account: ${e.message}"

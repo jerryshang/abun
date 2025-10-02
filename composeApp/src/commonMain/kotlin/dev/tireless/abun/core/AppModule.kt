@@ -20,14 +20,14 @@ val appModule =
     single {
       val database = AppDatabase(get())
       // Initialize default data when database is created
+      // Note: The 5 root accounts (Asset, Liability, Equity, Revenue, Expense)
+      // are automatically initialized by SQLDelight on database creation
       val categoryRepository = CategoryRepository(database)
-      val accountRepository = AccountRepository(database)
       val financeCategoryRepository = FinanceCategoryRepository(database)
       kotlinx.coroutines.runBlocking {
         try {
           println("Initializing default database data...")
           categoryRepository.initializeDefaultData()
-          accountRepository.initializeDefaultAccounts()
           financeCategoryRepository.initializeDefaultCategories()
           println("Default data initialization completed")
         } catch (e: Exception) {
@@ -44,10 +44,10 @@ val appModule =
     single { AlarmRepository(get()) }
     // Finance repositories
     single { AccountRepository(get()) }
-    single { TransactionRepository(get(), get()) }
     single { FinanceCategoryRepository(get()) }
+    single { TransactionRepository(get(), get(), get()) } // database, accountRepository, categoryRepository
     single { FinanceTagRepository(get()) }
-    single { TransactionGroupRepository(get()) }
+    single { TransactionGroupRepository(get(), get()) } // database, transactionRepository
   }
 
 val viewModelModule =

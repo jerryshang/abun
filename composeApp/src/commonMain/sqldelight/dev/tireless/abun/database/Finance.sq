@@ -1,20 +1,34 @@
--- Accounts Table
+-- Accounts Table (Chart of Accounts)
+-- Hierarchy-based: 5 root accounts with FIXED IDs
+-- All other accounts are descendants of these 5 roots
+-- Account type is determined by traversing parent_id to the root
 CREATE TABLE Account (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
-    type TEXT NOT NULL, -- 'cash', 'debit_card', 'credit_card', 'e_wallet', 'investment', 'debt'
+    parent_id INTEGER, -- NULL for root accounts, or FK to parent account
     initial_balance REAL NOT NULL DEFAULT 0.0,
     current_balance REAL NOT NULL DEFAULT 0.0,
     currency TEXT NOT NULL DEFAULT 'CNY',
     is_active INTEGER NOT NULL DEFAULT 1, -- Boolean
+    is_visible_in_ui INTEGER NOT NULL DEFAULT 1, -- Hide root accounts from users
     icon_name TEXT,
     color_hex TEXT,
     bill_date INTEGER, -- Day of month for credit card billing (1-31), NULL for non-credit accounts
     payment_date INTEGER, -- Day of month for payment due (1-31), NULL for non-credit/debt accounts
     credit_limit REAL, -- Credit limit for credit cards
     created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (parent_id) REFERENCES Account(id) ON DELETE SET NULL
 );
+
+-- Initialize 5 fundamental accounts with fixed IDs (must match RootAccountIds constants)
+INSERT INTO Account (id, name, parent_id, initial_balance, current_balance, currency, is_active, is_visible_in_ui, created_at, updated_at)
+VALUES
+  (1, 'Asset', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),      -- RootAccountIds.ASSET
+  (2, 'Liability', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),  -- RootAccountIds.LIABILITY
+  (3, 'Equity', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),     -- RootAccountIds.EQUITY
+  (4, 'Revenue', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0),    -- RootAccountIds.REVENUE
+  (5, 'Expense', NULL, 0.0, 0.0, 'CNY', 1, 0, 0, 0);    -- RootAccountIds.EXPENSE
 
 -- Finance Categories Table (separate from time categories)
 CREATE TABLE FinanceCategory (
@@ -42,25 +56,24 @@ CREATE TABLE TransactionGroup (
     updated_at INTEGER NOT NULL
 );
 
--- Transactions Table (Double-Entry Booking)
+-- Transactions Table (Pure Double-Entry Booking)
 CREATE TABLE `Transaction` (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    amount REAL NOT NULL, -- Always positive, direction determined by type
-    type TEXT NOT NULL, -- 'expense', 'income', 'transfer', 'loan', 'loan_payment'
+    amount REAL NOT NULL, -- Always positive
+    debit_account_id INTEGER NOT NULL, -- Account being debited
+    credit_account_id INTEGER NOT NULL, -- Account being credited
     transaction_date INTEGER NOT NULL, -- Timestamp in milliseconds
-    category_id INTEGER,
-    account_id INTEGER NOT NULL, -- The primary account affected
-    to_account_id INTEGER, -- For transfers only
-    transfer_group_id TEXT, -- UUID to link transfer pairs
+    transfer_group_id TEXT, -- UUID to link transfer pairs (for UI grouping)
+    category_id INTEGER, -- User-facing category (for display only, maps to expense/revenue accounts)
     payee TEXT, -- Merchant/Source name
     member TEXT, -- Who this expense is for
     notes TEXT,
     state TEXT NOT NULL DEFAULT 'confirmed', -- 'planned', 'estimated', 'confirmed'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
-    FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (to_account_id) REFERENCES Account(id) ON DELETE CASCADE
+    FOREIGN KEY (debit_account_id) REFERENCES Account(id) ON DELETE CASCADE,
+    FOREIGN KEY (credit_account_id) REFERENCES Account(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL
 );
 
 -- Transaction Group Membership (Many-to-Many)
@@ -109,46 +122,17 @@ CREATE TABLE TransactionLinkedItem (
     FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE
 );
 
--- Transaction Templates
-CREATE TABLE TransactionTemplate (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name TEXT NOT NULL,
-    amount REAL,
-    type TEXT NOT NULL,
-    category_id INTEGER,
-    account_id INTEGER NOT NULL,
-    payee TEXT,
-    member TEXT,
-    notes TEXT,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES FinanceCategory(id) ON DELETE SET NULL,
-    FOREIGN KEY (account_id) REFERENCES Account(id) ON DELETE CASCADE
-);
-
--- Recurring Transactions
-CREATE TABLE RecurringTransaction (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    template_id INTEGER NOT NULL,
-    frequency TEXT NOT NULL, -- 'daily', 'weekly', 'monthly', 'yearly'
-    interval_count INTEGER NOT NULL DEFAULT 1, -- Every N days/weeks/months
-    start_date INTEGER NOT NULL,
-    end_date INTEGER, -- NULL for indefinite
-    next_occurrence INTEGER NOT NULL,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
-    FOREIGN KEY (template_id) REFERENCES TransactionTemplate(id) ON DELETE CASCADE
-);
+-- Note: Transaction Templates and Recurring Transactions removed temporarily
+-- Will be re-implemented after full migration to debit/credit model
 
 -- Queries for Accounts
 insertAccount:
-INSERT INTO Account (name, type, initial_balance, current_balance, currency, is_active, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Account (name, parent_id, initial_balance, current_balance, currency, is_active, is_visible_in_ui, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateAccount:
 UPDATE Account
-SET name = ?, type = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
+SET name = ?, parent_id = ?, initial_balance = ?, current_balance = ?, currency = ?, is_active = ?, is_visible_in_ui = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
 WHERE id = ?;
 
 updateAccountBalance:
@@ -157,7 +141,7 @@ SET current_balance = ?, updated_at = ?
 WHERE id = ?;
 
 deleteAccount:
-DELETE FROM Account WHERE id = ?;
+DELETE FROM Account WHERE id = ? AND id > 5;  -- Prevent deletion of root accounts
 
 getAccountById:
 SELECT * FROM Account WHERE id = ?;
@@ -167,6 +151,22 @@ SELECT * FROM Account ORDER BY is_active DESC, created_at DESC;
 
 getActiveAccounts:
 SELECT * FROM Account WHERE is_active = 1 ORDER BY created_at DESC;
+
+-- Get all expense categories (sub-accounts of Expense root, id=5)
+getExpenseCategories:
+SELECT * FROM Account WHERE parent_id = 5 AND is_active = 1 ORDER BY name;
+
+-- Get all revenue categories (sub-accounts of Revenue root, id=4)
+getRevenueCategories:
+SELECT * FROM Account WHERE parent_id = 4 AND is_active = 1 ORDER BY name;
+
+-- Get all asset accounts (sub-accounts of Asset root, id=1)
+getAssetAccounts:
+SELECT * FROM Account WHERE parent_id = 1 AND is_active = 1 ORDER BY name;
+
+-- Get all liability accounts (sub-accounts of Liability root, id=2)
+getLiabilityAccounts:
+SELECT * FROM Account WHERE parent_id = 2 AND is_active = 1 ORDER BY name;
 
 -- Queries for Finance Categories
 insertFinanceCategory:
@@ -239,12 +239,12 @@ ORDER BY t.transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO `Transaction` (amount, type, transaction_date, category_id, account_id, to_account_id, transfer_group_id, payee, member, notes, state, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO `Transaction` (amount, debit_account_id, credit_account_id, transaction_date, transfer_group_id, category_id, payee, member, notes, state, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
 UPDATE `Transaction`
-SET amount = ?, type = ?, transaction_date = ?, category_id = ?, account_id = ?, to_account_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
+SET amount = ?, debit_account_id = ?, credit_account_id = ?, transaction_date = ?, transfer_group_id = ?, category_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:
@@ -258,7 +258,7 @@ SELECT * FROM `Transaction` ORDER BY transaction_date DESC, created_at DESC;
 
 getTransactionsByAccount:
 SELECT * FROM `Transaction`
-WHERE account_id = ? OR to_account_id = ?
+WHERE debit_account_id = ? OR credit_account_id = ?
 ORDER BY transaction_date DESC;
 
 getTransactionsByCategory:
@@ -269,8 +269,7 @@ SELECT * FROM `Transaction`
 WHERE transaction_date BETWEEN ? AND ?
 ORDER BY transaction_date DESC;
 
-getTransactionsByType:
-SELECT * FROM `Transaction` WHERE type = ? ORDER BY transaction_date DESC;
+-- Removed: getTransactionsByType (no longer has type column)
 
 getTransferPair:
 SELECT * FROM `Transaction` WHERE transfer_group_id = ? ORDER BY created_at;
@@ -354,78 +353,36 @@ INNER JOIN TransactionLinkedItem tli ON ft.id = tli.transaction_id
 WHERE tli.linked_item_id = ? AND tli.linked_item_type = ?
 ORDER BY ft.transaction_date DESC;
 
--- Queries for Templates
-insertTemplate:
-INSERT INTO TransactionTemplate (name, amount, type, category_id, account_id, payee, member, notes, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-
-updateTemplate:
-UPDATE TransactionTemplate
-SET name = ?, amount = ?, type = ?, category_id = ?, account_id = ?, payee = ?, member = ?, notes = ?, updated_at = ?
-WHERE id = ?;
-
-deleteTemplate:
-DELETE FROM TransactionTemplate WHERE id = ?;
-
-getTemplateById:
-SELECT * FROM TransactionTemplate WHERE id = ?;
-
-getAllTemplates:
-SELECT * FROM TransactionTemplate ORDER BY name;
-
--- Queries for Recurring Transactions
-insertRecurringTransaction:
-INSERT INTO RecurringTransaction (template_id, frequency, interval_count, start_date, end_date, next_occurrence, is_active, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-
-updateRecurringTransaction:
-UPDATE RecurringTransaction
-SET frequency = ?, interval_count = ?, start_date = ?, end_date = ?, next_occurrence = ?, is_active = ?, updated_at = ?
-WHERE id = ?;
-
-updateNextOccurrence:
-UPDATE RecurringTransaction SET next_occurrence = ?, updated_at = ? WHERE id = ?;
-
-deleteRecurringTransaction:
-DELETE FROM RecurringTransaction WHERE id = ?;
-
-getRecurringTransactionById:
-SELECT * FROM RecurringTransaction WHERE id = ?;
-
-getAllRecurringTransactions:
-SELECT * FROM RecurringTransaction ORDER BY next_occurrence;
-
-getActiveRecurringTransactions:
-SELECT * FROM RecurringTransaction WHERE is_active = 1 ORDER BY next_occurrence;
-
-getDueRecurringTransactions:
-SELECT * FROM RecurringTransaction WHERE is_active = 1 AND next_occurrence <= ? ORDER BY next_occurrence;
+-- Note: Template and recurring transaction queries removed
+-- Will be re-implemented after full migration to debit/credit model
 
 -- Analytics Queries
 getTotalBalanceAllAccounts:
 SELECT SUM(current_balance) AS total FROM Account WHERE is_active = 1;
 
+-- Note: Expense/Income sum queries now require joining with root account to determine type
+-- These will be moved to repository layer for proper hierarchy traversal
 getExpenseSumByCategory:
-SELECT category_id, SUM(amount) AS total
-FROM `Transaction`
-WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?
-GROUP BY category_id;
+SELECT t.category_id, SUM(t.amount) AS total
+FROM `Transaction` t
+WHERE t.transaction_date BETWEEN ? AND ?
+GROUP BY t.category_id;
 
 getIncomeSumByCategory:
-SELECT category_id, SUM(amount) AS total
-FROM `Transaction`
-WHERE type = 'income' AND transaction_date BETWEEN ? AND ?
-GROUP BY category_id;
+SELECT t.category_id, SUM(t.amount) AS total
+FROM `Transaction` t
+WHERE t.transaction_date BETWEEN ? AND ?
+GROUP BY t.category_id;
 
 getExpenseByDateRange:
-SELECT SUM(amount) AS total
-FROM `Transaction`
-WHERE type = 'expense' AND transaction_date BETWEEN ? AND ?;
+SELECT SUM(t.amount) AS total
+FROM `Transaction` t
+WHERE t.transaction_date BETWEEN ? AND ?;
 
 getIncomeByDateRange:
-SELECT SUM(amount) AS total
-FROM `Transaction`
-WHERE type = 'income' AND transaction_date BETWEEN ? AND ?;
+SELECT SUM(t.amount) AS total
+FROM `Transaction` t
+WHERE t.transaction_date BETWEEN ? AND ?;
 
 getRecentPayees:
 SELECT DISTINCT payee FROM `Transaction`

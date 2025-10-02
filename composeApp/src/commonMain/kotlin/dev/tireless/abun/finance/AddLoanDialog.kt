@@ -29,6 +29,7 @@ fun AddLoanDialog(
   var interestRate by remember { mutableStateOf("8") }
   var loanMonths by remember { mutableStateOf("24") }
   var paymentDay by remember { mutableStateOf("1") }
+  var payee by remember { mutableStateOf("") }
   var notes by remember { mutableStateOf("") }
 
   // Auto-fill payment day when lender account is selected
@@ -197,6 +198,15 @@ fun AddLoanDialog(
           supportingText = { Text("每月还款的日期 (1-31)") }
         )
 
+        // Payee/Lender Name
+        OutlinedTextField(
+          value = payee,
+          onValueChange = { payee = it },
+          label = { Text("出借方名称") },
+          modifier = Modifier.fillMaxWidth(),
+          supportingText = { Text("例如：朋友、银行名称等") }
+        )
+
         // Notes
         OutlinedTextField(
           value = notes,
@@ -211,7 +221,7 @@ fun AddLoanDialog(
       Button(
         onClick = {
           val amountValue = amount.toDoubleOrNull() ?: 0.0
-          val rateValue = (interestRate.toDoubleOrNull() ?: 0.0) / 100.0 // Convert to decimal
+          val rateValue = interestRate.toDoubleOrNull() ?: 0.0 // Keep as percentage
           val monthsValue = loanMonths.toIntOrNull() ?: 0
           val paymentDayValue = paymentDay.toIntOrNull() ?: 1
 
@@ -226,6 +236,7 @@ fun AddLoanDialog(
                 loanMonths = monthsValue,
                 paymentDay = paymentDayValue,
                 startDate = 1704067200000L, // Simplified for KMP
+                payee = payee.ifBlank { null },
                 notes = notes.ifBlank { null }
               )
             )

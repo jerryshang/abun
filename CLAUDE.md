@@ -9,6 +9,16 @@ Please refer to [AGENTS.md](./AGENTS.md) for comprehensive project setup, build 
 - Follow the project structure and coding conventions outlined in AGENTS.md
 - When making changes, ensure compatibility across both Android and iOS platforms
 
+## Documentation Policy
+**IMPORTANT**: When making system-level changes, update the corresponding documentation:
+
+- **System design changes**: Update relevant files in `docs/` folder
+- **Finance module changes**: Update `docs/finance.md`
+- **Architecture changes**: Create/update architecture documentation
+- **API changes**: Document breaking changes and migration guides
+
+Keep documentation in sync with code to maintain a single source of truth.
+
 ## Git Commit Policy
 **IMPORTANT**: Do NOT automatically commit changes unless explicitly requested by the user.
 

@@ -19,17 +19,22 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionDialog(
-  transaction: Transaction? = null,
+  transactionWithDetails: TransactionWithDetails? = null,
   accounts: List<Account>,
   categories: List<FinanceCategory> = emptyList(),
   onDismiss: () -> Unit,
   onConfirm: (CreateTransactionInput) -> Unit,
   categoryViewModel: FinanceCategoryViewModel = koinInject()
 ) {
+  val transaction = transactionWithDetails?.transaction
+  val inferredType = transactionWithDetails?.inferType()
+  val primaryAccount = transactionWithDetails?.getPrimaryAccount()
+  val secondaryAccount = transactionWithDetails?.getSecondaryAccount()
+
   var amount by remember { mutableStateOf(transaction?.amount?.toString() ?: "") }
-  var selectedType by remember { mutableStateOf(transaction?.type ?: TransactionType.EXPENSE) }
-  var selectedAccountId by remember { mutableStateOf(transaction?.accountId ?: accounts.firstOrNull()?.id ?: 0L) }
-  var selectedToAccountId by remember { mutableStateOf<Long?>(transaction?.toAccountId) }
+  var selectedType by remember { mutableStateOf(inferredType ?: TransactionType.EXPENSE) }
+  var selectedAccountId by remember { mutableStateOf(primaryAccount?.id ?: accounts.firstOrNull()?.id ?: 0L) }
+  var selectedToAccountId by remember { mutableStateOf<Long?>(secondaryAccount?.id) }
   var selectedCategoryId by remember { mutableStateOf<Long?>(transaction?.categoryId) }
   var payee by remember { mutableStateOf(transaction?.payee ?: "") }
   var member by remember { mutableStateOf(transaction?.member ?: "") }

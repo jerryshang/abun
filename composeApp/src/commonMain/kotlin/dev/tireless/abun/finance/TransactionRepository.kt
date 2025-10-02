@@ -8,18 +8,23 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.math.pow
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import dev.tireless.abun.database.Transaction as DbTransaction
 
 /**
  * Repository for managing financial transactions
- * Implements double-entry booking logic
+ * Implements double-entry booking with translation layer
+ *
+ * Translation Layer:
+ * - User creates "Expense" → System creates debit to expense account, credit to asset account
+ * - User creates "Income" → System creates debit to asset account, credit to revenue account
+ * - User creates "Transfer" → System creates debit to destination asset, credit to source asset
  */
 class TransactionRepository(
   private val database: AppDatabase,
-  private val accountRepository: AccountRepository
+  private val accountRepository: AccountRepository,
+  private val categoryRepository: FinanceCategoryRepository
 ) {
   private val queries = database.financeQueries
 
@@ -69,14 +74,8 @@ class TransactionRepository(
   }
 
   /**
-   * Get transactions by type
-   */
-  suspend fun getTransactionsByType(type: TransactionType): List<Transaction> = withContext(Dispatchers.IO) {
-    queries.getTransactionsByType(type.name.lowercase()).executeAsList().map { it.toDomain() }
-  }
-
-  /**
    * Create a new transaction with double-entry booking
+   * Translates user-facing transaction types to debit/credit entries
    */
   @OptIn(ExperimentalUuidApi::class)
   suspend fun createTransaction(input: CreateTransactionInput): Long = withContext(Dispatchers.IO) {
@@ -84,15 +83,22 @@ class TransactionRepository(
 
     when (input.type) {
       TransactionType.EXPENSE -> {
-        // Expense: Decrease account balance
+        // EXPENSE: Debit expense account, Credit asset account
+        // User pays $100 for coffee from Cash account:
+        // - Debit: Coffee Expense $100
+        // - Credit: Cash $100
+
+        require(input.categoryId != null) { "categoryId is required for expenses" }
+        val category = categoryRepository.getCategoryById(input.categoryId)!!
+        val expenseAccount = accountRepository.getOrCreateExpenseAccount(input.categoryId, category.name)
+
         queries.insertTransaction(
           amount = input.amount,
-          type = input.type.name.lowercase(),
+          debit_account_id = expenseAccount.id,
+          credit_account_id = input.accountId,
           transaction_date = input.transactionDate,
-          category_id = input.categoryId,
-          account_id = input.accountId,
-          to_account_id = null,
           transfer_group_id = null,
+          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -100,19 +106,29 @@ class TransactionRepository(
           created_at = now,
           updated_at = now
         )
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
+
+        // Update balances
+        accountRepository.adjustAccountBalance(expenseAccount.id, input.amount)  // Debit increases expense
+        accountRepository.adjustAccountBalance(input.accountId, -input.amount)   // Credit decreases asset
       }
 
       TransactionType.INCOME -> {
-        // Income: Increase account balance
+        // INCOME: Debit asset account, Credit revenue account
+        // User receives $1000 salary to Bank account:
+        // - Debit: Bank $1000
+        // - Credit: Salary Revenue $1000
+
+        require(input.categoryId != null) { "categoryId is required for income" }
+        val category = categoryRepository.getCategoryById(input.categoryId)!!
+        val revenueAccount = accountRepository.getOrCreateRevenueAccount(input.categoryId, category.name)
+
         queries.insertTransaction(
           amount = input.amount,
-          type = input.type.name.lowercase(),
+          debit_account_id = input.accountId,
+          credit_account_id = revenueAccount.id,
           transaction_date = input.transactionDate,
-          category_id = input.categoryId,
-          account_id = input.accountId,
-          to_account_id = null,
           transfer_group_id = null,
+          category_id = input.categoryId,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -120,25 +136,30 @@ class TransactionRepository(
           created_at = now,
           updated_at = now
         )
-        accountRepository.adjustAccountBalance(input.accountId, input.amount)
+
+        // Update balances
+        accountRepository.adjustAccountBalance(input.accountId, input.amount)    // Debit increases asset
+        accountRepository.adjustAccountBalance(revenueAccount.id, -input.amount) // Credit decreases revenue (negative revenue = income)
       }
 
       TransactionType.TRANSFER -> {
-        // Transfer: Create two transactions (debit and credit)
+        // TRANSFER: Debit destination asset, Credit source asset
+        // User transfers $100 from Cash to Bank:
+        // - Debit: Bank $100
+        // - Credit: Cash $100
+
         require(input.toAccountId != null) { "toAccountId is required for transfers" }
         require(input.accountId != input.toAccountId) { "Cannot transfer to the same account" }
 
         val transferGroupId = Uuid.random().toString()
 
-        // Debit from source account
         queries.insertTransaction(
           amount = input.amount,
-          type = input.type.name.lowercase(),
+          debit_account_id = input.toAccountId,
+          credit_account_id = input.accountId,
           transaction_date = input.transactionDate,
-          category_id = null,
-          account_id = input.accountId,
-          to_account_id = input.toAccountId,
           transfer_group_id = transferGroupId,
+          category_id = null,
           payee = input.payee,
           member = input.member,
           notes = input.notes,
@@ -146,30 +167,13 @@ class TransactionRepository(
           created_at = now,
           updated_at = now
         )
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
 
-        // Credit to destination account
-        queries.insertTransaction(
-          amount = input.amount,
-          type = input.type.name.lowercase(),
-          transaction_date = input.transactionDate,
-          category_id = null,
-          account_id = input.toAccountId,
-          to_account_id = input.accountId,
-          transfer_group_id = transferGroupId,
-          payee = input.payee,
-          member = input.member,
-          notes = "Transfer from account ${input.accountId}",
-          state = TransactionState.CONFIRMED.name.lowercase(),
-          created_at = now,
-          updated_at = now
-        )
-        accountRepository.adjustAccountBalance(input.toAccountId, input.amount)
+        // Update balances
+        accountRepository.adjustAccountBalance(input.toAccountId, input.amount)  // Debit increases destination
+        accountRepository.adjustAccountBalance(input.accountId, -input.amount)   // Credit decreases source
       }
 
-      // Loans and loan payments don't affect balance immediately for future transactions
       TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
-        // Will be implemented separately for loan functionality
         throw UnsupportedOperationException("Use createLoan() for loan transactions")
       }
     }
@@ -185,6 +189,175 @@ class TransactionRepository(
   }
 
   /**
+   * Create a loan with scheduled payments
+   *
+   * Accounting Treatment:
+   * - Borrowing money: Debit asset account (receives money), Credit liability account (loan payable)
+   * - Lending money: Debit liability account (loan receivable), Credit asset account (gives money)
+   *
+   * Creates:
+   * 1. Initial loan transaction (CONFIRMED)
+   * 2. Transaction group for the loan
+   * 3. Scheduled payment transactions (PLANNED)
+   */
+  @OptIn(ExperimentalUuidApi::class)
+  suspend fun createLoan(
+    input: CreateLoanInput,
+    transactionGroupRepository: TransactionGroupRepository
+  ): Long = withContext(Dispatchers.IO) {
+    val now = currentTimeMillis()
+
+    // 1. Create or get liability account for the loan
+    val loanAccountName = when (input.loanType) {
+      LoanType.INTEREST_FIRST -> "${input.payee ?: "Loan"} - Interest First"
+      LoanType.EQUAL_PRINCIPAL -> "${input.payee ?: "Loan"} - Equal Principal"
+      LoanType.EQUAL_INSTALLMENT -> "${input.payee ?: "Loan"} - Equal Installment"
+      LoanType.INTEREST_ONLY -> "${input.payee ?: "Loan"} - Interest Only"
+    }
+
+    val liabilityAccount = accountRepository.getOrCreateLiabilityAccount(loanAccountName)
+
+    // 2. Create initial loan transaction
+    // Borrowing: Debit asset (receive money), Credit liability (owe money)
+    queries.insertTransaction(
+      amount = input.amount,
+      debit_account_id = input.accountId,
+      credit_account_id = liabilityAccount.id,
+      transaction_date = input.startDate,
+      transfer_group_id = null,
+      category_id = null,
+      payee = input.payee,
+      member = null,
+      notes = input.notes,
+      state = TransactionState.CONFIRMED.name.lowercase(),
+      created_at = now,
+      updated_at = now
+    )
+
+    val loanTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+
+    // Update balances for initial loan
+    accountRepository.adjustAccountBalance(input.accountId, input.amount)       // Debit increases asset
+    accountRepository.adjustAccountBalance(liabilityAccount.id, -input.amount)  // Credit increases liability (negative balance = owe money)
+
+    // 3. Create transaction group for the loan
+    val groupId = transactionGroupRepository.createTransactionGroup(
+      name = "Loan: ${input.payee ?: "Unknown"}",
+      groupType = TransactionGroupType.LOAN,
+      description = "Loan of ¥${input.amount} at ${input.interestRate}% for ${input.loanMonths} months",
+      totalAmount = input.amount
+    )
+
+    // Add initial loan transaction to group
+    addTransactionToGroup(loanTransactionId, groupId)
+
+    // 4. Calculate and create scheduled payment transactions
+    val payments = calculateLoanPayments(
+      principal = input.amount,
+      interestRate = input.interestRate,
+      loanMonths = input.loanMonths,
+      loanType = input.loanType
+    )
+
+    // Create PLANNED transactions for each payment
+    payments.forEachIndexed { index, payment ->
+      val paymentDate = input.startDate + (index + 1) * 30L * 24 * 60 * 60 * 1000 // Approximate month
+
+      // Payment: Debit liability (reduce debt), Credit asset (pay money)
+      queries.insertTransaction(
+        amount = payment.total,
+        debit_account_id = liabilityAccount.id,
+        credit_account_id = input.accountId,
+        transaction_date = paymentDate,
+        transfer_group_id = null,
+        category_id = null,
+        payee = input.payee,
+        member = null,
+        notes = "Payment ${index + 1}/${input.loanMonths}: Principal ¥${payment.principal}, Interest ¥${payment.interest}",
+        state = TransactionState.PLANNED.name.lowercase(),
+        created_at = now,
+        updated_at = now
+      )
+
+      val paymentTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+      addTransactionToGroup(paymentTransactionId, groupId)
+    }
+
+    loanTransactionId
+  }
+
+  /**
+   * Calculate loan payment schedule
+   */
+  private fun calculateLoanPayments(
+    principal: Double,
+    interestRate: Double,
+    loanMonths: Int,
+    loanType: LoanType
+  ): List<LoanPayment> {
+    val monthlyRate = interestRate / 100.0 / 12.0
+    val payments = mutableListOf<LoanPayment>()
+
+    when (loanType) {
+      LoanType.INTEREST_FIRST -> {
+        // Interest first: Pay interest each month, principal at end
+        for (month in 1 until loanMonths) {
+          val interest = principal * monthlyRate
+          payments.add(LoanPayment(0.0, interest, interest))
+        }
+        // Last payment: principal + interest
+        val lastInterest = principal * monthlyRate
+        payments.add(LoanPayment(principal, lastInterest, principal + lastInterest))
+      }
+
+      LoanType.EQUAL_PRINCIPAL -> {
+        // Equal principal: Same principal each month, decreasing interest
+        val principalPerMonth = principal / loanMonths
+        var remainingPrincipal = principal
+
+        for (month in 1..loanMonths) {
+          val interest = remainingPrincipal * monthlyRate
+          val total = principalPerMonth + interest
+          payments.add(LoanPayment(principalPerMonth, interest, total))
+          remainingPrincipal -= principalPerMonth
+        }
+      }
+
+      LoanType.EQUAL_INSTALLMENT -> {
+        // Equal installment: Same total payment each month
+        val monthlyPayment = if (monthlyRate > 0) {
+          // Calculate (1 + monthlyRate)^loanMonths using repeated multiplication
+          var compoundFactor = 1.0
+          repeat(loanMonths) {
+            compoundFactor *= (1 + monthlyRate)
+          }
+          principal * monthlyRate * compoundFactor / (compoundFactor - 1)
+        } else {
+          principal / loanMonths
+        }
+
+        var remainingPrincipal = principal
+        for (month in 1..loanMonths) {
+          val interest = remainingPrincipal * monthlyRate
+          val principalPayment = monthlyPayment - interest
+          payments.add(LoanPayment(principalPayment, interest, monthlyPayment))
+          remainingPrincipal -= principalPayment
+        }
+      }
+
+      LoanType.INTEREST_ONLY -> {
+        // Interest only: Pay interest each month, no principal repayment
+        for (month in 1..loanMonths) {
+          val interest = principal * monthlyRate
+          payments.add(LoanPayment(0.0, interest, interest))
+        }
+      }
+    }
+
+    return payments
+  }
+
+  /**
    * Update an existing transaction
    */
   suspend fun updateTransaction(input: UpdateTransactionInput): Unit = withContext(Dispatchers.IO) {
@@ -192,72 +365,96 @@ class TransactionRepository(
     val oldTransaction = getTransactionById(input.id) ?: return@withContext
 
     // Revert old transaction's effect on account balance
-    when (oldTransaction.type) {
-      TransactionType.EXPENSE -> {
-        accountRepository.adjustAccountBalance(oldTransaction.accountId, oldTransaction.amount)
-      }
+    val oldDebitAccount = accountRepository.getAccountById(oldTransaction.debitAccountId)!!
+    val oldCreditAccount = accountRepository.getAccountById(oldTransaction.creditAccountId)!!
 
-      TransactionType.INCOME -> {
-        accountRepository.adjustAccountBalance(oldTransaction.accountId, -oldTransaction.amount)
-      }
+    accountRepository.adjustAccountBalance(oldTransaction.debitAccountId, -oldTransaction.amount)  // Reverse debit
+    accountRepository.adjustAccountBalance(oldTransaction.creditAccountId, oldTransaction.amount)  // Reverse credit
 
-      TransactionType.TRANSFER -> {
-        // Revert both accounts
-        accountRepository.adjustAccountBalance(oldTransaction.accountId, oldTransaction.amount)
-        oldTransaction.toAccountId?.let {
-          accountRepository.adjustAccountBalance(it, -oldTransaction.amount)
+    // Delete paired transfer transaction if exists
+    oldTransaction.transferGroupId?.let { groupId ->
+      val pairedTransactions = queries.getTransferPair(groupId).executeAsList()
+      pairedTransactions.forEach { paired ->
+        if (paired.id != oldTransaction.id) {
+          queries.deleteTransaction(paired.id)
         }
-        // Delete paired transaction if exists
-        oldTransaction.transferGroupId?.let { groupId ->
-          val pairedTransactions = queries.getTransferPair(groupId).executeAsList()
-          pairedTransactions.forEach { paired ->
-            if (paired.id != oldTransaction.id) {
-              queries.deleteTransaction(paired.id)
-            }
-          }
-        }
-      }
-
-      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
-        // Skip balance revert for loan transactions
       }
     }
 
-    // Apply new transaction
-    queries.updateTransaction(
-      amount = input.amount,
-      type = input.type.name.lowercase(),
-      transaction_date = input.transactionDate,
-      category_id = input.categoryId,
-      account_id = input.accountId,
-      to_account_id = input.toAccountId,
-      payee = input.payee,
-      member = input.member,
-      notes = input.notes,
-      state = TransactionState.CONFIRMED.name.lowercase(),
-      updated_at = now,
-      id = input.id
-    )
-
-    // Apply new balance changes
+    // Apply new transaction based on type
     when (input.type) {
       TransactionType.EXPENSE -> {
+        require(input.categoryId != null) { "categoryId is required for expenses" }
+        val category = categoryRepository.getCategoryById(input.categoryId)!!
+        val expenseAccount = accountRepository.getOrCreateExpenseAccount(input.categoryId, category.name)
+
+        queries.updateTransaction(
+          amount = input.amount,
+          debit_account_id = expenseAccount.id,
+          credit_account_id = input.accountId,
+          transaction_date = input.transactionDate,
+          transfer_group_id = null,
+          category_id = input.categoryId,
+          payee = input.payee,
+          member = input.member,
+          notes = input.notes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          updated_at = now,
+          id = input.id
+        )
+
+        accountRepository.adjustAccountBalance(expenseAccount.id, input.amount)
         accountRepository.adjustAccountBalance(input.accountId, -input.amount)
       }
 
       TransactionType.INCOME -> {
+        require(input.categoryId != null) { "categoryId is required for income" }
+        val category = categoryRepository.getCategoryById(input.categoryId)!!
+        val revenueAccount = accountRepository.getOrCreateRevenueAccount(input.categoryId, category.name)
+
+        queries.updateTransaction(
+          amount = input.amount,
+          debit_account_id = input.accountId,
+          credit_account_id = revenueAccount.id,
+          transaction_date = input.transactionDate,
+          transfer_group_id = null,
+          category_id = input.categoryId,
+          payee = input.payee,
+          member = input.member,
+          notes = input.notes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          updated_at = now,
+          id = input.id
+        )
+
         accountRepository.adjustAccountBalance(input.accountId, input.amount)
+        accountRepository.adjustAccountBalance(revenueAccount.id, -input.amount)
       }
 
       TransactionType.TRANSFER -> {
         require(input.toAccountId != null) { "toAccountId is required for transfers" }
-        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
+
+        queries.updateTransaction(
+          amount = input.amount,
+          debit_account_id = input.toAccountId,
+          credit_account_id = input.accountId,
+          transaction_date = input.transactionDate,
+          transfer_group_id = oldTransaction.transferGroupId, // Keep existing group ID
+          category_id = null,
+          payee = input.payee,
+          member = input.member,
+          notes = input.notes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          updated_at = now,
+          id = input.id
+        )
+
         accountRepository.adjustAccountBalance(input.toAccountId, input.amount)
+        accountRepository.adjustAccountBalance(input.accountId, -input.amount)
       }
 
       TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
-        // Loan transactions are managed separately via createLoan()
-        // Skip balance updates here
+        throw UnsupportedOperationException("Loan updates not yet supported")
       }
     }
 
@@ -277,33 +474,16 @@ class TransactionRepository(
     val transaction = getTransactionById(id) ?: return@withContext
 
     // Revert account balance changes
-    when (transaction.type) {
-      TransactionType.EXPENSE -> {
-        accountRepository.adjustAccountBalance(transaction.accountId, transaction.amount)
-      }
+    accountRepository.adjustAccountBalance(transaction.debitAccountId, -transaction.amount)  // Reverse debit
+    accountRepository.adjustAccountBalance(transaction.creditAccountId, transaction.amount)  // Reverse credit
 
-      TransactionType.INCOME -> {
-        accountRepository.adjustAccountBalance(transaction.accountId, -transaction.amount)
-      }
-
-      TransactionType.TRANSFER -> {
-        accountRepository.adjustAccountBalance(transaction.accountId, transaction.amount)
-        transaction.toAccountId?.let {
-          accountRepository.adjustAccountBalance(it, -transaction.amount)
+    // Delete paired transfer transaction if exists
+    transaction.transferGroupId?.let { groupId ->
+      val pairedTransactions = queries.getTransferPair(groupId).executeAsList()
+      pairedTransactions.forEach { paired ->
+        if (paired.id != transaction.id) {
+          queries.deleteTransaction(paired.id)
         }
-        // Delete paired transaction
-        transaction.transferGroupId?.let { groupId ->
-          val pairedTransactions = queries.getTransferPair(groupId).executeAsList()
-          pairedTransactions.forEach { paired ->
-            if (paired.id != transaction.id) {
-              queries.deleteTransaction(paired.id)
-            }
-          }
-        }
-      }
-
-      TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> {
-        // Skip balance revert for loan transactions
       }
     }
 
@@ -379,12 +559,11 @@ class TransactionRepository(
   private fun DbTransaction.toDomain() = Transaction(
     id = id,
     amount = amount,
-    type = TransactionType.fromString(type),
+    debitAccountId = debit_account_id,
+    creditAccountId = credit_account_id,
     transactionDate = transaction_date,
-    categoryId = category_id,
-    accountId = account_id,
-    toAccountId = to_account_id,
     transferGroupId = transfer_group_id,
+    categoryId = category_id,
     payee = payee,
     member = member,
     notes = notes,
@@ -405,214 +584,6 @@ class TransactionRepository(
    */
   suspend fun removeTransactionFromGroup(transactionId: Long, groupId: Long): Unit = withContext(Dispatchers.IO) {
     queries.removeTransactionFromGroup(transactionId, groupId)
-  }
-
-  /**
-   * Calculate monthly payment for different loan types
-   */
-  private fun calculateLoanPayment(
-    loanAmount: Double,
-    annualRate: Double,
-    months: Int,
-    loanType: LoanType,
-    monthNumber: Int
-  ): Pair<Double, Double> {
-    val monthlyRate = annualRate / 12.0
-
-    return when (loanType) {
-      LoanType.EQUAL_INSTALLMENT -> {
-        // 等额本息: Equal monthly payment (principal + interest)
-        if (monthlyRate == 0.0) {
-          val principal = loanAmount / months
-          Pair(principal, 0.0)
-        } else {
-          val payment = loanAmount * monthlyRate * (1 + monthlyRate).pow(months.toDouble()) /
-            ((1 + monthlyRate).pow(months.toDouble()) - 1)
-          val remainingPrincipal = loanAmount * (
-            (1 + monthlyRate).pow(months.toDouble()) -
-              (1 + monthlyRate).pow((monthNumber - 1).toDouble())
-            ) /
-            ((1 + monthlyRate).pow(months.toDouble()) - 1)
-          val interest = remainingPrincipal * monthlyRate
-          val principal = payment - interest
-          Pair(principal, interest)
-        }
-      }
-
-      LoanType.EQUAL_PRINCIPAL -> {
-        // 等额本金: Equal principal, decreasing interest
-        val principal = loanAmount / months
-        val remainingPrincipal = loanAmount - (principal * (monthNumber - 1))
-        val interest = remainingPrincipal * monthlyRate
-        Pair(principal, interest)
-      }
-
-      LoanType.INTEREST_FIRST -> {
-        // 先息后本: Interest only until last month, then principal
-        if (monthNumber < months) {
-          Pair(0.0, loanAmount * monthlyRate)
-        } else {
-          Pair(loanAmount, loanAmount * monthlyRate)
-        }
-      }
-
-      LoanType.INTEREST_ONLY -> {
-        // 只还利息: Interest only, no principal repayment
-        Pair(0.0, loanAmount * monthlyRate)
-      }
-    }
-  }
-
-  /**
-   * Calculate payment date for a given month
-   * Adds approximately monthsToAdd months to startDate (uses 30.44 days per month average)
-   */
-  private fun calculatePaymentDate(startDate: Long, monthsToAdd: Int, paymentDay: Int): Long {
-    // Use average days per month (365.25 / 12 = 30.4375) for better accuracy
-    val avgDaysPerMonth = 30.4375
-    val daysToAdd = (monthsToAdd * avgDaysPerMonth).toLong()
-    val millisToAdd = daysToAdd * 24L * 60L * 60L * 1000L
-    return startDate + millisToAdd
-  }
-
-  /**
-   * Create a loan with initial transaction and future payment transactions
-   * This creates:
-   * 1. A transaction group to track the loan
-   * 2. The initial LOAN transaction (receiving the money)
-   * 3. Future LOAN_PAYMENT transactions (planned state)
-   * 4. Links all transactions to the group
-   */
-  suspend fun createLoan(
-    input: CreateLoanInput,
-    transactionGroupRepository: TransactionGroupRepository
-  ): Pair<Long, Long> = withContext(Dispatchers.IO) {
-    val now = currentTimeMillis()
-
-    // Get lender account name for display
-    val lenderAccount = accountRepository.getAccountById(input.lenderAccountId)
-    val lenderName = lenderAccount?.name ?: "Unknown"
-
-    // 1. Create transaction group for the loan
-    val groupId = transactionGroupRepository.createTransactionGroup(
-      name = "借贷 - $lenderName",
-      groupType = TransactionGroupType.LOAN,
-      description = "借贷金额: ¥${input.amount}, 期限: ${input.loanMonths}个月, 利率: ${(input.interestRate * 100)}%",
-      totalAmount = input.amount
-    )
-
-    // 2. Create the initial LOAN transaction (receiving the money)
-    // This increases the account balance as money comes in
-    queries.insertTransaction(
-      amount = input.amount,
-      type = TransactionType.LOAN.name.lowercase(),
-      transaction_date = input.startDate,
-      category_id = null,
-      account_id = input.accountId,
-      to_account_id = input.lenderAccountId,
-      transfer_group_id = null,
-      payee = lenderName,
-      member = null,
-      notes = buildLoanNotes(input, lenderName),
-      state = TransactionState.CONFIRMED.name.lowercase(),
-      created_at = now,
-      updated_at = now
-    )
-
-    val loanTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
-
-    // 3. Update account balances
-    // Borrower account receives money (increase)
-    accountRepository.adjustAccountBalance(input.accountId, input.amount)
-    // Lender account gives money (decrease)
-    accountRepository.adjustAccountBalance(input.lenderAccountId, -input.amount)
-
-    // 4. Link loan transaction to group
-    queries.addTransactionToGroup(loanTransactionId, groupId)
-
-    // 5. Create future LOAN_PAYMENT transactions (in PLANNED state)
-    for (monthNumber in 1..input.loanMonths) {
-      val (principal, interest) = calculateLoanPayment(
-        loanAmount = input.amount,
-        annualRate = input.interestRate,
-        months = input.loanMonths,
-        loanType = input.loanType,
-        monthNumber = monthNumber
-      )
-
-      val paymentAmount = principal + interest
-      val paymentDate = calculatePaymentDate(input.startDate, monthNumber, input.paymentDay)
-
-      // Create payment transaction in PLANNED state
-      queries.insertTransaction(
-        amount = paymentAmount,
-        type = TransactionType.LOAN_PAYMENT.name.lowercase(),
-        transaction_date = paymentDate,
-        category_id = null,
-        account_id = input.accountId,
-        to_account_id = input.lenderAccountId,
-        transfer_group_id = null,
-        payee = lenderName,
-        member = null,
-        notes = buildPaymentNotes(monthNumber, input.loanMonths, principal, interest),
-        state = TransactionState.PLANNED.name.lowercase(),
-        created_at = now,
-        updated_at = now
-      )
-
-      val paymentTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
-
-      // Link payment transaction to group
-      queries.addTransactionToGroup(paymentTransactionId, groupId)
-    }
-
-    Pair(loanTransactionId, groupId)
-  }
-
-  /**
-   * Build loan notes with metadata for future processing
-   */
-  private fun buildLoanNotes(input: CreateLoanInput, lenderName: String): String {
-    val loanTypeText = when (input.loanType) {
-      LoanType.INTEREST_FIRST -> "先息后本"
-      LoanType.EQUAL_PRINCIPAL -> "等额本金"
-      LoanType.EQUAL_INSTALLMENT -> "等额本息"
-      LoanType.INTEREST_ONLY -> "只还利息"
-    }
-
-    val baseNotes = "借贷类型: $loanTypeText | 年利率: ${(input.interestRate * 100)}% | 期限: ${input.loanMonths}个月 | 还款日: 每月${input.paymentDay}日"
-
-    return if (input.notes != null) {
-      "$baseNotes | ${input.notes}"
-    } else {
-      baseNotes
-    }
-  }
-
-  /**
-   * Build payment notes for loan payment transactions
-   */
-  private fun buildPaymentNotes(
-    monthNumber: Int,
-    totalMonths: Int,
-    principal: Double,
-    interest: Double
-  ): String {
-    val formattedPrincipal = "%.2f".replace("%.", principal.toString().substringBefore('.') + ".")
-      .let { pattern ->
-        val intPart = principal.toLong()
-        val decPart = ((principal - intPart) * 100).toLong().toString().padStart(2, '0')
-        "$intPart.$decPart"
-      }
-
-    val formattedInterest = "%.2f".replace("%.", interest.toString().substringBefore('.') + ".")
-      .let { pattern ->
-        val intPart = interest.toLong()
-        val decPart = ((interest - intPart) * 100).toLong().toString().padStart(2, '0')
-        "$intPart.$decPart"
-      }
-
-    return "第$monthNumber/${totalMonths}期 | 本金: ¥$formattedPrincipal | 利息: ¥$formattedInterest"
   }
 
   /**
@@ -639,6 +610,59 @@ class TransactionRepository(
     colorHex = color_hex,
     createdAt = created_at
   )
+
+  /**
+   * Get transaction with enriched account details for UI display
+   */
+  suspend fun getTransactionWithDetails(id: Long): TransactionWithDetails? = withContext(Dispatchers.IO) {
+    val transaction = getTransactionById(id) ?: return@withContext null
+    val debitAccount = accountRepository.getAccountById(transaction.debitAccountId) ?: return@withContext null
+    val creditAccount = accountRepository.getAccountById(transaction.creditAccountId) ?: return@withContext null
+    val category = transaction.categoryId?.let { categoryRepository.getCategoryById(it) }
+    val tags = getTagsForTransaction(id)
+
+    // Get account types from cache
+    val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
+    val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
+
+    TransactionWithDetails(
+      transaction = transaction,
+      category = category,
+      debitAccount = debitAccount,
+      creditAccount = creditAccount,
+      tags = tags,
+      debitAccountType = debitAccountType,
+      creditAccountType = creditAccountType
+    )
+  }
+
+  /**
+   * Get all transactions with enriched details
+   */
+  suspend fun getAllTransactionsWithDetails(): List<TransactionWithDetails> = withContext(Dispatchers.IO) {
+    getAllTransactions().mapNotNull { transaction ->
+      val debitAccount = accountRepository.getAccountById(transaction.debitAccountId)
+      val creditAccount = accountRepository.getAccountById(transaction.creditAccountId)
+      if (debitAccount == null || creditAccount == null) return@mapNotNull null
+
+      val category = transaction.categoryId?.let { categoryRepository.getCategoryById(it) }
+      val tags = getTagsForTransaction(transaction.id)
+
+      // Get account types from cache
+      val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
+      val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
+
+      TransactionWithDetails(
+        transaction = transaction,
+        category = category,
+        debitAccount = debitAccount,
+        creditAccount = creditAccount,
+        tags = tags,
+        debitAccountType = debitAccountType,
+        creditAccountType = creditAccountType
+      )
+    }
+  }
 
   /**
    * Get current timestamp in milliseconds (KMP-compatible)

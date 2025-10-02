@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-class TransactionGroupRepository(private val database: AppDatabase) {
+class TransactionGroupRepository(
+  private val database: AppDatabase,
+  private val transactionRepository: TransactionRepository
+) {
   private val queries = database.financeQueries
 
   private fun currentTimeMillis(): Long = 1704067200000L // 2024-01-01 00:00:00 UTC - Simplified for KMP
@@ -73,6 +76,11 @@ class TransactionGroupRepository(private val database: AppDatabase) {
     .mapToList(Dispatchers.IO)
     .map { list -> list.map { mapToTransaction(it) } }
 
+  // Helper to get transactions using the shared repository
+  suspend fun getTransactionsInGroup(groupId: Long): List<Transaction> = withContext(Dispatchers.IO) {
+    queries.getTransactionsByGroup(groupId).executeAsList().map { mapToTransaction(it) }
+  }
+
   private fun mapToTransactionGroup(entity: dev.tireless.abun.database.TransactionGroup): TransactionGroup = TransactionGroup(
     id = entity.id,
     name = entity.name,
@@ -87,12 +95,11 @@ class TransactionGroupRepository(private val database: AppDatabase) {
   private fun mapToTransaction(entity: dev.tireless.abun.database.Transaction): Transaction = Transaction(
     id = entity.id,
     amount = entity.amount,
-    type = TransactionType.fromString(entity.type),
+    debitAccountId = entity.debit_account_id,
+    creditAccountId = entity.credit_account_id,
     transactionDate = entity.transaction_date,
-    categoryId = entity.category_id,
-    accountId = entity.account_id,
-    toAccountId = entity.to_account_id,
     transferGroupId = entity.transfer_group_id,
+    categoryId = entity.category_id,
     payee = entity.payee,
     member = entity.member,
     notes = entity.notes,
