@@ -27,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,12 +34,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.FinanceScreen
-import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.FutureViewScreen
 import dev.tireless.abun.material.PriceScreen
 import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
 import org.jetbrains.compose.resources.painterResource
@@ -51,41 +56,11 @@ import dev.tireless.abun.finance.CategoryManagementScreen as FinanceCategoryMana
 @Composable
 fun App() {
   MaterialTheme {
-    var selectedTab by remember { mutableIntStateOf(1) }
-    var showAccountManagement by remember { mutableStateOf(false) }
-    var showFinanceCategoryManagement by remember { mutableStateOf(false) }
-    var showPriceComparison by remember { mutableStateOf(false) }
-    var showFutureView by remember { mutableStateOf(false) }
-    var showAccountDetails by remember { mutableStateOf<Long?>(null) }
+    val navController = rememberNavController()
 
     Scaffold(
       bottomBar = {
-        NavigationBar {
-          NavigationBarItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { Text("Home") },
-            selected = selectedTab == 0,
-            onClick = { selectedTab = 0 },
-          )
-          NavigationBarItem(
-            icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Financial") },
-            label = { Text("Financial") },
-            selected = selectedTab == 1,
-            onClick = { selectedTab = 1 },
-          )
-          NavigationBarItem(
-            icon = { Icon(Icons.Default.Schedule, contentDescription = "Timeblock") },
-            label = { Text("Timeblock") },
-            selected = selectedTab == 2,
-            onClick = { selectedTab = 2 },
-          )
-          NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-            label = { Text("Settings") },
-            selected = selectedTab == 3,
-            onClick = { selectedTab = 3 },
-          )
-        }
+        BottomNavigationBar(navController)
       },
     ) { paddingValues ->
       Box(
@@ -94,50 +69,81 @@ fun App() {
           .fillMaxSize()
           .padding(paddingValues),
       ) {
-        when {
-          showAccountManagement -> {
-            AccountManagementScreen(
-              onNavigateBack = { showAccountManagement = false }
-            )
+        NavHost(
+          navController = navController,
+          startDestination = Route.Finance
+        ) {
+          // Main tabs
+          composable<Route.Home> {
+            HomeScreen()
           }
-          showFinanceCategoryManagement -> {
-            FinanceCategoryManagementScreen(
-              onNavigateBack = { showFinanceCategoryManagement = false }
-            )
+          composable<Route.Finance> {
+            FinanceScreen(navController)
           }
-          showPriceComparison -> {
-            PriceScreen(
-              onNavigateBack = { showPriceComparison = false }
-            )
+          composable<Route.Timeblock> {
+            TimeblockScreen(navController)
           }
-          showFutureView -> {
-            FutureViewScreen(
-              onNavigateBack = { showFutureView = false }
-            )
+          composable<Route.Settings> {
+            SettingsScreen(navController)
           }
-          showAccountDetails != null -> {
+
+          // Finance sub-screens
+          composable<Route.AccountManagement> {
+            AccountManagementScreen(navController)
+          }
+          composable<Route.FinanceCategoryManagement> {
+            FinanceCategoryManagementScreen(navController)
+          }
+          composable<Route.PriceComparison> {
+            PriceScreen(navController)
+          }
+          composable<Route.FutureView> {
+            FutureViewScreen(navController)
+          }
+          composable<Route.AccountDetails> { backStackEntry ->
+            val accountDetails: Route.AccountDetails = backStackEntry.toRoute()
             AccountDetailsScreen(
-              accountId = showAccountDetails,
-              onNavigateBack = { showAccountDetails = null }
+              accountId = accountDetails.accountId,
+              navController = navController
             )
           }
-          else -> {
-            when (selectedTab) {
-              0 -> HomeScreen()
-              1 -> FinanceScreen(
-                onNavigateToAccounts = { showAccountManagement = true },
-                onNavigateToCategories = { showFinanceCategoryManagement = true },
-                onNavigateToPriceComparison = { showPriceComparison = true },
-                onNavigateToFutureView = { showFutureView = true },
-                onNavigateToAccountDetails = { accountId -> showAccountDetails = accountId }
-              )
-              2 -> TimeblockScreen()
-              3 -> SettingsScreen()
-            }
+
+          // Timeblock sub-screens
+          composable<Route.TimeCategoryManagement> {
+            CategoryManagementScreen(navController)
           }
         }
       }
     }
+  }
+}
+
+@Composable
+private fun BottomNavigationBar(navController: NavHostController) {
+  NavigationBar {
+    NavigationBarItem(
+      icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+      label = { Text("Home") },
+      selected = false, // TODO: Track current route
+      onClick = { navController.navigate(Route.Home) },
+    )
+    NavigationBarItem(
+      icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Financial") },
+      label = { Text("Financial") },
+      selected = false, // TODO: Track current route
+      onClick = { navController.navigate(Route.Finance) },
+    )
+    NavigationBarItem(
+      icon = { Icon(Icons.Default.Schedule, contentDescription = "Timeblock") },
+      label = { Text("Timeblock") },
+      selected = false, // TODO: Track current route
+      onClick = { navController.navigate(Route.Timeblock) },
+    )
+    NavigationBarItem(
+      icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+      selected = false, // TODO: Track current route
+      onClick = { navController.navigate(Route.Settings) },
+    )
   }
 }
 
@@ -195,63 +201,55 @@ private fun HomeScreen() {
 }
 
 @Composable
-private fun SettingsScreen() {
-  var showCategoryManagement by remember { mutableStateOf(false) }
-
-  if (showCategoryManagement) {
-    CategoryManagementScreen(
-      onNavigateBack = { showCategoryManagement = false }
+private fun SettingsScreen(navController: NavHostController) {
+  Column(
+    modifier =
+    Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background)
+      .padding(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+  ) {
+    Text(
+      "Settings",
+      style = MaterialTheme.typography.headlineLarge,
+      modifier = Modifier.padding(bottom = 32.dp),
     )
-  } else {
-    Column(
-      modifier =
-      Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)
-        .padding(16.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-      Text(
-        "Settings",
-        style = MaterialTheme.typography.headlineLarge,
-        modifier = Modifier.padding(bottom = 32.dp),
-      )
 
-      // Category Management Section
-      Card(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(bottom = 16.dp)
+    // Category Management Section
+    Card(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 16.dp)
+    ) {
+      Column(
+        modifier = Modifier.padding(16.dp)
       ) {
-        Column(
-          modifier = Modifier.padding(16.dp)
+        Text(
+          "Category Management",
+          style = MaterialTheme.typography.titleLarge,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+          "Manage your timeblock categories and colors",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Button(
+          onClick = { navController.navigate(Route.TimeCategoryManagement) },
+          modifier = Modifier.fillMaxWidth()
         ) {
-          Text(
-            "Category Management",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
-          )
-          Text(
-            "Manage your timeblock categories and colors",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 16.dp)
-          )
-          Button(
-            onClick = { showCategoryManagement = true },
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            Text("Manage Categories")
-          }
+          Text("Manage Categories")
         }
       }
-
-      Text(
-        "Other settings will be available here.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(16.dp),
-      )
     }
+
+    Text(
+      "Other settings will be available here.",
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.padding(16.dp),
+    )
   }
 }

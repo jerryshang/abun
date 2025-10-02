@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import org.koin.compose.koinInject
 
 /**
@@ -20,8 +21,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountManagementScreen(
+  navController: NavHostController,
   viewModel: AccountViewModel = koinInject(),
-  onNavigateBack: () -> Unit
 ) {
   val accounts by viewModel.accounts.collectAsState()
   val totalBalance by viewModel.totalBalance.collectAsState()
@@ -34,7 +35,7 @@ fun AccountManagementScreen(
       TopAppBar(
         title = { Text("账户管理") },
         navigationIcon = {
-          IconButton(onClick = onNavigateBack) {
+          IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "返回")
           }
         }

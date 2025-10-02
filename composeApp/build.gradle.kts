@@ -3,15 +3,14 @@ plugins {
   alias(libs.plugins.androidApplication)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
+  alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.sqldelight)
 }
 
 kotlin {
   androidTarget {
-    compilations.all {
-      kotlinOptions {
-        jvmTarget = "11"
-      }
+    compilerOptions {
+      jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
   }
 
@@ -42,6 +41,7 @@ kotlin {
       implementation(compose.materialIconsExtended)
       implementation(libs.androidx.lifecycle.viewmodelCompose)
       implementation(libs.androidx.lifecycle.runtimeCompose)
+      implementation(libs.androidx.navigation.compose)
       implementation(libs.koin.core)
       implementation(libs.koin.compose)
       implementation(libs.koin.composeViewModel)

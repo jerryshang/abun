@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import dev.tireless.abun.time.Category
 import dev.tireless.abun.time.CategoryViewModel
 import dev.tireless.abun.time.Task
@@ -58,7 +59,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun CategoryManagementScreen(
-  onNavigateBack: () -> Unit = {}
+  navController: NavHostController
 ) {
   val viewModel: CategoryViewModel = koinViewModel()
   val taskRepository: TaskRepository = koinInject()
@@ -78,7 +79,7 @@ fun CategoryManagementScreen(
     TaskManagementScreen(
       category = selectedCategoryForTasks!!,
       taskRepository = taskRepository,
-      onNavigateBack = {
+      onClose = {
         showTaskManagement = false
         selectedCategoryForTasks = null
       }
@@ -348,7 +349,7 @@ private fun parseHexColor(hexColor: String): Long {
 private fun TaskManagementScreen(
   category: Category,
   taskRepository: TaskRepository,
-  onNavigateBack: () -> Unit
+  onClose: () -> Unit
 ) {
   var tasks by remember { mutableStateOf<List<Task>>(emptyList()) }
   var isLoading by remember { mutableStateOf(false) }
@@ -383,7 +384,7 @@ private fun TaskManagementScreen(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        IconButton(onClick = onNavigateBack) {
+        IconButton(onClick = onClose) {
           Icon(Icons.Default.ExpandLess, contentDescription = "Back")
         }
         Text(

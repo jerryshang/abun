@@ -46,9 +46,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import org.koin.compose.koinInject
-import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Future View Screen showing balance predictions and upcoming transactions
@@ -56,8 +55,8 @@ import kotlin.math.min
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FutureViewScreen(
+  navController: NavHostController,
   viewModel: TransactionViewModel = koinInject(),
-  onNavigateBack: () -> Unit,
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -93,7 +92,7 @@ fun FutureViewScreen(
       TopAppBar(
         title = { Text("未来视图") },
         navigationIcon = {
-          IconButton(onClick = onNavigateBack) {
+          IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "返回")
           }
         }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,6 +58,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import dev.tireless.abun.navigation.Route
 import org.koin.compose.koinInject
 
 /**
@@ -67,12 +68,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceScreen(
+  navController: NavHostController,
   viewModel: TransactionViewModel = koinInject(),
-  onNavigateToAccounts: () -> Unit = {},
-  onNavigateToCategories: () -> Unit = {},
-  onNavigateToPriceComparison: () -> Unit = {},
-  onNavigateToFutureView: () -> Unit = {},
-  onNavigateToAccountDetails: (Long?) -> Unit = {},
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -93,13 +90,13 @@ fun FinanceScreen(
       TopAppBar(
         title = { Text("财务管理") },
         actions = {
-          IconButton(onClick = onNavigateToPriceComparison) {
+          IconButton(onClick = { navController.navigate(Route.PriceComparison) }) {
             Icon(Icons.Default.ShoppingCart, "价格对比")
           }
-          IconButton(onClick = onNavigateToAccounts) {
+          IconButton(onClick = { navController.navigate(Route.AccountManagement) }) {
             Icon(Icons.Default.AccountBalanceWallet, "账户管理")
           }
-          IconButton(onClick = onNavigateToCategories) {
+          IconButton(onClick = { navController.navigate(Route.FinanceCategoryManagement) }) {
             Icon(Icons.Default.Category, "分类管理")
           }
         },
@@ -142,7 +139,7 @@ fun FinanceScreen(
               accounts = accounts,
               predictedBalance = predictedBalance,
               daysAhead = 30,
-              onViewFuture = onNavigateToFutureView,
+              onViewFuture = { navController.navigate(Route.FutureView) },
             )
           }
 
@@ -150,8 +147,8 @@ fun FinanceScreen(
           item {
             AccountListSection(
               accounts = accounts,
-              onManageAccounts = onNavigateToAccounts,
-              onAccountClick = { accountId -> onNavigateToAccountDetails(accountId) },
+              onManageAccounts = { navController.navigate(Route.AccountManagement) },
+              onAccountClick = { accountId -> navController.navigate(Route.AccountDetails(accountId)) },
             )
           }
 
@@ -169,7 +166,7 @@ fun FinanceScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
               )
-              TextButton(onClick = { onNavigateToAccountDetails(null) }) {
+              TextButton(onClick = { navController.navigate(Route.AccountDetails(null)) }) {
                 Text("查看全部 >")
               }
             }

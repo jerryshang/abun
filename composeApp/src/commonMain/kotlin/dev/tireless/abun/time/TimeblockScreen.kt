@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import dev.tireless.abun.time.Timeblock
 import dev.tireless.abun.time.TimeblockViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -65,7 +66,7 @@ enum class ZoomLevel {
 }
 
 @Composable
-fun TimeblockScreen() {
+fun TimeblockScreen(navController: NavHostController) {
   val viewModel: TimeblockViewModel = koinViewModel()
   val timeblocks by viewModel.timeblocks.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()

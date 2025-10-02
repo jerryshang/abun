@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 
 data class PriceItem(
   val price: String = "",
@@ -56,7 +57,7 @@ data class PriceItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceScreen(onNavigateBack: () -> Unit = {}) {
+fun PriceScreen(navController: NavHostController) {
   var priceItems by remember { mutableStateOf(listOf(PriceItem(), PriceItem())) }
   val focusManager = LocalFocusManager.current
 
@@ -85,7 +86,7 @@ fun PriceScreen(onNavigateBack: () -> Unit = {}) {
       TopAppBar(
         title = { Text("价格对比") },
         navigationIcon = {
-          IconButton(onClick = onNavigateBack) {
+          IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "返回")
           }
         }

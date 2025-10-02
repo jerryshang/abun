@@ -1,6 +1,5 @@
 package dev.tireless.abun.finance
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import org.koin.compose.koinInject
 
 /**
@@ -50,8 +49,8 @@ import org.koin.compose.koinInject
 @Composable
 fun AccountDetailsScreen(
   accountId: Long?,
+  navController: NavHostController,
   viewModel: TransactionViewModel = koinInject(),
-  onNavigateBack: () -> Unit,
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -104,7 +103,7 @@ fun AccountDetailsScreen(
           }
         },
         navigationIcon = {
-          IconButton(onClick = onNavigateBack) {
+          IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "返回")
           }
         },

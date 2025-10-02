@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import org.koin.compose.koinInject
 
 /**
@@ -20,8 +21,8 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryManagementScreen(
+  navController: NavHostController,
   viewModel: FinanceCategoryViewModel = koinInject(),
-  onNavigateBack: () -> Unit
 ) {
   val categories by viewModel.categories.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
@@ -34,7 +35,7 @@ fun CategoryManagementScreen(
       TopAppBar(
         title = { Text("分类管理") },
         navigationIcon = {
-          IconButton(onClick = onNavigateBack) {
+          IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "返回")
           }
         }
