@@ -20,16 +20,13 @@ class TransactionGroupRepository(
   suspend fun createTransactionGroup(
     name: String,
     groupType: TransactionGroupType,
-    description: String? = null,
-    totalAmount: Double? = null
+    description: String? = null
   ): Long = withContext(Dispatchers.IO) {
     val now = currentTimeMillis()
     queries.insertTransactionGroup(
       name = name,
       group_type = groupType.name.lowercase(),
       description = description,
-      total_amount = totalAmount?.toStorageAmount(),
-      status = GroupStatus.ACTIVE.name.lowercase(),
       created_at = now,
       updated_at = now
     )
@@ -39,13 +36,11 @@ class TransactionGroupRepository(
   suspend fun updateTransactionGroup(
     id: Long,
     name: String,
-    description: String? = null,
-    status: GroupStatus
+    description: String? = null
   ): Unit = withContext(Dispatchers.IO) {
     queries.updateTransactionGroup(
       name = name,
       description = description,
-      status = status.name.lowercase(),
       updated_at = currentTimeMillis(),
       id = id
     )
@@ -86,8 +81,6 @@ class TransactionGroupRepository(
     name = entity.name,
     groupType = TransactionGroupType.fromString(entity.group_type),
     description = entity.description,
-    totalAmountStorage = entity.total_amount,
-    status = GroupStatus.fromString(entity.status),
     createdAt = entity.created_at,
     updatedAt = entity.updated_at
   )

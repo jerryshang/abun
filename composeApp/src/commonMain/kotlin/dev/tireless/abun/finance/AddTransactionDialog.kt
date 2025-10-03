@@ -298,8 +298,7 @@ fun AddTransactionDialog(
                 toAccountId = finalToAccountId,
                 payee = payee.ifBlank { null },
                 member = member.ifBlank { null },
-                notes = notes.ifBlank { null },
-                tagIds = emptyList()
+                notes = notes.ifBlank { null }
               )
             )
           }

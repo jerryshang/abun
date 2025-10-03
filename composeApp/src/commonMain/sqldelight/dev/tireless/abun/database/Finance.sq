@@ -30,14 +30,14 @@ VALUES
   (4, 'Revenue', NULL, 'CNY', 3, 0, 0),    -- RootAccountIds.REVENUE
   (5, 'Expense', NULL, 'CNY', 3, 0, 0);    -- RootAccountIds.EXPENSE
 
--- Transaction Groups Table (for grouping related transactions like loans)
+-- Transaction Groups Table (Pure virtual grouping for related transactions)
+-- This is a logical grouping mechanism without financial meaning
+-- Aggregate amounts and status should be calculated from member transactions
 CREATE TABLE TransactionGroup (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name TEXT NOT NULL,
     group_type TEXT NOT NULL, -- 'loan', 'installment', 'split', 'custom'
     description TEXT,
-    total_amount INTEGER, -- Amount * 10000
-    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'completed', 'cancelled'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -68,23 +68,6 @@ CREATE TABLE TransactionGroupMember (
     PRIMARY KEY (transaction_id, group_id),
     FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
-);
-
--- Tags Table
-CREATE TABLE FinanceTag (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    name TEXT NOT NULL UNIQUE,
-    color_hex TEXT,
-    created_at INTEGER NOT NULL
-);
-
--- Transaction-Tag Association Table (Many-to-Many)
-CREATE TABLE TransactionTag (
-    transaction_id INTEGER NOT NULL,
-    tag_id INTEGER NOT NULL,
-    PRIMARY KEY (transaction_id, tag_id),
-    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES FinanceTag(id) ON DELETE CASCADE
 );
 
 -- Attachments Table
@@ -150,12 +133,12 @@ SELECT * FROM Account WHERE parent_id = 2 AND (config & 1) = 1 ORDER BY name;
 
 -- Queries for Transaction Groups
 insertTransactionGroup:
-INSERT INTO TransactionGroup (name, group_type, description, total_amount, status, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionGroup (name, group_type, description, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?);
 
 updateTransactionGroup:
 UPDATE TransactionGroup
-SET name = ?, description = ?, status = ?, updated_at = ?
+SET name = ?, description = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransactionGroup:
@@ -218,8 +201,6 @@ SELECT * FROM `Transaction`
 WHERE transaction_date BETWEEN ? AND ?
 ORDER BY transaction_date DESC;
 
--- Removed: getTransactionsByType (no longer has type column)
-
 getTransferPair:
 SELECT * FROM `Transaction` WHERE transfer_group_id = ? ORDER BY created_at;
 
@@ -234,45 +215,6 @@ SELECT * FROM `Transaction` WHERE state = ? ORDER BY transaction_date;
 
 updateTransactionState:
 UPDATE `Transaction` SET state = ?, updated_at = ? WHERE id = ?;
-
--- Queries for Tags
-insertFinanceTag:
-INSERT INTO FinanceTag (name, color_hex, created_at)
-VALUES (?, ?, ?);
-
-updateFinanceTag:
-UPDATE FinanceTag SET name = ?, color_hex = ? WHERE id = ?;
-
-deleteFinanceTag:
-DELETE FROM FinanceTag WHERE id = ?;
-
-getFinanceTagById:
-SELECT * FROM FinanceTag WHERE id = ?;
-
-getAllFinanceTags:
-SELECT * FROM FinanceTag ORDER BY name;
-
-getFinanceTagByName:
-SELECT * FROM FinanceTag WHERE name = ?;
-
--- Queries for Transaction-Tag associations
-addTagToTransaction:
-INSERT OR IGNORE INTO TransactionTag (transaction_id, tag_id) VALUES (?, ?);
-
-removeTagFromTransaction:
-DELETE FROM TransactionTag WHERE transaction_id = ? AND tag_id = ?;
-
-getTagsForTransaction:
-SELECT t.* FROM FinanceTag t
-INNER JOIN TransactionTag tt ON t.id = tt.tag_id
-WHERE tt.transaction_id = ?
-ORDER BY t.name;
-
-getTransactionsByTag:
-SELECT ft.* FROM `Transaction` ft
-INNER JOIN TransactionTag tt ON ft.id = tt.transaction_id
-WHERE tt.tag_id = ?
-ORDER BY ft.transaction_date DESC;
 
 -- Queries for Attachments
 insertAttachment:

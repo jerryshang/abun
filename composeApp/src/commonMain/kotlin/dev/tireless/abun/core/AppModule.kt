@@ -43,7 +43,6 @@ val appModule =
     // Finance repositories
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository
-    single { FinanceTagRepository(get()) }
     single { TransactionGroupRepository(get(), get()) } // database, transactionRepository
   }
 
@@ -53,7 +52,7 @@ val viewModelModule =
     factory { TimeblockViewModel(get(), get(), get()) }
     factory { CategoryViewModel(get()) }
     // Finance ViewModels
-    factory { TransactionViewModel(get(), get(), get(), get()) }
+    factory { TransactionViewModel(get(), get(), get()) }
     factory { AccountViewModel(get()) }
   }
 

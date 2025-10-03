@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 class TransactionViewModel(
   private val transactionRepository: TransactionRepository,
   private val accountRepository: AccountRepository,
-  private val tagRepository: FinanceTagRepository,
   private val transactionGroupRepository: TransactionGroupRepository
 ) : ViewModel() {
 
@@ -22,9 +21,6 @@ class TransactionViewModel(
 
   private val _accounts = MutableStateFlow<List<AccountWithBalance>>(emptyList())
   val accounts: StateFlow<List<AccountWithBalance>> = _accounts.asStateFlow()
-
-  private val _tags = MutableStateFlow<List<FinanceTag>>(emptyList())
-  val tags: StateFlow<List<FinanceTag>> = _tags.asStateFlow()
 
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -45,7 +41,6 @@ class TransactionViewModel(
         _isLoading.value = true
         _transactions.value = transactionRepository.getAllTransactionsWithDetails()
         _accounts.value = accountRepository.getActiveAccountsWithBalance()
-        _tags.value = tagRepository.getAllTags()
       } catch (e: Exception) {
         _error.value = "Failed to load data: ${e.message}"
       } finally {

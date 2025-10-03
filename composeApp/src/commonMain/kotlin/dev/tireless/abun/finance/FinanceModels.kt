@@ -101,19 +101,6 @@ enum class TransactionGroupType {
 }
 
 /**
- * Transaction Group Status
- */
-enum class GroupStatus {
-  ACTIVE,
-  COMPLETED,
-  CANCELLED;
-
-  companion object {
-    fun fromString(value: String): GroupStatus = values().find { it.name == value.uppercase() } ?: ACTIVE
-  }
-}
-
-/**
  * Transaction State
  */
 enum class TransactionState {
@@ -255,25 +242,18 @@ data class Transaction(
 }
 
 /**
- * Domain model for Transaction Group
- * Note: totalAmount is stored as Long (actual * 10000) for precision
+ * Domain model for Transaction Group (Pure Virtual Grouping)
+ * This is purely a logical grouping mechanism without financial meaning.
+ * Total amounts and status should be calculated from member transactions.
  */
 data class TransactionGroup(
   val id: Long,
   val name: String,
   val groupType: TransactionGroupType,
   val description: String? = null,
-  val totalAmountStorage: Long? = null, // Stored as actual * 10000
-  val status: GroupStatus = GroupStatus.ACTIVE,
   val createdAt: Long,
   val updatedAt: Long
-) {
-  /**
-   * Get total amount as display value (Double)
-   */
-  val totalAmount: Double?
-    get() = totalAmountStorage?.toDisplayAmount()
-}
+)
 
 /**
  * Loan Metadata (stored as JSON in transaction)
@@ -294,16 +274,6 @@ data class LoanMetadata(
   val principalAmount: Double? = null,
   // For specific payment calculation
   val interestAmount: Double? = null
-)
-
-/**
- * Domain model for Tag
- */
-data class FinanceTag(
-  val id: Long,
-  val name: String,
-  val colorHex: String? = null,
-  val createdAt: Long
 )
 
 /**
@@ -368,7 +338,6 @@ data class TransactionWithDetails(
   val transaction: Transaction,
   val debitAccount: Account,
   val creditAccount: Account,
-  val tags: List<FinanceTag> = emptyList(),
   // Cached account types for performance (computed from hierarchy in repository)
   val debitAccountType: AccountType,
   val creditAccountType: AccountType
@@ -496,8 +465,7 @@ data class CreateTransactionInput(
   val toAccountId: Long? = null, // For TRANSFER only
   val payee: String? = null,
   val member: String? = null,
-  val notes: String? = null,
-  val tagIds: List<Long> = emptyList()
+  val notes: String? = null
 )
 
 data class UpdateTransactionInput(
@@ -509,13 +477,7 @@ data class UpdateTransactionInput(
   val toAccountId: Long? = null,
   val payee: String? = null,
   val member: String? = null,
-  val notes: String? = null,
-  val tagIds: List<Long> = emptyList()
-)
-
-data class CreateTagInput(
-  val name: String,
-  val colorHex: String? = null
+  val notes: String? = null
 )
 
 data class CreateLoanInput(

@@ -473,8 +473,7 @@ fun FinanceScreen(
                 toAccountId = input.toAccountId,
                 payee = input.payee,
                 member = input.member,
-                notes = input.notes,
-                tagIds = input.tagIds,
+                notes = input.notes
               ),
             )
           }

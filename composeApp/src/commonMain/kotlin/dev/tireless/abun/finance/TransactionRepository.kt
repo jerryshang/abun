@@ -163,11 +163,6 @@ class TransactionRepository(
 
     val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
 
-    // Add tags if provided
-    input.tagIds.forEach { tagId ->
-      queries.addTagToTransaction(transactionId, tagId)
-    }
-
     transactionId
   }
 
@@ -224,8 +219,7 @@ class TransactionRepository(
     val groupId = transactionGroupRepository.createTransactionGroup(
       name = "Loan: ${input.payee ?: "Unknown"}",
       groupType = TransactionGroupType.LOAN,
-      description = "Loan of ¥${input.amount} at ${input.interestRate}% for ${input.loanMonths} months",
-      totalAmount = input.amount
+      description = "Loan of ¥${input.amount} at ${input.interestRate}% for ${input.loanMonths} months"
     )
 
     // Add initial loan transaction to group
@@ -425,14 +419,6 @@ class TransactionRepository(
         throw UnsupportedOperationException("Loan updates not yet supported")
       }
     }
-
-    // Update tags
-    queries.getTagsForTransaction(input.id).executeAsList().forEach { tag ->
-      queries.removeTagFromTransaction(input.id, tag.id)
-    }
-    input.tagIds.forEach { tagId ->
-      queries.addTagToTransaction(input.id, tagId)
-    }
   }
 
   /**
@@ -455,20 +441,6 @@ class TransactionRepository(
     }
 
     queries.deleteTransaction(id)
-  }
-
-  /**
-   * Get tags for a transaction
-   */
-  suspend fun getTagsForTransaction(transactionId: Long): List<FinanceTag> = withContext(Dispatchers.IO) {
-    queries.getTagsForTransaction(transactionId).executeAsList().map { it.toDomainTag() }
-  }
-
-  /**
-   * Get transactions by tag
-   */
-  suspend fun getTransactionsByTag(tagId: Long): List<Transaction> = withContext(Dispatchers.IO) {
-    queries.getTransactionsByTag(tagId).executeAsList().map { it.toDomain() }
   }
 
   /**
@@ -522,17 +494,8 @@ class TransactionRepository(
     name = name,
     groupType = TransactionGroupType.fromString(group_type),
     description = description,
-    totalAmountStorage = total_amount,
-    status = GroupStatus.fromString(status),
     createdAt = created_at,
     updatedAt = updated_at
-  )
-
-  private fun dev.tireless.abun.database.FinanceTag.toDomainTag() = FinanceTag(
-    id = id,
-    name = name,
-    colorHex = color_hex,
-    createdAt = created_at
   )
 
   /**
@@ -542,7 +505,6 @@ class TransactionRepository(
     val transaction = getTransactionById(id) ?: return@withContext null
     val debitAccount = accountRepository.getAccountById(transaction.debitAccountId) ?: return@withContext null
     val creditAccount = accountRepository.getAccountById(transaction.creditAccountId) ?: return@withContext null
-    val tags = getTagsForTransaction(id)
 
     // Get account types from cache
     val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
@@ -552,7 +514,6 @@ class TransactionRepository(
       transaction = transaction,
       debitAccount = debitAccount,
       creditAccount = creditAccount,
-      tags = tags,
       debitAccountType = debitAccountType,
       creditAccountType = creditAccountType
     )
@@ -567,8 +528,6 @@ class TransactionRepository(
       val creditAccount = accountRepository.getAccountById(transaction.creditAccountId)
       if (debitAccount == null || creditAccount == null) return@mapNotNull null
 
-      val tags = getTagsForTransaction(transaction.id)
-
       // Get account types from cache
       val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
       val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
@@ -577,7 +536,6 @@ class TransactionRepository(
         transaction = transaction,
         debitAccount = debitAccount,
         creditAccount = creditAccount,
-        tags = tags,
         debitAccountType = debitAccountType,
         creditAccountType = creditAccountType
       )
