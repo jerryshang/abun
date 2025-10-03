@@ -30,6 +30,12 @@ VALUES
   (4, 'Revenue', NULL, 'CNY', 3, 0, 0),    -- RootAccountIds.REVENUE
   (5, 'Expense', NULL, 'CNY', 3, 0, 0);    -- RootAccountIds.EXPENSE
 
+-- Initialize default Cash account under Asset
+-- config = 7 means: bit0=1 (active), bit1=1 (countable), bit2=1 (visible to UI)
+INSERT INTO Account (name, parent_id, currency, config, created_at, updated_at)
+VALUES
+  ('Cash', 1, 'CNY', 7, 0, 0);
+
 -- Transaction Groups Table (Pure virtual grouping for related transactions)
 -- This is a logical grouping mechanism without financial meaning
 -- Aggregate amounts and status should be calculated from member transactions
@@ -68,26 +74,6 @@ CREATE TABLE TransactionGroupMember (
     PRIMARY KEY (transaction_id, group_id),
     FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
-);
-
--- Attachments Table
-CREATE TABLE TransactionAttachment (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    transaction_id INTEGER NOT NULL,
-    file_path TEXT NOT NULL,
-    file_type TEXT NOT NULL, -- 'image', 'pdf', etc.
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE
-);
-
--- Linked Items Table (Cross-module linking)
-CREATE TABLE TransactionLinkedItem (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    transaction_id INTEGER NOT NULL,
-    linked_item_id INTEGER NOT NULL,
-    linked_item_type TEXT NOT NULL, -- 'note', 'task', 'timeblock', 'event', etc.
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE
 );
 
 -- Note: Transaction Templates and Recurring Transactions removed temporarily
@@ -215,34 +201,6 @@ SELECT * FROM `Transaction` WHERE state = ? ORDER BY transaction_date;
 
 updateTransactionState:
 UPDATE `Transaction` SET state = ?, updated_at = ? WHERE id = ?;
-
--- Queries for Attachments
-insertAttachment:
-INSERT INTO TransactionAttachment (transaction_id, file_path, file_type, created_at)
-VALUES (?, ?, ?, ?);
-
-deleteAttachment:
-DELETE FROM TransactionAttachment WHERE id = ?;
-
-getAttachmentsForTransaction:
-SELECT * FROM TransactionAttachment WHERE transaction_id = ? ORDER BY created_at;
-
--- Queries for Linked Items
-insertLinkedItem:
-INSERT INTO TransactionLinkedItem (transaction_id, linked_item_id, linked_item_type, created_at)
-VALUES (?, ?, ?, ?);
-
-deleteLinkedItem:
-DELETE FROM TransactionLinkedItem WHERE id = ?;
-
-getLinkedItemsForTransaction:
-SELECT * FROM TransactionLinkedItem WHERE transaction_id = ? ORDER BY created_at;
-
-getTransactionsByLinkedItem:
-SELECT ft.* FROM `Transaction` ft
-INNER JOIN TransactionLinkedItem tli ON ft.id = tli.transaction_id
-WHERE tli.linked_item_id = ? AND tli.linked_item_type = ?
-ORDER BY ft.transaction_date DESC;
 
 -- Note: Template and recurring transaction queries removed
 -- Will be re-implemented after full migration to debit/credit model

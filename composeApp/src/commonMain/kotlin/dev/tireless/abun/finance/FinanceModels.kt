@@ -277,28 +277,6 @@ data class LoanMetadata(
 )
 
 /**
- * Domain model for Transaction Attachment
- */
-data class TransactionAttachment(
-  val id: Long,
-  val transactionId: Long,
-  val filePath: String,
-  val fileType: String,
-  val createdAt: Long
-)
-
-/**
- * Domain model for Linked Item (cross-module linking)
- */
-data class TransactionLinkedItem(
-  val id: Long,
-  val transactionId: Long,
-  val linkedItemId: Long,
-  val linkedItemType: String, // 'note', 'task', 'timeblock', etc.
-  val createdAt: Long
-)
-
-/**
  * Domain model for Transaction Template
  */
 data class TransactionTemplate(
