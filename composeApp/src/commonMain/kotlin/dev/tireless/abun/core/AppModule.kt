@@ -44,6 +44,7 @@ val appModule =
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository
     single { TransactionGroupRepository(get(), get()) } // database, transactionRepository
+    single { AccountLoaderService(get(), get()) } // accountRepository, transactionRepository
   }
 
 val viewModelModule =
@@ -53,7 +54,7 @@ val viewModelModule =
     factory { CategoryViewModel(get()) }
     // Finance ViewModels
     factory { TransactionViewModel(get(), get(), get()) }
-    factory { AccountViewModel(get()) }
+    factory { AccountViewModel(get(), get()) } // accountRepository, accountLoaderService
   }
 
 val allModules =

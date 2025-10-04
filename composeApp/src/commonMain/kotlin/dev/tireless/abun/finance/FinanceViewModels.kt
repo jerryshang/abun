@@ -170,7 +170,8 @@ class TransactionViewModel(
  * ViewModel for managing accounts
  */
 class AccountViewModel(
-  private val accountRepository: AccountRepository
+  private val accountRepository: AccountRepository,
+  private val accountLoaderService: AccountLoaderService
 ) : ViewModel() {
 
   private val _accounts = MutableStateFlow<List<AccountWithBalance>>(emptyList())
@@ -260,5 +261,24 @@ class AccountViewModel(
 
   fun clearError() {
     _error.value = null
+  }
+
+  /**
+   * Load predefined account template
+   * Clears all transactions and non-root accounts, then loads the template
+   */
+  fun loadTemplate(csvContent: String) {
+    viewModelScope.launch {
+      try {
+        _isLoading.value = true
+        accountLoaderService.clearAllData()
+        accountLoaderService.loadPredefinedAccounts(csvContent)
+        loadAccounts()
+      } catch (e: Exception) {
+        _error.value = "Failed to load template: ${e.message}"
+      } finally {
+        _isLoading.value = false
+      }
+    }
   }
 }
