@@ -1,4 +1,4 @@
-package dev.tireless.abun.material
+package dev.tireless.abun.finance
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +57,7 @@ data class PriceItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceScreen(navController: NavHostController) {
+fun PriceComparator(navController: NavHostController) {
   var priceItems by remember { mutableStateOf(listOf(PriceItem(), PriceItem())) }
   val focusManager = LocalFocusManager.current
 

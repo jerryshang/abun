@@ -43,7 +43,7 @@ import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.FinanceScreen
 import dev.tireless.abun.finance.FutureViewScreen
-import dev.tireless.abun.material.PriceScreen
+import dev.tireless.abun.finance.PriceComparator
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
@@ -91,7 +91,7 @@ fun App() {
             AccountManagementScreen(navController)
           }
           composable<Route.PriceComparison> {
-            PriceScreen(navController)
+            PriceComparator(navController)
           }
           composable<Route.FutureView> {
             FutureViewScreen(navController)
