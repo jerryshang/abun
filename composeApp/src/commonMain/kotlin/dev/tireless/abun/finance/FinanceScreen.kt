@@ -69,6 +69,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.composables.icons.lucide.ArrowRightLeft
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.EyeOff
 import com.composables.icons.lucide.Landmark
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.PiggyBank
@@ -158,7 +160,7 @@ fun FinanceScreen(
               }) {
                 Icon(
                   imageVector = if (selectedAccountId != null) Icons.Default.Close else Icons.Default.AttachMoney,
-                  contentDescription = if (selectedAccountId != null) "清除筛选" else "选择账户"
+                  contentDescription = if (selectedAccountId != null) "Clear filter" else "Select account"
                 )
               }
               if (selectedAccount != null) {
@@ -168,13 +170,13 @@ fun FinanceScreen(
                 )
               } else {
                 Text(
-                  text = "全部 (All)",
+                  text = "All",
                   style = MaterialTheme.typography.titleLarge
                 )
               }
               Icon(
                 imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = "展开账户选择",
+                contentDescription = "Expand account selection",
                 modifier = Modifier.size(24.dp)
               )
             }
@@ -191,7 +193,7 @@ fun FinanceScreen(
               DropdownMenuItem(
                 text = {
                   Text(
-                    "全部 (All)",
+                    "All",
                     fontWeight = if (selectedAccountId == null) FontWeight.Bold else FontWeight.Normal
                   )
                 },
@@ -211,13 +213,13 @@ fun FinanceScreen(
                       verticalAlignment = Alignment.CenterVertically
                     ) {
                       Text(
-                        "资产 (Assets)",
+                        "Assets",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                       )
                       Icon(
                         imageVector = if (expandedAssets) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
-                        contentDescription = if (expandedAssets) "收起" else "展开",
+                        contentDescription = if (expandedAssets) "Collapse" else "Expand",
                         modifier = Modifier
                           .size(20.dp)
                           .rotate(if (expandedAssets) 0f else -90f)
@@ -255,13 +257,13 @@ fun FinanceScreen(
                       verticalAlignment = Alignment.CenterVertically
                     ) {
                       Text(
-                        "负债 (Liabilities)",
+                        "Liabilities",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                       )
                       Icon(
                         imageVector = if (expandedLiabilities) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
-                        contentDescription = if (expandedLiabilities) "收起" else "展开",
+                        contentDescription = if (expandedLiabilities) "Collapse" else "Expand",
                         modifier = Modifier
                           .size(20.dp)
                           .rotate(if (expandedLiabilities) 0f else -90f)
@@ -293,10 +295,10 @@ fun FinanceScreen(
         },
         actions = {
           IconButton(onClick = { navController.navigate(Route.PriceComparison) }) {
-            Icon(Icons.Default.ShoppingCart, "价格对比")
+            Icon(Icons.Default.ShoppingCart, "Price Comparison")
           }
           IconButton(onClick = { navController.navigate(Route.AccountManagement) }) {
-            Icon(Icons.Default.AccountBalanceWallet, "账户管理")
+            Icon(Icons.Default.AccountBalanceWallet, "Account Management")
           }
         },
       )
@@ -369,15 +371,15 @@ fun FinanceScreen(
             ) {
               Text(
                 text = if (selectedAccount != null) {
-                  "${selectedAccount.name} 交易记录"
+                  "${selectedAccount.name} Transaction History"
                 } else {
-                  "最近交易 (Recent Transactions)"
+                  "Recent Transactions"
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
               )
               TextButton(onClick = { navController.navigate(Route.AccountDetails(selectedAccountId)) }) {
-                Text("查看全部 >")
+                Text("View All >")
               }
             }
           }
@@ -405,7 +407,7 @@ fun FinanceScreen(
             .padding(16.dp),
           action = {
             TextButton(onClick = { viewModel.clearError() }) {
-              Text("关闭")
+              Text("Close")
             }
           },
         ) {
@@ -527,20 +529,20 @@ fun AccountListSection(
       ) {
         Icon(
           imageVector = Icons.Default.KeyboardArrowDown,
-          contentDescription = if (isExpanded) "收起" else "展开",
+          contentDescription = if (isExpanded) "Collapse" else "Expand",
           modifier = Modifier
             .size(20.dp)
             .rotate(rotation),
           tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-          text = "账户列表 (Accounts)",
+          text = "Accounts",
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.SemiBold,
         )
       }
       TextButton(onClick = onManageAccounts) {
-        Text("管理 >")
+        Text("Manage >")
       }
     }
 
@@ -602,10 +604,6 @@ fun AccountsSummaryCard(
   var isBalanceVisible by remember { mutableStateOf(true) }
   val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
 
-  // TODO: Calculate month-over-month change from historical data
-  val monthlyChange = 2500.0 // Placeholder
-  val isPositiveChange = monthlyChange >= 0
-
   Card(
     modifier =
     Modifier
@@ -626,7 +624,7 @@ fun AccountsSummaryCard(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Text(
-          text = "总资产 (Total Assets)",
+          text = "Total Assets",
           style = MaterialTheme.typography.titleMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -634,9 +632,10 @@ fun AccountsSummaryCard(
           onClick = { isBalanceVisible = !isBalanceVisible },
           modifier = Modifier.size(32.dp),
         ) {
-          Text(
-            text = if (isBalanceVisible) "👁️" else "👁️‍🗨️",
-            style = MaterialTheme.typography.titleMedium,
+          Icon(
+            imageVector = if (isBalanceVisible) Lucide.Eye else Lucide.EyeOff,
+            contentDescription = if (isBalanceVisible) "Hide balance" else "Show balance",
+            modifier = Modifier.size(20.dp),
           )
         }
       }
@@ -650,71 +649,6 @@ fun AccountsSummaryCard(
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
       )
-
-      Spacer(modifier = Modifier.height(4.dp))
-
-      // Month-over-month comparison
-      if (isBalanceVisible) {
-        Text(
-          text = "(较上月 ${if (isPositiveChange) "+" else ""}¥${formatAmount(monthlyChange)})",
-          style = MaterialTheme.typography.bodySmall,
-          color = if (isPositiveChange) Color(0xFF388E3C) else Color(0xFFD32F2F),
-        )
-      }
-
-      Spacer(modifier = Modifier.height(16.dp))
-
-      // Divider
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(1.dp)
-          .background(MaterialTheme.colorScheme.outlineVariant)
-      )
-
-      Spacer(modifier = Modifier.height(16.dp))
-
-      // Financial Prediction Section
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .clickable(onClick = onViewFuture),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Column(modifier = Modifier.weight(1f)) {
-          Text(
-            text = "财务预测",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-          Spacer(modifier = Modifier.height(4.dp))
-          if (isBalanceVisible) {
-            Text(
-              text = "${daysAhead}日后预计: ¥${formatAmount(predictedBalance)}",
-              style = MaterialTheme.typography.bodyMedium,
-              color = if (predictedBalance >= totalBalance) {
-                Color(0xFF388E3C)
-              } else {
-                Color(0xFFF57C00)
-              }
-            )
-          } else {
-            Text(
-              text = "${daysAhead}日后预计: ¥****.**",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
-        Icon(
-          imageVector = Icons.Default.Add,
-          contentDescription = "查看未来",
-          modifier = Modifier.size(16.dp).rotate(90f),
-          tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
     }
   }
 }
@@ -880,7 +814,7 @@ fun AccountDetailSummaryCard(
         ) {
           Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "查看详情",
+            contentDescription = "View details",
             modifier = Modifier.size(16.dp).rotate(90f),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -898,7 +832,7 @@ fun AccountDetailSummaryCard(
 
           // Debt amount
           Text(
-            text = "欠款金额",
+            text = "Debt Amount",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -930,7 +864,7 @@ fun AccountDetailSummaryCard(
             ) {
               Column {
                 Text(
-                  text = "可用额度",
+                  text = "Available Credit",
                   style = MaterialTheme.typography.labelMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -945,7 +879,7 @@ fun AccountDetailSummaryCard(
 
               Column(horizontalAlignment = Alignment.End) {
                 Text(
-                  text = "总额度",
+                  text = "Total Limit",
                   style = MaterialTheme.typography.labelMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -987,7 +921,7 @@ fun AccountDetailSummaryCard(
         isAsset -> {
           // Debit card or asset: Show current balance
           Text(
-            text = "当前余额",
+            text = "Current Balance",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
@@ -1003,7 +937,7 @@ fun AccountDetailSummaryCard(
         else -> {
           // Other account types: Just show balance
           Text(
-            text = "余额",
+            text = "Balance",
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
