@@ -1,7 +1,9 @@
 package dev.tireless.abun.finance
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +31,6 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -60,12 +62,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.composables.icons.lucide.ArrowRightLeft
+import com.composables.icons.lucide.Landmark
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.PiggyBank
+import com.composables.icons.lucide.Receipt
 import dev.tireless.abun.navigation.Route
 import org.koin.compose.koinInject
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
  * UI state for dialog management
@@ -302,10 +315,6 @@ fun FinanceScreen(
         },
         onAddTransfer = {
           dialogState = DialogState.Transfer
-          isFabExpanded = false
-        },
-        onAddTransaction = {
-          dialogState = DialogState.Transaction(null)
           isFabExpanded = false
         },
         onCreateLoan = {
@@ -1063,7 +1072,7 @@ fun formatDate(timestamp: Long): String {
 private fun isLeapYear(year: Int): Boolean = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 
 /**
- * Fan-out FAB with multiple action buttons
+ * Fan-out FAB with arc layout for transaction actions
  */
 @Composable
 fun FanOutFAB(
@@ -1072,7 +1081,6 @@ fun FanOutFAB(
   onAddExpense: () -> Unit,
   onAddIncome: () -> Unit,
   onAddTransfer: () -> Unit,
-  onAddTransaction: () -> Unit,
   onCreateLoan: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -1081,67 +1089,78 @@ fun FanOutFAB(
   )
 
   Box(modifier = modifier) {
-    Column(
-      horizontalAlignment = Alignment.End,
-      verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-      // Action buttons
-      AnimatedVisibility(
-        visible = isExpanded,
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
-      ) {
-        Column(
-          horizontalAlignment = Alignment.End,
-          verticalArrangement = Arrangement.spacedBy(16.dp),
+    // Arc radius and angle range
+    val radius = 200f // Distance from FAB center (increased for better spacing)
+    val startAngle = PI * 195 / 180 // Start from 195 degrees
+    val endAngle = PI * 75 / 180 // End at 75 degrees
+    val sweepAngle = startAngle - endAngle // Total sweep angle
+
+    // Button configurations with Lucide icons
+    val buttons = listOf(
+      Triple(Lucide.PiggyBank, "Expense", onAddExpense),
+      Triple(Lucide.Receipt, "Income", onAddIncome),
+      Triple(Lucide.ArrowRightLeft, "Transfer", onAddTransfer),
+      Triple(Lucide.Landmark, "Loan", onCreateLoan)
+    )
+
+    // Fan-out buttons in arc
+    buttons.forEachIndexed { index, (icon, description, onClick) ->
+      // Calculate angle for this button (evenly distributed across the arc)
+      val angle = startAngle - (sweepAngle * index / (buttons.size - 1))
+      val offsetX = (radius * cos(angle)).roundToInt()
+      val offsetY = -(radius * sin(angle)).roundToInt() // Negative because Y grows downward
+
+      // Animated scale and alpha
+      val scale by animateFloatAsState(
+        targetValue = if (isExpanded) 1f else 0f,
+        animationSpec = spring(
+          dampingRatio = Spring.DampingRatioMediumBouncy,
+          stiffness = Spring.StiffnessLow
+        )
+      )
+      val alpha by animateFloatAsState(
+        targetValue = if (isExpanded) 1f else 0f,
+        animationSpec = spring(
+          dampingRatio = Spring.DampingRatioMediumBouncy,
+          stiffness = Spring.StiffnessLow
+        )
+      )
+
+      if (scale > 0.01f) {
+        IconButton(
+          onClick = onClick,
+          modifier = Modifier
+            .offset { IntOffset(offsetX, offsetY) }
+            .size(48.dp)
+            .graphicsLayer {
+              scaleX = scale
+              scaleY = scale
+              this.alpha = alpha
+            }
+            .background(
+              color = MaterialTheme.colorScheme.secondaryContainer,
+              shape = androidx.compose.foundation.shape.CircleShape
+            )
         ) {
-          // Create Loan button
-          FabMenuItem(
-            icon = Icons.Default.MoneyOff,
-            label = "创建借贷",
-            onClick = onCreateLoan,
-          )
-
-          // Add Transaction button
-          FabMenuItem(
-            icon = Icons.Default.AttachMoney,
-            label = "添加交易",
-            onClick = onAddTransaction,
-          )
-
-          // Add Transfer button
-          FabMenuItem(
-            icon = Icons.Default.SwapHoriz,
-            label = "添加转账",
-            onClick = onAddTransfer,
-          )
-
-          // Add Income button
-          FabMenuItem(
-            icon = Icons.Default.Add,
-            label = "添加收入",
-            onClick = onAddIncome,
-          )
-
-          // Add Expense button
-          FabMenuItem(
-            icon = Icons.Default.Remove,
-            label = "添加支出",
-            onClick = onAddExpense,
+          Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.size(24.dp),
           )
         }
       }
+    }
 
-      // Main FAB
-      FloatingActionButton(
-        onClick = { onExpandChange(!isExpanded) },
-      ) {
-        Icon(
-          imageVector = Icons.Default.Add,
-          contentDescription = if (isExpanded) "关闭" else "添加",
-          modifier = Modifier.rotate(rotation),
-        )
-      }
+    // Main FAB
+    FloatingActionButton(
+      onClick = { onExpandChange(!isExpanded) },
+    ) {
+      Icon(
+        imageVector = Icons.Default.Add,
+        contentDescription = if (isExpanded) "Close" else "Add",
+        modifier = Modifier.rotate(rotation),
+      )
     }
   }
 }
