@@ -8,9 +8,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.ArrowRightLeft
+import com.composables.icons.lucide.Lucide
 
 /**
  * Dialog for adding a transfer transaction
@@ -69,9 +72,16 @@ fun AddTransferDialog(
     title = {
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
       ) {
-        Text("添加转账")
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(Lucide.ArrowRightLeft, "转账", modifier = Modifier.size(24.dp))
+          Text("添加转账")
+        }
         IconButton(onClick = onDismiss) {
           Icon(Icons.Default.Close, "关闭")
         }

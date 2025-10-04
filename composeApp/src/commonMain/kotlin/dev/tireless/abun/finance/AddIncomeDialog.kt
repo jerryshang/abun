@@ -8,9 +8,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.PiggyBank
 
 /**
  * Dialog for adding an income transaction
@@ -68,9 +71,16 @@ fun AddIncomeDialog(
     title = {
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
       ) {
-        Text("添加收入")
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(Lucide.PiggyBank, "收入", modifier = Modifier.size(24.dp))
+          Text("添加收入")
+        }
         IconButton(onClick = onDismiss) {
           Icon(Icons.Default.Close, "关闭")
         }

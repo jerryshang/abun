@@ -8,9 +8,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.Landmark
+import com.composables.icons.lucide.Lucide
 
 /**
  * Dialog for creating a new loan
@@ -46,9 +49,16 @@ fun AddLoanDialog(
     title = {
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
       ) {
-        Text("创建借贷")
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(Lucide.Landmark, "借贷", modifier = Modifier.size(24.dp))
+          Text("创建借贷")
+        }
         IconButton(onClick = onDismiss) {
           Icon(Icons.Default.Close, "关闭")
         }

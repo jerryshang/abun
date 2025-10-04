@@ -1097,8 +1097,8 @@ fun FanOutFAB(
 
     // Button configurations with Lucide icons
     val buttons = listOf(
-      Triple(Lucide.PiggyBank, "Expense", onAddExpense),
-      Triple(Lucide.Receipt, "Income", onAddIncome),
+      Triple(Lucide.Receipt, "Expense", onAddExpense),
+      Triple(Lucide.PiggyBank, "Income", onAddIncome),
       Triple(Lucide.ArrowRightLeft, "Transfer", onAddTransfer),
       Triple(Lucide.Landmark, "Loan", onCreateLoan)
     )
