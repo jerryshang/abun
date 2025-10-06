@@ -13,11 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,8 +39,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.composables.icons.lucide.Calendar
+import com.composables.icons.lucide.House
+import com.composables.icons.lucide.Library
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Package2
+import com.composables.icons.lucide.Settings
 import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.ExpenseEditScreen
@@ -58,6 +63,7 @@ import dev.tireless.abun.finance.TransactionViewModel
 import dev.tireless.abun.finance.toEditPayload
 import dev.tireless.abun.finance.TransferEditScreen
 import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.mental.QuickNoteScreen
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
@@ -87,16 +93,19 @@ fun App() {
       ) {
         NavHost(
           navController = navController,
-          startDestination = Route.Finance
+          startDestination = Route.Material
         ) {
           // Main tabs
           composable<Route.Home> {
             HomeScreen()
           }
-          composable<Route.Finance> {
+          composable<Route.Material> {
             FinanceScreen(navController)
           }
-          composable<Route.Timeblock> {
+          composable<Route.Mental> {
+            QuickNoteScreen()
+          }
+          composable<Route.Time> {
             TimeblockScreen(navController)
           }
           composable<Route.Settings> {
@@ -208,6 +217,9 @@ fun App() {
 
 @Composable
 private fun BottomNavigationBar(navController: NavHostController) {
+  val navBackStackEntry by navController.currentBackStackEntryAsState()
+  val currentDestination = navBackStackEntry?.destination
+
   Surface(
     modifier = Modifier.fillMaxWidth(),
     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
@@ -221,31 +233,112 @@ private fun BottomNavigationBar(navController: NavHostController) {
       contentColor = MaterialTheme.colorScheme.onSurface
     ) {
       NavigationBarItem(
-        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-        label = { Text("Home") },
-        selected = false, // TODO: Track current route
-        onClick = { navController.navigate(Route.Home) },
+        icon = { Icon(imageVector = Lucide.House, contentDescription = "Home") },
+        selected = currentDestination.matchesAny(HomeRoutes),
+        onClick = {
+          if (!currentDestination.matchesAny(HomeRoutes)) {
+            navController.navigate(Route.Home) {
+              popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+              }
+              launchSingleTop = true
+              restoreState = true
+            }
+          }
+        },
       )
       NavigationBarItem(
-        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Financial") },
-        label = { Text("Financial") },
-        selected = false, // TODO: Track current route
-        onClick = { navController.navigate(Route.Finance) },
+        icon = { Icon(imageVector = Lucide.Package2, contentDescription = "Material") },
+        selected = currentDestination.matchesAny(MaterialRoutes),
+        onClick = {
+          if (!currentDestination.matchesAny(MaterialRoutes)) {
+            navController.navigate(Route.Material) {
+              popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+              }
+              launchSingleTop = true
+              restoreState = true
+            }
+          }
+        },
       )
       NavigationBarItem(
-        icon = { Icon(Icons.Default.Schedule, contentDescription = "Timeblock") },
-        label = { Text("Timeblock") },
-        selected = false, // TODO: Track current route
-        onClick = { navController.navigate(Route.Timeblock) },
+        icon = { Icon(imageVector = Lucide.Library, contentDescription = "Mental") },
+        selected = currentDestination.matchesAny(MentalRoutes),
+        onClick = {
+          if (!currentDestination.matchesAny(MentalRoutes)) {
+            navController.navigate(Route.Mental) {
+              popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+              }
+              launchSingleTop = true
+              restoreState = true
+            }
+          }
+        },
       )
       NavigationBarItem(
-        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-        selected = false, // TODO: Track current route
-        onClick = { navController.navigate(Route.Settings) },
+        icon = { Icon(imageVector = Lucide.Calendar, contentDescription = "Time") },
+        selected = currentDestination.matchesAny(TimeRoutes),
+        onClick = {
+          if (!currentDestination.matchesAny(TimeRoutes)) {
+            navController.navigate(Route.Time) {
+              popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+              }
+              launchSingleTop = true
+              restoreState = true
+            }
+          }
+        },
+      )
+      NavigationBarItem(
+        icon = { Icon(imageVector = Lucide.Settings, contentDescription = "Settings") },
+        selected = currentDestination.matchesAny(SettingsRoutes),
+        onClick = {
+          if (!currentDestination.matchesAny(SettingsRoutes)) {
+            navController.navigate(Route.Settings) {
+              popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+              }
+              launchSingleTop = true
+              restoreState = true
+            }
+          }
+        },
       )
     }
   }
 }
+
+private fun NavDestination?.matchesAny(routes: Set<String>) =
+  routes.any { matchesRoute(it) }
+
+private fun NavDestination?.matchesRoute(route: String?): Boolean {
+  if (route.isNullOrEmpty()) return false
+  return this?.hierarchy?.any { destination ->
+    destination.route?.startsWith(route) == true
+  } ?: false
+}
+
+private val HomeRoutes = setOfNotNull(Route.Home::class.qualifiedName)
+private val MaterialRoutes = setOfNotNull(
+  Route.Material::class.qualifiedName,
+  Route.AccountManagement::class.qualifiedName,
+  Route.ExpenseEdit::class.qualifiedName,
+  Route.RevenueEdit::class.qualifiedName,
+  Route.TransferEdit::class.qualifiedName,
+  Route.LoanEdit::class.qualifiedName,
+  Route.PriceComparison::class.qualifiedName,
+  Route.FutureView::class.qualifiedName,
+  Route.AccountDetails::class.qualifiedName,
+)
+private val MentalRoutes = setOfNotNull(Route.Mental::class.qualifiedName)
+private val TimeRoutes = setOfNotNull(
+  Route.Time::class.qualifiedName,
+  Route.TimeCategoryManagement::class.qualifiedName,
+)
+private val SettingsRoutes = setOfNotNull(Route.Settings::class.qualifiedName)
 
 @Composable
 private fun HomeScreen() {

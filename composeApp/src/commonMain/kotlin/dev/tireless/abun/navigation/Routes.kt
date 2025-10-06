@@ -13,10 +13,13 @@ sealed interface Route {
   data object Home : Route
 
   @Serializable
-  data object Finance : Route
+  data object Material : Route
 
   @Serializable
-  data object Timeblock : Route
+  data object Mental : Route
+
+  @Serializable
+  data object Time : Route
 
   @Serializable
   data object Settings : Route

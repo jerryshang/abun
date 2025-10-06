@@ -3,6 +3,8 @@ package dev.tireless.abun.core
 import dev.tireless.abun.Greeting
 import dev.tireless.abun.database.AppDatabase
 import dev.tireless.abun.finance.*
+import dev.tireless.abun.mental.NoteRepository
+import dev.tireless.abun.mental.NoteViewModel
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.mental.QuotesRepository
 import dev.tireless.abun.time.AlarmRepository
@@ -36,6 +38,7 @@ val appModule =
       database
     }
     single { QuotesRepository(get()) }
+    single { NoteRepository(get()) }
     single { CategoryRepository(get()) }
     single { TaskRepository(get()) }
     single { TimeblockRepository(get()) }
@@ -50,6 +53,7 @@ val appModule =
 val viewModelModule =
   module {
     factory { QuoteViewModel(get()) }
+    factory { NoteViewModel(get()) }
     factory { TimeblockViewModel(get(), get(), get()) }
     factory { CategoryViewModel(get()) }
     // Finance ViewModels
