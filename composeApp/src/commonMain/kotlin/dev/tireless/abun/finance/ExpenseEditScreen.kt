@@ -1,15 +1,47 @@
 package dev.tireless.abun.finance
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,248 +54,215 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
+import kotlin.math.abs
 import kotlinx.datetime.Clock
 
-/**
- * Full screen for adding an expense transaction
- *
- * User Flow:
- * 1. Enter amount
- * 2. Select payment account (Asset/Liability - where money comes from)
- * 3. Select expense account (what the money is spent on - Food, Transport, etc.)
- * 4. Optional: payee, member, notes, date
- *
- * Accounting:
- * - Debit: Expense account (selected by user - Expense account)
- * - Credit: Payment account (selected by user - Asset/Liability)
- */
+private data class ExpenseEntryState(
+  val transactionId: Long? = null,
+  val categoryId: Long? = null,
+  val amount: String = "",
+  val notes: String = "",
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseEditScreen(
   navController: NavHostController,
   accounts: List<AccountWithBalance>,
-  onCreate: (CreateTransactionInput) -> Unit,
-  onUpdate: (UpdateTransactionInput) -> Unit,
-  existingTransaction: TransactionEditPayload? = null,
+  onCreate: (SplitExpenseDraft) -> Unit,
+  onUpdate: (SplitExpenseDraft) -> Unit,
+  existingDraft: SplitExpenseDraft? = null,
+  transactionId: Long? = null,
 ) {
-  val isEditing = existingTransaction?.type == TransactionType.EXPENSE
-  val initialAmountText = existingTransaction?.let { formatAmount(it.amount) } ?: "0.00"
-  var amount by remember(existingTransaction) {
-    mutableStateOf(
-      TextFieldValue(
-        text = initialAmountText,
-        selection = TextRange(0, initialAmountText.length)
-      )
-    )
-  }
-  var selectedPaymentAccountId by remember(existingTransaction) { mutableStateOf(existingTransaction?.toAccountId) }
-  var selectedExpenseAccountId by remember(existingTransaction) { mutableStateOf(existingTransaction?.accountId) }
-  var payee by remember(existingTransaction) { mutableStateOf(existingTransaction?.payee ?: "") }
-  var notes by remember(existingTransaction) { mutableStateOf(existingTransaction?.notes ?: "") }
-  var selectedDateMillis by remember(existingTransaction) {
-    mutableStateOf(existingTransaction?.transactionDate ?: Clock.System.now().toEpochMilliseconds())
-  }
-  var showDatePicker by remember { mutableStateOf(false) }
-
+  val isEditing = transactionId != null
   val focusRequester = remember { FocusRequester() }
   val keyboardController = LocalSoftwareKeyboardController.current
 
-  // Request focus and show keyboard on amount field when screen opens
-  LaunchedEffect(isEditing) {
-    if (!isEditing) {
-      kotlinx.coroutines.delay(100) // Small delay to ensure UI is ready
-      focusRequester.requestFocus()
-    }
+  var amount by remember {
+    mutableStateOf(
+      TextFieldValue(
+        text = "0.00",
+        selection = TextRange(0, 4)
+      )
+    )
   }
+  var selectedPaymentAccountId by remember { mutableStateOf<Long?>(null) }
+  var payee by remember { mutableStateOf("") }
+  var selectedDateMillis by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+  var showDatePicker by remember { mutableStateOf(false) }
+  var expenseEntries by remember { mutableStateOf(listOf(ExpenseEntryState())) }
+  var initialized by remember { mutableStateOf(false) }
+  var successMessage by remember { mutableStateOf<String?>(null) }
 
-  // Filter to show only Asset and Liability accounts (user's real accounts)
   val paymentAccounts = remember(accounts) {
     accounts.filter { account ->
       account.parentId == RootAccountIds.ASSET || account.parentId == RootAccountIds.LIABILITY
     }
   }
-
-  // Filter to show only Expense accounts (what money is spent on)
   val expenseAccounts = remember(accounts) {
     accounts.filter { account ->
       account.parentId == RootAccountIds.EXPENSE
     }
   }
 
-  // Set initial selections
-  LaunchedEffect(paymentAccounts, expenseAccounts) {
-    if (selectedPaymentAccountId == null && paymentAccounts.isNotEmpty()) {
-      selectedPaymentAccountId = paymentAccounts.first().id
-    }
-    if (selectedExpenseAccountId == null && expenseAccounts.isNotEmpty()) {
-      selectedExpenseAccountId = expenseAccounts.first().id
+  LaunchedEffect(accounts, existingDraft, isEditing) {
+    val canInitialize = accounts.isNotEmpty() && (!isEditing || existingDraft != null)
+    if (!initialized && canInitialize) {
+      if (existingDraft != null) {
+        val formattedTotal = formatAmount(existingDraft.totalAmount)
+        amount = TextFieldValue(formattedTotal, TextRange(0, formattedTotal.length))
+        selectedPaymentAccountId = existingDraft.paymentAccountId
+        payee = existingDraft.payee.orEmpty()
+        selectedDateMillis = existingDraft.transactionDate
+        expenseEntries = existingDraft.entries.map { entry ->
+          ExpenseEntryState(
+            transactionId = entry.transactionId,
+            categoryId = entry.categoryId,
+            amount = formatAmount(entry.amount),
+            notes = entry.notes.orEmpty()
+          )
+        }.ifEmpty {
+          listOf(ExpenseEntryState(categoryId = expenseAccounts.firstOrNull()?.id))
+        }
+      } else {
+        val initialFormatted = amount.text
+        amount = TextFieldValue(initialFormatted, TextRange(0, initialFormatted.length))
+        selectedPaymentAccountId = paymentAccounts.firstOrNull()?.id
+        expenseEntries = listOf(
+          ExpenseEntryState(categoryId = expenseAccounts.firstOrNull()?.id)
+        )
+      }
+
+      if (selectedPaymentAccountId == null && paymentAccounts.isNotEmpty()) {
+        selectedPaymentAccountId = paymentAccounts.first().id
+      }
+
+      initialized = true
     }
   }
 
+  LaunchedEffect(isEditing) {
+    if (!isEditing) {
+      kotlinx.coroutines.delay(100)
+      focusRequester.requestFocus()
+    }
+  }
+
+  val parsedEntryAmounts = expenseEntries.map { parseAmountInput(it.amount) }
+  val entriesComplete = parsedEntryAmounts.none { it == null }
+  val nonNullEntryAmounts = parsedEntryAmounts.filterNotNull()
+  val entriesTotal = nonNullEntryAmounts.sum()
+  val entriesPositive = nonNullEntryAmounts.all { it > 0 }
+  val categoriesSelected = expenseEntries.all { it.categoryId != null }
+  val amountValue = parseAmountInput(amount.text)
+  val totalsMatch = entriesComplete && amountValue != null && abs(entriesTotal - amountValue) < 0.0001
+  val canSave = amountValue != null && amountValue > 0 &&
+    selectedPaymentAccountId != null &&
+    categoriesSelected &&
+    entriesComplete &&
+    entriesPositive &&
+    totalsMatch
+
+  val memberSnapshot = existingDraft?.member
+  val groupNoteSnapshot = existingDraft?.groupNote
+
   Scaffold(
     topBar = {
-      TopAppBar(
-        windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
-        title = { Text(if (isEditing) "Edit Expense" else "Add Expense") },
-        navigationIcon = {
-          IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-          }
-        },
-        actions = {
-          val amountValue = amount.text.toDoubleOrNull()
-          val canSave = amountValue?.let { it > 0 } == true &&
-            selectedExpenseAccountId != null &&
-            selectedPaymentAccountId != null
+      Column {
+        TopAppBar(
+          windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
+          title = { Text(if (isEditing) "Edit Expense" else "Add Expense") },
+          navigationIcon = {
+            IconButton(onClick = { navController.navigateUp() }) {
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+          },
+          actions = {
+            TextButton(
+              enabled = canSave,
+              onClick = {
+                if (!canSave) return@TextButton
 
-          TextButton(
-            onClick = {
-              if (!canSave) return@TextButton
+                val entryDrafts = expenseEntries.map { state ->
+                  SplitExpenseEntry(
+                    transactionId = state.transactionId,
+                    categoryId = state.categoryId!!,
+                    amount = parseAmountInput(state.amount)!!,
+                    notes = state.notes.takeIf { it.isNotBlank() }
+                  )
+                }
 
-              if (isEditing && existingTransaction != null) {
-                onUpdate(
-                  UpdateTransactionInput(
-                    id = existingTransaction.id,
-                    amount = amountValue!!,
-                    type = TransactionType.EXPENSE,
-                    transactionDate = selectedDateMillis,
-                    accountId = selectedExpenseAccountId!!,
-                    toAccountId = selectedPaymentAccountId!!,
-                    payee = payee.takeIf { it.isNotBlank() },
-                    member = existingTransaction.member,
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
+                val draft = SplitExpenseDraft(
+                  groupId = existingDraft?.groupId,
+                  transactionDate = selectedDateMillis,
+                  totalAmount = amountValue!!,
+                  paymentAccountId = selectedPaymentAccountId!!,
+                  payee = payee.takeIf { it.isNotBlank() },
+                  member = memberSnapshot,
+                  entries = entryDrafts,
+                  groupNote = groupNoteSnapshot
                 )
-              } else {
-                onCreate(
-                  CreateTransactionInput(
-                    amount = amountValue!!,
-                    type = TransactionType.EXPENSE,
-                    transactionDate = selectedDateMillis,
-                    accountId = selectedExpenseAccountId!!,
-                    toAccountId = selectedPaymentAccountId!!,
-                    payee = payee.takeIf { it.isNotBlank() },
-                    member = null,
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
-                )
+
+                if (isEditing) {
+                  onUpdate(draft)
+                } else {
+                  onCreate(draft)
+                }
+                keyboardController?.hide()
+                successMessage = if (isEditing) "Expense updated" else "Expense saved"
               }
-              navController.navigateUp()
-            },
-            enabled = canSave
+            ) {
+              Text(if (isEditing) "Update" else "Save")
+            }
+          }
+        )
+
+        val splitErrorMessage = if (entriesComplete && amountValue != null && !totalsMatch) {
+          val formattedEntriesTotal = formatAmount(entriesTotal)
+          val formattedAmount = formatAmount(amountValue)
+          "Split total ¥$formattedEntriesTotal must equal ¥$formattedAmount"
+        } else {
+          null
+        }
+
+        val bannerMessage = successMessage ?: splitErrorMessage
+        val isSuccessBanner = successMessage != null
+
+        if (bannerMessage != null) {
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .background(
+                if (isSuccessBanner) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+              )
+              .padding(horizontal = 12.dp, vertical = 6.dp)
           ) {
-            Text(if (isEditing) "Update" else "Save")
+            Text(
+              text = bannerMessage,
+              color = if (isSuccessBanner) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onError,
+              style = MaterialTheme.typography.bodySmall
+            )
           }
         }
-      )
+      }
     }
   ) { paddingValues ->
+    LaunchedEffect(successMessage) {
+      if (successMessage != null) {
+        kotlinx.coroutines.delay(800)
+        navController.navigateUp()
+      }
+    }
+
     Column(
-      modifier = Modifier
+      modifier =
+      Modifier
         .fillMaxSize()
         .padding(paddingValues)
-        .padding(16.dp)
+        .padding(horizontal = 16.dp, vertical = 20.dp)
         .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-      // Amount Input
-      OutlinedTextField(
-        value = amount,
-        onValueChange = { amount = it },
-        label = { Text("Amount") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier
-          .fillMaxWidth()
-          .focusRequester(focusRequester)
-          .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-              if (amount.selection.length != amount.text.length) {
-                amount = amount.copy(selection = TextRange(0, amount.text.length))
-              }
-              keyboardController?.show()
-            }
-          },
-        prefix = { Text("¥") },
-        singleLine = true
-      )
-
-      // Payment Account Selector
-      var expandedAccounts by remember { mutableStateOf(false) }
-      ExposedDropdownMenuBox(
-        expanded = expandedAccounts,
-        onExpandedChange = { expandedAccounts = it }
-      ) {
-        OutlinedTextField(
-          value = paymentAccounts.find { it.id == selectedPaymentAccountId }?.name ?: "",
-          onValueChange = {},
-          readOnly = true,
-          label = { Text("Payment Account") },
-          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccounts) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
-        )
-        ExposedDropdownMenu(
-          expanded = expandedAccounts,
-          onDismissRequest = { expandedAccounts = false }
-        ) {
-          paymentAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                  Text(account.name)
-                  Text(
-                    "¥${formatAmount(account.currentBalance)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                  )
-                }
-              },
-              onClick = {
-                selectedPaymentAccountId = account.id
-                expandedAccounts = false
-              }
-            )
-          }
-        }
-      }
-
-      // Expense Account Selector (what money is spent on)
-      var expandedExpense by remember { mutableStateOf(false) }
-      ExposedDropdownMenuBox(
-        expanded = expandedExpense,
-        onExpandedChange = { expandedExpense = it }
-      ) {
-        OutlinedTextField(
-          value = expenseAccounts.find { it.id == selectedExpenseAccountId }?.name ?: "",
-          onValueChange = {},
-          readOnly = true,
-          label = { Text("Expense Category") },
-          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedExpense) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
-        )
-        ExposedDropdownMenu(
-          expanded = expandedExpense,
-          onDismissRequest = { expandedExpense = false }
-        ) {
-          expenseAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = { Text(account.name) },
-              onClick = {
-                selectedExpenseAccountId = account.id
-                expandedExpense = false
-              }
-            )
-          }
-        }
-      }
-
-      // Date Picker
       val dateInteractionSource = remember { MutableInteractionSource() }
 
       LaunchedEffect(dateInteractionSource) {
@@ -279,45 +278,109 @@ fun ExpenseEditScreen(
         onValueChange = {},
         readOnly = true,
         label = { Text("Date") },
-        trailingIcon = { Icon(Lucide.Calendar, "Select date") },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        interactionSource = dateInteractionSource
-      )
-
-      // Payee (Optional)
-      OutlinedTextField(
-        value = payee,
-        onValueChange = { payee = it },
-        label = { Text("Merchant (Optional)") },
+          trailingIcon = { Icon(Lucide.Calendar, contentDescription = "Select date") },
+        interactionSource = dateInteractionSource,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true
       )
 
-      // Notes (Optional)
-      OutlinedTextField(
-        value = notes,
-        onValueChange = { notes = it },
-        label = { Text("Notes (Optional)") },
-        modifier = Modifier.fillMaxWidth(),
-        minLines = 3,
-        maxLines = 5
+      PaymentAccountSelector(
+        paymentAccounts = paymentAccounts,
+        selectedPaymentAccountId = selectedPaymentAccountId,
+        onAccountSelected = { selectedPaymentAccountId = it },
+        modifier = Modifier.fillMaxWidth()
       )
+
+      OutlinedTextField(
+        value = amount,
+        onValueChange = { newValue ->
+          if (newValue.text.isEmpty() || isValidAmountInput(newValue.text)) {
+            amount = newValue
+          }
+        },
+        label = { Text("Total Amount") },
+        prefix = { Text("¥") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        modifier =
+        Modifier
+          .fillMaxWidth()
+          .focusRequester(focusRequester)
+          .onFocusChanged { state ->
+            if (state.isFocused) {
+              amount = amount.copy(selection = TextRange(0, amount.text.length))
+              keyboardController?.show()
+            }
+          }
+      )
+
+      OutlinedTextField(
+        value = payee,
+        onValueChange = { payee = it },
+        label = { Text("Merchant") },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true
+      )
+
+      if (expenseEntries.size == 1) {
+        val single = expenseEntries.first()
+        val desired = if (amount.text.isBlank()) "" else amount.text
+        if (single.amount != desired) {
+          expenseEntries = listOf(single.copy(amount = desired))
+        }
+      }
+
+      expenseEntries.forEachIndexed { index, entryState ->
+        ExpenseEntryRow(
+          index = index,
+          entryState = entryState,
+          expenseAccounts = expenseAccounts,
+          onCategorySelected = { categoryId ->
+            expenseEntries = expenseEntries.toMutableList().also {
+              it[index] = it[index].copy(categoryId = categoryId)
+            }
+          },
+          onAmountChanged = { updatedAmount ->
+            if (updatedAmount.isEmpty() || isValidAmountInput(updatedAmount)) {
+              expenseEntries = expenseEntries.toMutableList().also {
+                it[index] = it[index].copy(amount = updatedAmount)
+              }
+            }
+          },
+          onNotesChanged = { updatedNotes ->
+            expenseEntries = expenseEntries.toMutableList().also {
+              it[index] = it[index].copy(notes = updatedNotes)
+            }
+          },
+          onRemove = if (expenseEntries.size > 1) {
+            {
+              expenseEntries = expenseEntries.filterIndexed { entryIndex, _ -> entryIndex != index }
+            }
+          } else {
+            null
+          },
+          onAddNew = {
+            expenseEntries = expenseEntries + ExpenseEntryState(categoryId = expenseAccounts.firstOrNull()?.id)
+          },
+          isSingleEntry = expenseEntries.size == 1
+        )
+
+        if (index != expenseEntries.lastIndex) {
+          Spacer(modifier = Modifier.height(12.dp))
+        }
+      }
     }
   }
 
-  // Date Picker Dialog
   if (showDatePicker) {
-    val datePickerState = rememberDatePickerState(
-      initialSelectedDateMillis = selectedDateMillis
-    )
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDateMillis)
     DatePickerDialog(
       onDismissRequest = { showDatePicker = false },
       confirmButton = {
         TextButton(
           onClick = {
-            datePickerState.selectedDateMillis?.let {
-              selectedDateMillis = it
+            datePickerState.selectedDateMillis?.let { millis ->
+              selectedDateMillis = millis
             }
             showDatePicker = false
           }
@@ -332,6 +395,153 @@ fun ExpenseEditScreen(
       }
     ) {
       DatePicker(state = datePickerState)
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PaymentAccountSelector(
+  paymentAccounts: List<AccountWithBalance>,
+  selectedPaymentAccountId: Long?,
+  onAccountSelected: (Long) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = { expanded = it },
+    modifier = modifier
+  ) {
+    OutlinedTextField(
+      value = paymentAccounts.find { it.id == selectedPaymentAccountId }?.name ?: "",
+      onValueChange = {},
+      readOnly = true,
+      label = { Text("Payment Account") },
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier
+        .fillMaxWidth()
+        .menuAnchor()
+    )
+    ExposedDropdownMenu(
+      expanded = expanded,
+      onDismissRequest = { expanded = false }
+    ) {
+      paymentAccounts.forEach { account ->
+        DropdownMenuItem(
+          text = {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              Text(account.name)
+              Text(
+                text = "¥${formatAmount(account.currentBalance)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          },
+          onClick = {
+            onAccountSelected(account.id)
+            expanded = false
+          }
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpenseEntryRow(
+  index: Int,
+  entryState: ExpenseEntryState,
+  expenseAccounts: List<AccountWithBalance>,
+  onCategorySelected: (Long) -> Unit,
+  onAmountChanged: (String) -> Unit,
+  onNotesChanged: (String) -> Unit,
+  onRemove: (() -> Unit)?,
+  onAddNew: () -> Unit,
+  isSingleEntry: Boolean,
+) {
+  var expanded by remember(entryState.transactionId, index) { mutableStateOf(false) }
+
+  Column(
+    modifier = Modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      OutlinedTextField(
+        value = entryState.amount,
+        onValueChange = onAmountChanged,
+        label = { Text("Amount") },
+        prefix = { Text("¥") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        readOnly = isSingleEntry,
+        modifier = Modifier.weight(1f)
+      )
+
+      ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.weight(1f)
+      ) {
+        OutlinedTextField(
+          value = expenseAccounts.find { it.id == entryState.categoryId }?.name ?: "",
+          onValueChange = {},
+          readOnly = true,
+          label = { Text("Category") },
+          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+          modifier = Modifier
+            .fillMaxWidth()
+            .menuAnchor()
+        )
+        ExposedDropdownMenu(
+          expanded = expanded,
+          onDismissRequest = { expanded = false }
+        ) {
+          expenseAccounts.forEach { account ->
+            DropdownMenuItem(
+              text = { Text(account.name) },
+              onClick = {
+                onCategorySelected(account.id)
+                expanded = false
+              }
+            )
+          }
+        }
+      }
+    }
+
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      OutlinedTextField(
+        value = entryState.notes,
+        onValueChange = onNotesChanged,
+        label = { Text("Notes") },
+        modifier = Modifier.weight(1f),
+        singleLine = true,
+        maxLines = 1
+      )
+
+      if (onRemove != null) {
+        IconButton(onClick = onRemove) {
+          Icon(Icons.Default.Delete, contentDescription = "Remove expense ${index + 1}")
+        }
+      }
+
+      IconButton(onClick = onAddNew) {
+        Icon(Icons.Default.Add, contentDescription = "Add expense item")
+      }
     }
   }
 }

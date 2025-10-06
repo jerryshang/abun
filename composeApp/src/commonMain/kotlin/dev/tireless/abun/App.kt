@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -59,6 +60,7 @@ import dev.tireless.abun.finance.FutureViewScreen
 import dev.tireless.abun.finance.LoanEditScreen
 import dev.tireless.abun.finance.PriceComparator
 import dev.tireless.abun.finance.RevenueEditScreen
+import dev.tireless.abun.finance.SplitExpenseDraft
 import dev.tireless.abun.finance.TransactionViewModel
 import dev.tireless.abun.finance.toEditPayload
 import dev.tireless.abun.finance.TransferEditScreen
@@ -124,19 +126,22 @@ fun App() {
             val route: Route.ExpenseEdit = backStackEntry.toRoute()
             val viewModel: TransactionViewModel = koinInject()
             val accounts by viewModel.accounts.collectAsState()
-            val transactions by viewModel.transactions.collectAsState()
-            val existingTransaction = route.transactionId?.let { id ->
-              transactions.find { it.transaction.id == id }?.toEditPayload()
+            val loadedDraft by produceState<SplitExpenseDraft?>(
+              initialValue = null,
+              key1 = route.transactionId
+            ) {
+              value = route.transactionId?.let { id -> viewModel.getSplitExpenseDraft(id) }
             }
             ExpenseEditScreen(
               navController = navController,
               accounts = accounts,
-              existingTransaction = existingTransaction,
-              onCreate = { input ->
-                viewModel.createTransaction(input)
+              existingDraft = loadedDraft,
+              transactionId = route.transactionId,
+              onCreate = { draft ->
+                viewModel.createSplitExpense(draft)
               },
-              onUpdate = { input ->
-                viewModel.updateTransaction(input)
+              onUpdate = { draft ->
+                viewModel.updateSplitExpense(draft)
               }
             )
           }

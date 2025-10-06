@@ -494,6 +494,26 @@ data class CreateTransactionInput(
   val notes: String? = null
 )
 
+data class SplitExpenseEntry(
+  val transactionId: Long? = null,
+  val categoryId: Long,
+  val amount: Double,
+  val notes: String? = null,
+)
+
+data class SplitExpenseDraft(
+  val groupId: Long? = null,
+  val transactionDate: Long,
+  val totalAmount: Double,
+  val paymentAccountId: Long,
+  val payee: String? = null,
+  val member: String? = null,
+  val entries: List<SplitExpenseEntry>,
+  val groupNote: String? = null,
+) {
+  val entriesTotal: Double = entries.sumOf { it.amount }
+}
+
 @Serializable
 data class TransactionEditPayload(
   val id: Long,

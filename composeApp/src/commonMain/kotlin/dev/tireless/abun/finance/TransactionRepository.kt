@@ -167,6 +167,145 @@ class TransactionRepository(
   }
 
   /**
+   * Create a split expense transaction group with one payment account and multiple expense entries.
+   */
+  suspend fun createSplitExpense(draft: SplitExpenseDraft): List<Long> = withContext(Dispatchers.IO) {
+    require(draft.entries.isNotEmpty()) { "At least one expense entry is required" }
+
+    val totalEntries = draft.entries.sumOf { it.amount }
+    require(kotlin.math.abs(totalEntries - draft.totalAmount) < 0.0001) {
+      "Split entries must sum to the total amount"
+    }
+
+    val now = currentTimeMillis()
+    queries.insertTransactionGroup(
+      name = buildSplitGroupName(draft.payee),
+      group_type = TransactionGroupType.SPLIT.name.lowercase(),
+      description = draft.groupNote,
+      created_at = now,
+      updated_at = now
+    )
+
+    val groupId = queries.getAllTransactionGroups().executeAsList().lastOrNull()?.id
+      ?: throw IllegalStateException("Failed to create transaction group")
+
+    val transactionIds = mutableListOf<Long>()
+    draft.entries.forEach { entry ->
+      queries.insertTransaction(
+        amount = entry.amount.toStorageAmount(),
+        debit_account_id = entry.categoryId,
+        credit_account_id = draft.paymentAccountId,
+        transaction_date = draft.transactionDate,
+        transfer_group_id = null,
+        payee = draft.payee,
+        member = draft.member,
+        notes = entry.notes,
+        state = TransactionState.CONFIRMED.name.lowercase(),
+        created_at = now,
+        updated_at = now
+      )
+
+      val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id
+        ?: throw IllegalStateException("Failed to create split expense transaction")
+      transactionIds += transactionId
+      queries.addTransactionToGroup(transactionId, groupId)
+    }
+
+    transactionIds
+  }
+
+  /**
+   * Update a split expense group. Supports adding, updating, and removing entries.
+   */
+  suspend fun updateSplitExpense(draft: SplitExpenseDraft): Unit = withContext(Dispatchers.IO) {
+    require(draft.entries.isNotEmpty()) { "At least one expense entry is required" }
+
+    val totalEntries = draft.entries.sumOf { it.amount }
+    require(kotlin.math.abs(totalEntries - draft.totalAmount) < 0.0001) {
+      "Split entries must sum to the total amount"
+    }
+
+    val now = currentTimeMillis()
+
+    var groupId = draft.groupId
+    if (groupId == null) {
+      queries.insertTransactionGroup(
+        name = buildSplitGroupName(draft.payee),
+        group_type = TransactionGroupType.SPLIT.name.lowercase(),
+        description = draft.groupNote,
+        created_at = now,
+        updated_at = now
+      )
+      groupId = queries.getAllTransactionGroups().executeAsList().lastOrNull()?.id
+        ?: throw IllegalStateException("Failed to create transaction group")
+    } else {
+      queries.updateTransactionGroup(
+        name = buildSplitGroupName(draft.payee),
+        description = draft.groupNote,
+        updated_at = now,
+        id = groupId
+      )
+    }
+
+    val existingIds: MutableSet<Long> = if (draft.groupId != null) {
+      queries.getTransactionsByGroup(groupId).executeAsList().map { it.id }.toMutableSet()
+    } else {
+      draft.entries.mapNotNull { it.transactionId }.toMutableSet()
+    }
+
+    val retainedIds = mutableSetOf<Long>()
+
+    draft.entries.forEach { entry ->
+      val entryNotes = entry.notes
+      val entryTransactionId = entry.transactionId
+
+      if (entryTransactionId != null && existingIds.contains(entryTransactionId)) {
+        queries.updateTransaction(
+          amount = entry.amount.toStorageAmount(),
+          debit_account_id = entry.categoryId,
+          credit_account_id = draft.paymentAccountId,
+          transaction_date = draft.transactionDate,
+          transfer_group_id = null,
+          payee = draft.payee,
+          member = draft.member,
+          notes = entryNotes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          updated_at = now,
+          id = entryTransactionId
+        )
+        queries.addTransactionToGroup(entryTransactionId, groupId)
+        retainedIds += entryTransactionId
+      } else {
+        queries.insertTransaction(
+          amount = entry.amount.toStorageAmount(),
+          debit_account_id = entry.categoryId,
+          credit_account_id = draft.paymentAccountId,
+          transaction_date = draft.transactionDate,
+          transfer_group_id = null,
+          payee = draft.payee,
+          member = draft.member,
+          notes = entryNotes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          created_at = now,
+          updated_at = now
+        )
+        val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id
+          ?: throw IllegalStateException("Failed to create split expense transaction")
+        queries.addTransactionToGroup(transactionId, groupId)
+        retainedIds += transactionId
+      }
+    }
+
+    if (draft.groupId != null) {
+      val toRemove = existingIds - retainedIds
+      toRemove.forEach { transactionId ->
+        queries.removeTransactionFromGroup(transactionId, groupId)
+        queries.deleteTransaction(transactionId)
+      }
+    }
+  }
+
+  /**
    * Create a loan with scheduled payments
    *
    * Accounting Treatment:
@@ -540,6 +679,11 @@ class TransactionRepository(
         creditAccountType = creditAccountType
       )
     }
+  }
+
+  private fun buildSplitGroupName(payee: String?): String {
+    val base = payee?.takeIf { it.isNotBlank() } ?: "Split Expense"
+    return "Expense: $base"
   }
 
   /**

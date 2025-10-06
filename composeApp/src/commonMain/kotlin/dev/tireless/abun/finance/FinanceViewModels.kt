@@ -74,6 +74,21 @@ class TransactionViewModel(
     }
   }
 
+  fun createSplitExpense(draft: SplitExpenseDraft) {
+    viewModelScope.launch {
+      try {
+        _isLoading.value = true
+        transactionRepository.createSplitExpense(draft)
+        refreshTransactions()
+        refreshAccounts()
+      } catch (e: Exception) {
+        _error.value = "Failed to create split expense: ${e.message}"
+      } finally {
+        _isLoading.value = false
+      }
+    }
+  }
+
   fun updateTransaction(input: UpdateTransactionInput) {
     viewModelScope.launch {
       try {
@@ -83,6 +98,21 @@ class TransactionViewModel(
         refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to update transaction: ${e.message}"
+      } finally {
+        _isLoading.value = false
+      }
+    }
+  }
+
+  fun updateSplitExpense(draft: SplitExpenseDraft) {
+    viewModelScope.launch {
+      try {
+        _isLoading.value = true
+        transactionRepository.updateSplitExpense(draft)
+        refreshTransactions()
+        refreshAccounts()
+      } catch (e: Exception) {
+        _error.value = "Failed to update split expense: ${e.message}"
       } finally {
         _isLoading.value = false
       }
@@ -138,6 +168,53 @@ class TransactionViewModel(
   } catch (e: Exception) {
     _error.value = "Failed to load transactions: ${e.message}"
     emptyList()
+  }
+
+  suspend fun getSplitExpenseDraft(transactionId: Long): SplitExpenseDraft? = try {
+    val transaction = transactionRepository.getTransactionById(transactionId) ?: return null
+    val groups = transactionRepository.getGroupsForTransaction(transactionId)
+    val splitGroup = groups.firstOrNull { it.groupType == TransactionGroupType.SPLIT }
+
+    val (entries, paymentAccountId) = if (splitGroup != null) {
+      val groupedTransactions = transactionGroupRepository.getTransactionsInGroup(splitGroup.id)
+      val paymentId = groupedTransactions.firstOrNull()?.creditAccountId ?: transaction.creditAccountId
+      val mappedEntries = groupedTransactions.map { groupedTransaction ->
+        SplitExpenseEntry(
+          transactionId = groupedTransaction.id,
+          categoryId = groupedTransaction.debitAccountId,
+          amount = groupedTransaction.amount,
+          notes = groupedTransaction.notes
+        )
+      }
+      mappedEntries to paymentId
+    } else {
+      listOf(
+        SplitExpenseEntry(
+          transactionId = transaction.id,
+          categoryId = transaction.debitAccountId,
+          amount = transaction.amount,
+          notes = transaction.notes
+        )
+      ) to transaction.creditAccountId
+    }
+
+    val groupNote = splitGroup?.let { group ->
+      transactionGroupRepository.getTransactionGroupById(group.id)?.description
+    }
+
+    SplitExpenseDraft(
+      groupId = splitGroup?.id,
+      transactionDate = transaction.transactionDate,
+      totalAmount = entries.sumOf { it.amount },
+      paymentAccountId = paymentAccountId,
+      payee = transaction.payee,
+      member = transaction.member,
+      entries = entries,
+      groupNote = groupNote
+    )
+  } catch (e: Exception) {
+    _error.value = "Failed to load split expense: ${e.message}"
+    null
   }
 
   private fun refreshAccounts() {
