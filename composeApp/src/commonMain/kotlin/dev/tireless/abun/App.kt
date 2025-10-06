@@ -5,11 +5,14 @@ import abun.composeapp.generated.resources.compose_multiplatform
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Home
@@ -22,16 +25,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -54,13 +61,17 @@ import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
+import dev.tireless.abun.material.AppTheme
+import dev.tireless.abun.material.ThemePreference
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun App() {
-  MaterialTheme {
+  var themePreference by rememberSaveable { mutableStateOf(ThemePreference.SYSTEM) }
+
+  AppTheme(themePreference = themePreference) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -89,7 +100,11 @@ fun App() {
             TimeblockScreen(navController)
           }
           composable<Route.Settings> {
-            SettingsScreen(navController)
+            SettingsScreen(
+              navController = navController,
+              themePreference = themePreference,
+              onThemePreferenceChange = { themePreference = it }
+            )
           }
 
           // Finance sub-screens
@@ -193,30 +208,42 @@ fun App() {
 
 @Composable
 private fun BottomNavigationBar(navController: NavHostController) {
-  NavigationBar {
-    NavigationBarItem(
-      icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-      label = { Text("Home") },
-      selected = false, // TODO: Track current route
-      onClick = { navController.navigate(Route.Home) },
-    )
-    NavigationBarItem(
-      icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Financial") },
-      label = { Text("Financial") },
-      selected = false, // TODO: Track current route
-      onClick = { navController.navigate(Route.Finance) },
-    )
-    NavigationBarItem(
-      icon = { Icon(Icons.Default.Schedule, contentDescription = "Timeblock") },
-      label = { Text("Timeblock") },
-      selected = false, // TODO: Track current route
-      onClick = { navController.navigate(Route.Timeblock) },
-    )
-    NavigationBarItem(
-      icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-      selected = false, // TODO: Track current route
-      onClick = { navController.navigate(Route.Settings) },
-    )
+  Surface(
+    modifier = Modifier.fillMaxWidth(),
+    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+    contentColor = MaterialTheme.colorScheme.onSurface,
+    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    tonalElevation = 4.dp,
+    shadowElevation = 16.dp
+  ) {
+    NavigationBar(
+      containerColor = Color.Transparent,
+      contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+      NavigationBarItem(
+        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+        label = { Text("Home") },
+        selected = false, // TODO: Track current route
+        onClick = { navController.navigate(Route.Home) },
+      )
+      NavigationBarItem(
+        icon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = "Financial") },
+        label = { Text("Financial") },
+        selected = false, // TODO: Track current route
+        onClick = { navController.navigate(Route.Finance) },
+      )
+      NavigationBarItem(
+        icon = { Icon(Icons.Default.Schedule, contentDescription = "Timeblock") },
+        label = { Text("Timeblock") },
+        selected = false, // TODO: Track current route
+        onClick = { navController.navigate(Route.Timeblock) },
+      )
+      NavigationBarItem(
+        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+        selected = false, // TODO: Track current route
+        onClick = { navController.navigate(Route.Settings) },
+      )
+    }
   }
 }
 
@@ -230,51 +257,95 @@ private fun HomeScreen() {
   val currentQuote by quoteViewModel.currentQuote.collectAsState()
   val isLoading by quoteViewModel.isLoading.collectAsState()
 
-  Column(
-    modifier =
-    Modifier
-      .background(MaterialTheme.colorScheme.primaryContainer)
-      .fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally,
+  Surface(
+    modifier = Modifier.fillMaxSize(),
+    color = MaterialTheme.colorScheme.background,
+    contentColor = MaterialTheme.colorScheme.onBackground
   ) {
-    Button(
-      onClick = {
-        showContent = !showContent
-        quoteViewModel.loadRandomQuote()
-      },
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(24.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-      if (isLoading) {
-        CircularProgressIndicator()
-      } else {
-        Text("Get New Quote!")
-      }
-    }
-
-    AnimatedVisibility(showContent) {
-      val greetingText = remember { greeting.greet() }
-      Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+      Button(
+        onClick = {
+          showContent = !showContent
+          quoteViewModel.loadRandomQuote()
+        },
       ) {
-        Image(painterResource(Res.drawable.compose_multiplatform), null)
-        Text("Compose: $greetingText")
+        if (isLoading) {
+          CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+        } else {
+          Text("Get New Quote!")
+        }
       }
-    }
 
-    // Display current quote
-    currentQuote?.let { quote ->
-      Text(
-        text = "${quote.content} — ${quote.source ?: "Unknown"}",
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-      )
+      AnimatedVisibility(showContent) {
+        val greetingText = remember { greeting.greet() }
+        Card(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+          ) {
+            Image(painterResource(Res.drawable.compose_multiplatform), null)
+            Text(
+              "Compose: $greetingText",
+              style = MaterialTheme.typography.titleMedium,
+              modifier = Modifier.padding(top = 12.dp)
+            )
+          }
+        }
+      }
+
+      currentQuote?.let { quote ->
+        Card(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp)
+        ) {
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Text(
+              text = "${quote.content}",
+              style = MaterialTheme.typography.bodyLarge,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.fillMaxWidth()
+            )
+            quote.source?.let { source ->
+              Text(
+                text = "— $source",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                  .padding(top = 8.dp)
+                  .fillMaxWidth(),
+                textAlign = TextAlign.Center
+              )
+            }
+          }
+        }
+      }
     }
   }
 }
 
 @Composable
-private fun SettingsScreen(navController: NavHostController) {
+private fun SettingsScreen(
+  navController: NavHostController,
+  themePreference: ThemePreference,
+  onThemePreferenceChange: (ThemePreference) -> Unit
+) {
   Column(
     modifier =
     Modifier
@@ -288,6 +359,70 @@ private fun SettingsScreen(navController: NavHostController) {
       style = MaterialTheme.typography.headlineLarge,
       modifier = Modifier.padding(bottom = 32.dp),
     )
+
+    // Appearance Section
+    Card(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(bottom = 16.dp)
+    ) {
+      Column(
+        modifier = Modifier.padding(16.dp)
+      ) {
+        Text(
+          "Appearance",
+          style = MaterialTheme.typography.titleLarge,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+          "Choose how the app adapts to light or dark mode.",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(bottom = 16.dp)
+        )
+        listOf(
+          ThemePreference.SYSTEM,
+          ThemePreference.LIGHT,
+          ThemePreference.DARK
+        ).forEach { preference ->
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(vertical = 6.dp)
+              .clickable { onThemePreferenceChange(preference) },
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            RadioButton(
+              selected = themePreference == preference,
+              onClick = { onThemePreferenceChange(preference) }
+            )
+            Column(
+              modifier = Modifier.padding(start = 12.dp)
+            ) {
+              val title = when (preference) {
+                ThemePreference.SYSTEM -> "Use system theme"
+                ThemePreference.LIGHT -> "Light theme"
+                ThemePreference.DARK -> "Dark theme"
+              }
+              val description = when (preference) {
+                ThemePreference.SYSTEM -> "Match your device setting"
+                ThemePreference.LIGHT -> "Always use the light palette"
+                ThemePreference.DARK -> "Always use the dark palette"
+              }
+              Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+              )
+              Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+        }
+      }
+    }
 
     // Category Management Section
     Card(
