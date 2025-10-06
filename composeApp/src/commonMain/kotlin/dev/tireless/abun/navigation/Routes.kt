@@ -31,6 +31,11 @@ sealed interface Route {
   data object AccountManagement : Route
 
   @Serializable
+  data class AccountEdit(
+    val accountId: Long? = null,
+  ) : Route
+
+  @Serializable
   data class ExpenseEdit(
     val transactionId: Long? = null,
   ) : Route

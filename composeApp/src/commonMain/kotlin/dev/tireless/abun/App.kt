@@ -54,6 +54,8 @@ import com.composables.icons.lucide.Package2
 import com.composables.icons.lucide.Settings
 import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountManagementScreen
+import dev.tireless.abun.finance.AccountEditScreen
+import dev.tireless.abun.finance.AccountViewModel
 import dev.tireless.abun.finance.ExpenseEditScreen
 import dev.tireless.abun.finance.FinanceScreen
 import dev.tireless.abun.finance.FutureViewScreen
@@ -121,6 +123,15 @@ fun App() {
           // Finance sub-screens
           composable<Route.AccountManagement> {
             AccountManagementScreen(navController)
+          }
+          composable<Route.AccountEdit> { backStackEntry ->
+            val route: Route.AccountEdit = backStackEntry.toRoute()
+            val viewModel: AccountViewModel = koinInject()
+            AccountEditScreen(
+              navController = navController,
+              accountId = route.accountId,
+              viewModel = viewModel,
+            )
           }
           composable<Route.ExpenseEdit> { backStackEntry ->
             val route: Route.ExpenseEdit = backStackEntry.toRoute()

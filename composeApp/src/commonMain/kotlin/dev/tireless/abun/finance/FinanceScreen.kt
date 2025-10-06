@@ -74,8 +74,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.composables.icons.lucide.ArrowRightLeft
 import com.composables.icons.lucide.Calculator
-import com.composables.icons.lucide.Eye
-import com.composables.icons.lucide.EyeOff
 import com.composables.icons.lucide.Landmark
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.PiggyBank
@@ -124,8 +122,6 @@ fun FinanceScreen(
   }
 
   // Calculate predicted balance (placeholder logic)
-  val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
-  val predictedBalance = totalBalance + 4500.0 // TODO: Calculate based on planned transactions
 
   Scaffold(
     topBar = {
@@ -285,9 +281,6 @@ fun FinanceScreen(
             } else {
               AccountsSummaryCard(
                 accounts = accounts,
-                predictedBalance = predictedBalance,
-                daysAhead = 30,
-                onViewFuture = { navController.navigate(Route.FutureView) },
                 modifier = Modifier.fillMaxWidth(),
               )
             }
@@ -489,12 +482,8 @@ fun AccountListSection(
 @Composable
 fun AccountsSummaryCard(
   accounts: List<AccountWithBalance>,
-  predictedBalance: Double,
-  daysAhead: Int = 30,
-  onViewFuture: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  var isBalanceVisible by remember { mutableStateOf(true) }
   val totalBalance = accounts.filter { it.isActive }.sumOf { it.currentBalance }
 
   Surface(
@@ -506,79 +495,19 @@ fun AccountsSummaryCard(
   ) {
     Column(
       modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
-      verticalArrangement = Arrangement.spacedBy(20.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          Text(
-            text = "Total balance",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-          Text(
-            text = if (isBalanceVisible) "¥${formatAmount(totalBalance)}" else "¥••••",
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-          )
-        }
-        Surface(
-          modifier = Modifier
-            .size(36.dp)
-            .clickable { isBalanceVisible = !isBalanceVisible },
-          shape = CircleShape,
-          color = MaterialTheme.colorScheme.surface,
-          tonalElevation = 0.dp,
-          shadowElevation = 0.dp,
-          border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        ) {
-          Box(contentAlignment = Alignment.Center) {
-            Icon(
-              imageVector = if (isBalanceVisible) Lucide.Eye else Lucide.EyeOff,
-              contentDescription = if (isBalanceVisible) "Hide balance" else "Show balance",
-              modifier = Modifier.size(18.dp),
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
-      }
-
-      HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Column {
-          Text(
-            text = "Projection in $daysAhead days",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-          Spacer(modifier = Modifier.height(4.dp))
-          Text(
-            text = if (isBalanceVisible) "¥${formatAmount(predictedBalance)}" else "¥••••",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-          )
-        }
-
-        TextButton(
-          onClick = onViewFuture,
-          contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-          Text(
-            text = "View forecast",
-            style = MaterialTheme.typography.labelLarge,
-          )
-        }
-      }
+      Text(
+        text = "Total balance",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Text(
+        text = "¥${formatAmount(totalBalance)}",
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+      )
     }
   }
 }
@@ -597,14 +526,18 @@ fun TransactionCard(
   val primaryAccount = transactionWithDetails.getPrimaryAccount()
   val secondaryAccount = transactionWithDetails.getSecondaryAccount()
 
-  val (accentColor, icon) =
+  val icon =
     when (transactionType) {
-      TransactionType.EXPENSE -> MaterialTheme.colorScheme.error to Icons.Default.Remove
-      TransactionType.INCOME -> MaterialTheme.colorScheme.tertiary to Icons.Default.Add
-      TransactionType.TRANSFER -> MaterialTheme.colorScheme.secondary to Lucide.ArrowRightLeft
-      TransactionType.LOAN -> MaterialTheme.colorScheme.primary to Lucide.Landmark
-      TransactionType.LOAN_PAYMENT -> MaterialTheme.colorScheme.primary to Lucide.PiggyBank
+      TransactionType.EXPENSE -> Icons.Default.Remove
+      TransactionType.INCOME -> Icons.Default.Add
+      TransactionType.TRANSFER -> Lucide.ArrowRightLeft
+      TransactionType.LOAN -> Lucide.Landmark
+      TransactionType.LOAN_PAYMENT -> Lucide.PiggyBank
     }
+
+  val accountColor = resolveTransactionColor(transactionWithDetails)
+  val accentColor = accountColor ?: MaterialTheme.colorScheme.secondary
+  val backgroundColor = accentColor.copy(alpha = 0.12f)
 
   Surface(
     modifier = Modifier
@@ -613,7 +546,7 @@ fun TransactionCard(
     shape = RoundedCornerShape(24.dp),
     tonalElevation = 1.dp,
     shadowElevation = 0.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+    color = backgroundColor,
   ) {
     Row(
       modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -622,7 +555,7 @@ fun TransactionCard(
       Box(
         modifier = Modifier
           .size(44.dp)
-          .background(color = accentColor.copy(alpha = 0.12f), shape = CircleShape),
+          .background(color = accentColor.copy(alpha = 0.18f), shape = CircleShape),
         contentAlignment = Alignment.Center,
       ) {
         Icon(
@@ -715,6 +648,21 @@ fun TransactionCard(
     }
   }
 }
+
+private fun resolveTransactionColor(transactionWithDetails: TransactionWithDetails): Color? {
+  val transactionType = transactionWithDetails.inferType()
+  val primaryAccount = transactionWithDetails.getPrimaryAccount()
+  val secondaryAccount = transactionWithDetails.getSecondaryAccount()
+
+  val colorHex = when (transactionType) {
+    TransactionType.EXPENSE, TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> transactionWithDetails.debitAccount.colorHex
+    TransactionType.INCOME -> transactionWithDetails.creditAccount.colorHex
+    TransactionType.TRANSFER -> primaryAccount.colorHex ?: secondaryAccount?.colorHex
+  }
+
+  return hexToColorOrNull(colorHex)
+}
+
 
 /**
  * Account detail summary card showing account-specific information
