@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -301,27 +300,17 @@ private fun ParentAccountSelector(
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
     )
 
-    ExposedDropdownMenu(
+    AccountHierarchySelector(
+      accounts = options,
+      filter = AccountFilter.ALL,
+      selectedAccountId = selectedParentId,
+      onAccountSelected = {
+        onParentSelected(it)
+      },
       expanded = expanded,
-      onDismissRequest = { expanded = false },
-    ) {
-      DropdownMenuItem(
-        text = { Text("无") },
-        onClick = {
-          onParentSelected(null)
-          expanded = false
-        },
-      )
-
-      options.forEach { account ->
-        DropdownMenuItem(
-          text = { Text(account.name) },
-          onClick = {
-            onParentSelected(account.id)
-            expanded = false
-          },
-        )
-      }
-    }
+      onExpandedChange = { expanded = it },
+      showAllOption = true,
+      allLabel = "无",
+    )
   }
 }
