@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import org.koin.compose.koinInject
@@ -283,6 +284,7 @@ private fun ParentAccountSelector(
   }
   val selectedAccount = options.firstOrNull { it.id == selectedParentId }
   val fieldText = selectedAccount?.name ?: "无"
+  var anchorWidth by remember { mutableStateOf(0) }
 
   ExposedDropdownMenuBox(
     expanded = expanded,
@@ -295,7 +297,8 @@ private fun ParentAccountSelector(
       modifier =
         Modifier
           .fillMaxWidth()
-          .menuAnchor(),
+          .menuAnchor()
+          .onGloballyPositioned { anchorWidth = it.size.width },
       label = { Text("父账户 (可选)") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
     )
@@ -311,6 +314,7 @@ private fun ParentAccountSelector(
       onExpandedChange = { expanded = it },
       showAllOption = true,
       allLabel = "无",
+      menuWidthPx = anchorWidth,
     )
   }
 }

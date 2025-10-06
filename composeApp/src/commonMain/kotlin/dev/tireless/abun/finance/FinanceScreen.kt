@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -103,6 +104,7 @@ fun FinanceScreen(
 
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAccountSelector by remember { mutableStateOf(false) }
+  var selectorAnchorWidth by remember { mutableStateOf(0) }
   var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
 
   // Update filtered transactions when selection changes
@@ -148,6 +150,7 @@ fun FinanceScreen(
               color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
               tonalElevation = 0.dp,
               shadowElevation = 0.dp,
+              modifier = Modifier.onGloballyPositioned { coords -> selectorAnchorWidth = coords.size.width }
             ) {
               Row(
                 modifier =
@@ -214,6 +217,7 @@ fun FinanceScreen(
               expanded = showAccountSelector,
               onExpandedChange = { showAccountSelector = it },
               showAllOption = true,
+              menuWidthPx = selectorAnchorWidth,
             )
           }
         },

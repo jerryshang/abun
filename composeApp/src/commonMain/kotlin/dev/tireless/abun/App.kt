@@ -71,8 +71,8 @@ import dev.tireless.abun.mental.QuickNoteScreen
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
-import dev.tireless.abun.material.AppTheme
-import dev.tireless.abun.material.ThemePreference
+import dev.tireless.abun.ui.AppTheme
+import dev.tireless.abun.ui.ThemePreference
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
