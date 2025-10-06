@@ -3,6 +3,7 @@ package dev.tireless.abun.finance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -111,6 +112,7 @@ fun RevenueEditScreen(
   Scaffold(
     topBar = {
       TopAppBar(
+        windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
         title = { Text(if (isEditing) "Edit Income" else "Add Income") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {

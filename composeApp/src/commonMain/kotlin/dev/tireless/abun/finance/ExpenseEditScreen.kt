@@ -103,6 +103,7 @@ fun ExpenseEditScreen(
   Scaffold(
     topBar = {
       TopAppBar(
+        windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
         title = { Text(if (isEditing) "Edit Expense" else "Add Expense") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
