@@ -37,8 +37,6 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -112,15 +110,8 @@ fun FinanceScreen(
   var dialogState by remember { mutableStateOf<DialogState>(DialogState.None) }
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAccountSelector by remember { mutableStateOf(false) }
-  var expandedAssets by remember { mutableStateOf(true) }
-  var expandedLiabilities by remember { mutableStateOf(true) }
   var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
   val scope = rememberCoroutineScope()
-
-  // Filter accounts to show only Assets and Liabilities
-  val selectableAccounts = accounts.filter { account ->
-    account.parentId == RootAccountIds.ASSET || account.parentId == RootAccountIds.LIABILITY
-  }
 
   // Update filtered transactions when selection changes
   LaunchedEffect(selectedAccountId, transactions) {
@@ -181,116 +172,15 @@ fun FinanceScreen(
               )
             }
 
-            DropdownMenu(
+            AccountHierarchySelector(
+              accounts = accounts,
+              filter = AccountFilter.NORMAL_ACCOUNTS,
+              selectedAccountId = selectedAccountId,
+              onAccountSelected = { viewModel.setSelectedAccount(it) },
               expanded = showAccountSelector,
-              onDismissRequest = { showAccountSelector = false }
-            ) {
-              // Group accounts by parent (Asset or Liability)
-              val assetAccounts = selectableAccounts.filter { it.parentId == RootAccountIds.ASSET }
-              val liabilityAccounts = selectableAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
-
-              // "All" option
-              DropdownMenuItem(
-                text = {
-                  Text(
-                    "All",
-                    fontWeight = if (selectedAccountId == null) FontWeight.Bold else FontWeight.Normal
-                  )
-                },
-                onClick = {
-                  viewModel.setSelectedAccount(null)
-                  showAccountSelector = false
-                }
-              )
-
-              // Assets section with expandable children
-              if (assetAccounts.isNotEmpty()) {
-                DropdownMenuItem(
-                  text = {
-                    Row(
-                      modifier = Modifier.fillMaxWidth(),
-                      horizontalArrangement = Arrangement.SpaceBetween,
-                      verticalAlignment = Alignment.CenterVertically
-                    ) {
-                      Text(
-                        "Assets",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
-                      )
-                      Icon(
-                        imageVector = if (expandedAssets) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
-                        contentDescription = if (expandedAssets) "Collapse" else "Expand",
-                        modifier = Modifier
-                          .size(20.dp)
-                          .rotate(if (expandedAssets) 0f else -90f)
-                      )
-                    }
-                  },
-                  onClick = { expandedAssets = !expandedAssets }
-                )
-
-                if (expandedAssets) {
-                  assetAccounts.forEach { account ->
-                    DropdownMenuItem(
-                      text = {
-                        Text(
-                          "  • ${account.name}",
-                          fontWeight = if (selectedAccountId == account.id) FontWeight.Bold else FontWeight.Normal
-                        )
-                      },
-                      onClick = {
-                        viewModel.setSelectedAccount(account.id)
-                        showAccountSelector = false
-                      }
-                    )
-                  }
-                }
-              }
-
-              // Liabilities section with expandable children
-              if (liabilityAccounts.isNotEmpty()) {
-                DropdownMenuItem(
-                  text = {
-                    Row(
-                      modifier = Modifier.fillMaxWidth(),
-                      horizontalArrangement = Arrangement.SpaceBetween,
-                      verticalAlignment = Alignment.CenterVertically
-                    ) {
-                      Text(
-                        "Liabilities",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold
-                      )
-                      Icon(
-                        imageVector = if (expandedLiabilities) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
-                        contentDescription = if (expandedLiabilities) "Collapse" else "Expand",
-                        modifier = Modifier
-                          .size(20.dp)
-                          .rotate(if (expandedLiabilities) 0f else -90f)
-                      )
-                    }
-                  },
-                  onClick = { expandedLiabilities = !expandedLiabilities }
-                )
-
-                if (expandedLiabilities) {
-                  liabilityAccounts.forEach { account ->
-                    DropdownMenuItem(
-                      text = {
-                        Text(
-                          "  • ${account.name}",
-                          fontWeight = if (selectedAccountId == account.id) FontWeight.Bold else FontWeight.Normal
-                        )
-                      },
-                      onClick = {
-                        viewModel.setSelectedAccount(account.id)
-                        showAccountSelector = false
-                      }
-                    )
-                  }
-                }
-              }
-            }
+              onExpandedChange = { showAccountSelector = it },
+              showAllOption = true
+            )
           }
         },
         actions = {
