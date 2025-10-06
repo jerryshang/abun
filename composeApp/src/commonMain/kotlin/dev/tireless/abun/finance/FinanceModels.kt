@@ -1,5 +1,7 @@
 package dev.tireless.abun.finance
 
+import kotlinx.serialization.Serializable
+
 /**
  * Account configuration flags (bitwise)
  */
@@ -60,6 +62,7 @@ enum class AccountType {
 /**
  * Transaction Types
  */
+@Serializable
 enum class TransactionType {
   EXPENSE,
   INCOME,
@@ -354,6 +357,51 @@ data class TransactionWithDetails(
   }
 }
 
+fun TransactionWithDetails.toEditPayload(): TransactionEditPayload? {
+  val transactionType = inferType()
+  val transaction = transaction
+
+  return when (transactionType) {
+    TransactionType.EXPENSE -> TransactionEditPayload(
+      id = transaction.id,
+      type = transactionType,
+      amount = transaction.amount,
+      transactionDate = transaction.transactionDate,
+      accountId = transaction.debitAccountId,
+      toAccountId = transaction.creditAccountId,
+      payee = transaction.payee,
+      member = transaction.member,
+      notes = transaction.notes,
+    )
+
+    TransactionType.INCOME -> TransactionEditPayload(
+      id = transaction.id,
+      type = transactionType,
+      amount = transaction.amount,
+      transactionDate = transaction.transactionDate,
+      accountId = transaction.creditAccountId,
+      toAccountId = transaction.debitAccountId,
+      payee = transaction.payee,
+      member = transaction.member,
+      notes = transaction.notes,
+    )
+
+    TransactionType.TRANSFER -> TransactionEditPayload(
+      id = transaction.id,
+      type = transactionType,
+      amount = transaction.amount,
+      transactionDate = transaction.transactionDate,
+      accountId = transaction.creditAccountId,
+      toAccountId = transaction.debitAccountId,
+      payee = transaction.payee,
+      member = transaction.member,
+      notes = transaction.notes,
+    )
+
+    TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> null
+  }
+}
+
 /**
  * Helper extension to infer transaction type from account types
  */
@@ -444,6 +492,19 @@ data class CreateTransactionInput(
   val payee: String? = null,
   val member: String? = null,
   val notes: String? = null
+)
+
+@Serializable
+data class TransactionEditPayload(
+  val id: Long,
+  val type: TransactionType,
+  val amount: Double,
+  val transactionDate: Long,
+  val accountId: Long,
+  val toAccountId: Long? = null,
+  val payee: String? = null,
+  val member: String? = null,
+  val notes: String? = null,
 )
 
 data class UpdateTransactionInput(

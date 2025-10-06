@@ -41,9 +41,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountManagementScreen
+import dev.tireless.abun.finance.ExpenseEditScreen
 import dev.tireless.abun.finance.FinanceScreen
 import dev.tireless.abun.finance.FutureViewScreen
+import dev.tireless.abun.finance.LoanEditScreen
 import dev.tireless.abun.finance.PriceComparator
+import dev.tireless.abun.finance.RevenueEditScreen
+import dev.tireless.abun.finance.TransactionViewModel
+import dev.tireless.abun.finance.toEditPayload
+import dev.tireless.abun.finance.TransferEditScreen
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
@@ -89,6 +95,77 @@ fun App() {
           // Finance sub-screens
           composable<Route.AccountManagement> {
             AccountManagementScreen(navController)
+          }
+          composable<Route.ExpenseEdit> { backStackEntry ->
+            val route: Route.ExpenseEdit = backStackEntry.toRoute()
+            val viewModel: TransactionViewModel = koinInject()
+            val accounts by viewModel.accounts.collectAsState()
+            val transactions by viewModel.transactions.collectAsState()
+            val existingTransaction = route.transactionId?.let { id ->
+              transactions.find { it.transaction.id == id }?.toEditPayload()
+            }
+            ExpenseEditScreen(
+              navController = navController,
+              accounts = accounts,
+              existingTransaction = existingTransaction,
+              onCreate = { input ->
+                viewModel.createTransaction(input)
+              },
+              onUpdate = { input ->
+                viewModel.updateTransaction(input)
+              }
+            )
+          }
+          composable<Route.RevenueEdit> { backStackEntry ->
+            val route: Route.RevenueEdit = backStackEntry.toRoute()
+            val viewModel: TransactionViewModel = koinInject()
+            val accounts by viewModel.accounts.collectAsState()
+            val transactions by viewModel.transactions.collectAsState()
+            val existingTransaction = route.transactionId?.let { id ->
+              transactions.find { it.transaction.id == id }?.toEditPayload()
+            }
+            RevenueEditScreen(
+              navController = navController,
+              accounts = accounts,
+              existingTransaction = existingTransaction,
+              onCreate = { input ->
+                viewModel.createTransaction(input)
+              },
+              onUpdate = { input ->
+                viewModel.updateTransaction(input)
+              }
+            )
+          }
+          composable<Route.TransferEdit> { backStackEntry ->
+            val route: Route.TransferEdit = backStackEntry.toRoute()
+            val viewModel: TransactionViewModel = koinInject()
+            val accounts by viewModel.accounts.collectAsState()
+            val transactions by viewModel.transactions.collectAsState()
+            val existingTransaction = route.transactionId?.let { id ->
+              transactions.find { it.transaction.id == id }?.toEditPayload()
+            }
+            TransferEditScreen(
+              navController = navController,
+              accounts = accounts,
+              existingTransaction = existingTransaction,
+              onCreate = { input ->
+                viewModel.createTransaction(input)
+              },
+              onUpdate = { input ->
+                viewModel.updateTransaction(input)
+              }
+            )
+          }
+          composable<Route.LoanEdit> {
+            val viewModel: TransactionViewModel = koinInject()
+            val accounts by viewModel.accounts.collectAsState()
+            LoanEditScreen(
+              navController = navController,
+              onConfirm = { input ->
+                viewModel.createLoan(input)
+              },
+              accounts = accounts
+            )
           }
           composable<Route.PriceComparison> {
             PriceComparator(navController)

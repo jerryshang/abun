@@ -9,32 +9,135 @@ CREATE TABLE Account (
     name TEXT NOT NULL,
     parent_id INTEGER, -- NULL for root accounts, or FK to parent account
     currency TEXT NOT NULL DEFAULT 'CNY',
-    config INTEGER NOT NULL DEFAULT 3, -- Bitwise: bit0=active, bit1=countable, bit2=visible
+    config INTEGER NOT NULL DEFAULT 7, -- Bitwise: bit0=active, bit1=countable, bit2=visible
     icon_name TEXT,
     color_hex TEXT,
     bill_date INTEGER CHECK (bill_date IS NULL OR (bill_date >= 1 AND bill_date <= 28)), -- Day of month 1-28 (compatible with Feb)
     payment_date INTEGER CHECK (payment_date IS NULL OR (payment_date >= 1 AND payment_date <= 28)), -- Day of month 1-28
     credit_limit INTEGER NOT NULL DEFAULT -1, -- Credit limit * 10000, -1 for non-liability accounts
-    created_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (parent_id) REFERENCES Account(id) ON DELETE SET NULL
 );
+-- =============================================================================
+-- SQL for Initializing the Chart of Accounts
+-- App: "Abundance"
+-- ID Strategy: Hierarchical Primary Keys (User Directed)
+-- =============================================================================
 
--- Initialize 5 fundamental accounts with fixed IDs (must match RootAccountIds constants)
--- config = 3 means: bit0=1 (active), bit1=1 (countable), bit2=0 (invisible to UI)
-INSERT INTO Account (id, name, parent_id, currency, config, created_at, updated_at)
-VALUES
-  (1, 'Asset', NULL, 'CNY', 3, 0, 0),      -- RootAccountIds.ASSET
-  (2, 'Liability', NULL, 'CNY', 3, 0, 0),  -- RootAccountIds.LIABILITY
-  (3, 'Equity', NULL, 'CNY', 3, 0, 0),     -- RootAccountIds.EQUITY
-  (4, 'Revenue', NULL, 'CNY', 3, 0, 0),    -- RootAccountIds.REVENUE
-  (5, 'Expense', NULL, 'CNY', 3, 0, 0);    -- RootAccountIds.EXPENSE
+-- ----------------------------
+-- 5 Fundamental Root Accounts
+-- ----------------------------
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(1, 'Asset', NULL, '#2196F3'),      -- 🔵 Blue for Assets
+(2, 'Liability', NULL, '#FF9800'),  -- 🟠 Orange for Liabilities
+(3, 'Equity', NULL, '#9C27B0'),     -- 🟣 Purple for Equity
+(4, 'Revenue', NULL, '#4CAF50'),    -- 🟢 Green for Revenue
+(5, 'Expense', NULL, '#F44336');    -- 🔴 Red for Expenses
 
--- Initialize default Cash account under Asset
--- config = 7 means: bit0=1 (active), bit1=1 (countable), bit2=1 (visible to UI)
-INSERT INTO Account (name, parent_id, currency, config, created_at, updated_at)
-VALUES
-  ('Cash', 1, 'CNY', 7, 0, 0);
+-- ----------------------------
+-- ASSET ACCOUNTS (parent_id: 1)
+-- ----------------------------
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(101, 'Cash', 1, '#64B5F6'),
+(102, 'Checking Accounts', 1, '#42A5F5'),
+(103, 'E-Wallets', 1, '#90CAF9'),
+(104, 'Growth', 1, '#1E88E5'),
+(105, 'Lending', 1, '#1976D2'),
+(106, 'Fixed Assets', 1, '#0D47A1');
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(107, 'Deposits', 1, '#1565C0'),
+(108, 'Reimbursables', 1, '#0288D1');
+-- -------------------------------
+-- LIABILITY ACCOUNTS (parent_id: 2)
+-- -------------------------------
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(201, 'Credit Cards', 2, '#FB8C00'),
+(202, 'Loans', 2, '#F57C00'),
+(203, 'Borrowing', 2, '#EF6C00');
+
+-- ----------------------------
+-- EQUITY ACCOUNTS (parent_id: 3)
+-- ----------------------------
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(301, 'Open Balance', 3, '#BA68C8'),
+(302, 'Capital Contributions', 3, '#AB47BC'),
+(303, 'Capital Losses', 3, '#9C27B0'),
+(304, 'Adjustments', 3, '#8E24AA'),
+(305, 'Retained Earnings', 3, '#7B1FA2');
+
+-- -----------------------------
+-- REVENUE ACCOUNTS (parent_id: 4)
+-- -----------------------------
+-- Level 2 Categories
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(401, 'Active', 4, '#66BB6A'),
+(402, 'Passive', 4, '#388E3C'),
+(403, 'Others', 4, '#A5D6A7');
+-- Level 3 under Active (401)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(40101, 'Salary', 401, '#81C784'),
+(40102, 'Bonus', 401, '#81C784'),
+(40103, 'Side Hustle', 401, '#81C784');
+-- Level 3 under Passive (402)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(40201, 'Interest', 402, '#43A047'),
+(40202, 'Dividends', 402, '#43A047'),
+(40203, 'Capital Gains', 402, '#43A047'),
+(40204, 'Royalties & Rent', 402, '#43A047');
+-- Level 3 under Others (403)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(40301, 'Red Packets', 403, '#C8E6C9'),
+(40302, 'Second-hand Sales', 403, '#C8E6C9'),
+(40303, 'Windfall', 403, '#C8E6C9');
+
+-- -----------------------------
+-- EXPENSE ACCOUNTS (parent_id: 5)
+-- -----------------------------
+-- Level 2 Categories
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(501, 'Essential', 5, '#EF5350'),
+(502, 'Lifestyle', 5, '#E53935'),
+(503, 'Growth & Creation', 5, '#C62828'),
+(504, 'Financial Costs', 5, '#B71C1C'),
+(505, 'Uncategorized', 5, '#D32F2F');
+
+-- Level 3 under Essential (501)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(50101, 'Housing', 501, '#FFCDD2'),
+(50102, 'Utilities', 501, '#FFCDD2'),
+(50103, 'Groceries', 501, '#FFCDD2'),
+(50104, 'Household', 501, '#FFCDD2'),
+(50105, 'Transportation', 501, '#FFCDD2'),
+(50106, 'Communication', 501, '#FFCDD2'),
+(50107, 'Basic Apparel', 501, '#FFCDD2'),
+(50108, 'Personal Care', 501, '#FFCDD2'),
+(50109, 'Healthcare', 501, '#FFCDD2'),
+(50110, 'Insurance', 501, '#FFCDD2'),
+(50111, 'Family Support', 501, '#FFCDD2'),
+(50112, 'Pet Care', 501, '#FFCDD2'),
+(50113, 'Administrative & Legal', 501, '#FFCDD2');
+
+-- Level 3 under Lifestyle (502)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(50201, 'Dining & Social', 502, '#EF9A9A'),
+(50202, 'Fashion & Accessories', 502, '#EF9A9A'),
+(50203, 'Electronics & Gadgets', 502, '#EF9A9A'),
+(50204, 'Home & Decor', 502, '#EF9A9A'),
+(50205, 'Entertainment & Hobbies', 502, '#EF9A9A'),
+(50206, 'Travel & Vacation', 502, '#EF9A9A'),
+(50207, 'Gifting & Donations', 502, '#EF9A9A');
+
+-- Level 3 under Growth & Creation (503)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(50301, 'Self-Development', 503, '#E57373'),
+(50302, 'Side Hustle Costs', 503, '#E57373');
+
+-- Level 3 under Financial Costs (504)
+INSERT INTO Account (id, name, parent_id, color_hex) VALUES
+(50401, 'Interest Paid', 504, '#D32F2F'),
+(50402, 'Fees & Charges', 504, '#D32F2F'),
+(50403, 'Taxes', 504, '#D32F2F');
 
 -- Transaction Groups Table (Pure virtual grouping for related transactions)
 -- This is a logical grouping mechanism without financial meaning

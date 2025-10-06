@@ -28,13 +28,33 @@ sealed interface Route {
   data object AccountManagement : Route
 
   @Serializable
+  data class ExpenseEdit(
+    val transactionId: Long? = null,
+  ) : Route
+
+  @Serializable
+  data class RevenueEdit(
+    val transactionId: Long? = null,
+  ) : Route
+
+  @Serializable
+  data class TransferEdit(
+    val transactionId: Long? = null,
+  ) : Route
+
+  @Serializable
+  data object LoanEdit : Route
+
+  @Serializable
   data object PriceComparison : Route
 
   @Serializable
   data object FutureView : Route
 
   @Serializable
-  data class AccountDetails(val accountId: Long?) : Route
+  data class AccountDetails(
+    val accountId: Long?,
+  ) : Route
 
   /**
    * Timeblock module routes

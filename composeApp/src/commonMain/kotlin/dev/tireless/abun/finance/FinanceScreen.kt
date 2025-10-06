@@ -54,7 +54,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,18 +80,6 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * UI state for dialog management
- */
-sealed interface DialogState {
-  data object None : DialogState
-  data object Expense : DialogState
-  data object Income : DialogState
-  data object Transfer : DialogState
-  data object Loan : DialogState
-  data class Transaction(val transactionWithDetails: TransactionWithDetails?) : DialogState
-}
-
-/**
  * Main Finance Screen with transaction list
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,11 +94,9 @@ fun FinanceScreen(
   val error by viewModel.error.collectAsState()
   val selectedAccountId by viewModel.selectedAccountId.collectAsState()
 
-  var dialogState by remember { mutableStateOf<DialogState>(DialogState.None) }
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAccountSelector by remember { mutableStateOf(false) }
   var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
-  val scope = rememberCoroutineScope()
 
   // Update filtered transactions when selection changes
   LaunchedEffect(selectedAccountId, transactions) {
@@ -198,19 +183,19 @@ fun FinanceScreen(
         isExpanded = isFabExpanded,
         onExpandChange = { isFabExpanded = it },
         onAddExpense = {
-          dialogState = DialogState.Expense
+          navController.navigate(Route.ExpenseEdit())
           isFabExpanded = false
         },
         onAddIncome = {
-          dialogState = DialogState.Income
+          navController.navigate(Route.RevenueEdit())
           isFabExpanded = false
         },
         onAddTransfer = {
-          dialogState = DialogState.Transfer
+          navController.navigate(Route.TransferEdit())
           isFabExpanded = false
         },
         onCreateLoan = {
-          dialogState = DialogState.Loan
+          navController.navigate(Route.LoanEdit)
           isFabExpanded = false
         },
       )
@@ -279,7 +264,7 @@ fun FinanceScreen(
             TransactionCard(
               transactionWithDetails = transactionWithDetails,
               onClick = {
-                dialogState = DialogState.Transaction(transactionWithDetails)
+                handleTransactionClick(navController, transactionWithDetails)
               },
               onDelete = {
                 viewModel.deleteTransaction(transactionWithDetails.transaction.id)
@@ -306,82 +291,19 @@ fun FinanceScreen(
       }
     }
   }
+}
 
-  // Dialog Management
-  when (val state = dialogState) {
-    DialogState.None -> { /* No dialog */ }
+private fun handleTransactionClick(
+  navController: NavHostController,
+  transactionWithDetails: TransactionWithDetails,
+) {
+  val transactionId = transactionWithDetails.transaction.id
 
-    DialogState.Expense -> {
-      AddExpenseDialog(
-        accounts = accounts,
-        onDismiss = { dialogState = DialogState.None },
-        onConfirm = { input ->
-          viewModel.createTransaction(input)
-          dialogState = DialogState.None
-        }
-      )
-    }
-
-    DialogState.Income -> {
-      AddIncomeDialog(
-        accounts = accounts,
-        onDismiss = { dialogState = DialogState.None },
-        onConfirm = { input ->
-          viewModel.createTransaction(input)
-          dialogState = DialogState.None
-        }
-      )
-    }
-
-    DialogState.Transfer -> {
-      AddTransferDialog(
-        accounts = accounts,
-        onDismiss = { dialogState = DialogState.None },
-        onConfirm = { input ->
-          viewModel.createTransaction(input)
-          dialogState = DialogState.None
-        }
-      )
-    }
-
-    DialogState.Loan -> {
-      AddLoanDialog(
-        accounts = accounts,
-        onDismiss = { dialogState = DialogState.None },
-        onConfirm = { input ->
-          viewModel.createLoan(input)
-          dialogState = DialogState.None
-        }
-      )
-    }
-
-    is DialogState.Transaction -> {
-      AddTransactionDialog(
-        transactionWithDetails = state.transactionWithDetails,
-        accounts = accounts,
-        onDismiss = { dialogState = DialogState.None },
-        onConfirm = { input ->
-          if (state.transactionWithDetails == null) {
-            viewModel.createTransaction(input)
-          } else {
-            viewModel.updateTransaction(
-              UpdateTransactionInput(
-                id = state.transactionWithDetails.transaction.id,
-                amount = input.amount,
-                type = input.type,
-                transactionDate = input.transactionDate,
-                accountId = input.accountId,
-                toAccountId = input.toAccountId,
-                payee = input.payee,
-                member = input.member,
-                notes = input.notes
-              ),
-            )
-          }
-          dialogState = DialogState.None
-        },
-      )
-    }
+  when (transactionWithDetails.inferType()) {
+    TransactionType.EXPENSE -> navController.navigate(Route.ExpenseEdit(transactionId))
+    TransactionType.INCOME -> navController.navigate(Route.RevenueEdit(transactionId))
+    TransactionType.TRANSFER -> navController.navigate(Route.TransferEdit(transactionId))
+    TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> Unit
   }
 }
 

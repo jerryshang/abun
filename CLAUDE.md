@@ -52,6 +52,7 @@ This ensures the codebase remains in a working state throughout development.
 
 - **DO NOT** use JVM/Android-only APIs (System.*, android.*, java.*)
 - **DO NOT** use platform-specific string formatting or file operations
+- **ALWAYS** use `kotlinx.datetime` for date and time operations (e.g., `Clock.System.now().toEpochMilliseconds()`)
 - **ALWAYS** test iOS compatibility with `./gradlew :composeApp:compileKotlinIosSimulatorArm64`
 - **REFER** to AGENTS.md for detailed KMP development rules and common fixes
 
