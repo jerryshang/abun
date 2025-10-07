@@ -8,6 +8,9 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import dev.tireless.abun.database.Transaction as DbTransaction
@@ -161,7 +164,7 @@ class TransactionRepository(
       }
     }
 
-    val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+    val transactionId = queries.getLastInsertedRowId().executeAsOne()
 
     transactionId
   }
@@ -178,16 +181,15 @@ class TransactionRepository(
     }
 
     val now = currentTimeMillis()
+    val groupId = generateSplitGroupId(draft.transactionDate)
     queries.insertTransactionGroup(
+      id = groupId,
       name = buildSplitGroupName(draft.payee),
       group_type = TransactionGroupType.SPLIT.name.lowercase(),
       description = draft.groupNote,
       created_at = now,
       updated_at = now
     )
-
-    val groupId = queries.getAllTransactionGroups().executeAsList().lastOrNull()?.id
-      ?: throw IllegalStateException("Failed to create transaction group")
 
     val transactionIds = mutableListOf<Long>()
     draft.entries.forEach { entry ->
@@ -205,8 +207,7 @@ class TransactionRepository(
         updated_at = now
       )
 
-      val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id
-        ?: throw IllegalStateException("Failed to create split expense transaction")
+      val transactionId = queries.getLastInsertedRowId().executeAsOne()
       transactionIds += transactionId
       queries.addTransactionToGroup(transactionId, groupId)
     }
@@ -229,15 +230,15 @@ class TransactionRepository(
 
     var groupId = draft.groupId
     if (groupId == null) {
+      groupId = generateSplitGroupId(draft.transactionDate)
       queries.insertTransactionGroup(
+        id = groupId,
         name = buildSplitGroupName(draft.payee),
         group_type = TransactionGroupType.SPLIT.name.lowercase(),
         description = draft.groupNote,
         created_at = now,
         updated_at = now
       )
-      groupId = queries.getAllTransactionGroups().executeAsList().lastOrNull()?.id
-        ?: throw IllegalStateException("Failed to create transaction group")
     } else {
       queries.updateTransactionGroup(
         name = buildSplitGroupName(draft.payee),
@@ -289,8 +290,7 @@ class TransactionRepository(
           created_at = now,
           updated_at = now
         )
-        val transactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id
-          ?: throw IllegalStateException("Failed to create split expense transaction")
+        val transactionId = queries.getLastInsertedRowId().executeAsOne()
         queries.addTransactionToGroup(transactionId, groupId)
         retainedIds += transactionId
       }
@@ -350,7 +350,7 @@ class TransactionRepository(
       updated_at = now
     )
 
-    val loanTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+    val loanTransactionId = queries.getLastInsertedRowId().executeAsOne()
 
     // Balance is calculated on demand from transactions - no manual adjustment needed
 
@@ -358,7 +358,8 @@ class TransactionRepository(
     val groupId = transactionGroupRepository.createTransactionGroup(
       name = "Loan: ${input.payee ?: "Unknown"}",
       groupType = TransactionGroupType.LOAN,
-      description = "Loan of ¥${input.amount} at ${input.interestRate}% for ${input.loanMonths} months"
+      description = "Loan of ¥${input.amount} at ${input.interestRate}% for ${input.loanMonths} months",
+      id = null
     )
 
     // Add initial loan transaction to group
@@ -391,7 +392,7 @@ class TransactionRepository(
         updated_at = now
       )
 
-      val paymentTransactionId = queries.getAllTransactions().executeAsList().lastOrNull()?.id ?: -1L
+      val paymentTransactionId = queries.getLastInsertedRowId().executeAsOne()
       addTransactionToGroup(paymentTransactionId, groupId)
     }
 
@@ -648,13 +649,15 @@ class TransactionRepository(
     // Get account types from cache
     val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
     val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
+    val groups = queries.getGroupsForTransaction(transaction.id).executeAsList().map { it.toDomainGroup() }
 
     TransactionWithDetails(
       transaction = transaction,
       debitAccount = debitAccount,
       creditAccount = creditAccount,
       debitAccountType = debitAccountType,
-      creditAccountType = creditAccountType
+      creditAccountType = creditAccountType,
+      groups = groups
     )
   }
 
@@ -670,15 +673,36 @@ class TransactionRepository(
       // Get account types from cache
       val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
       val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
+      val groups = queries.getGroupsForTransaction(transaction.id).executeAsList().map { it.toDomainGroup() }
 
       TransactionWithDetails(
         transaction = transaction,
         debitAccount = debitAccount,
         creditAccount = creditAccount,
         debitAccountType = debitAccountType,
-        creditAccountType = creditAccountType
+        creditAccountType = creditAccountType,
+        groups = groups
       )
     }
+  }
+
+  private fun generateSplitGroupId(transactionDate: Long): Long {
+    val dateCode = transactionDate.toGroupDateCode()
+    val base = dateCode * GROUP_SERIAL_BASE
+    val maxExisting = queries.getMaxTransactionGroupIdInRange(base, base + GROUP_SERIAL_BASE - 1)
+      .executeAsOne().MAX
+    val nextId = when {
+      maxExisting == null -> base + 1
+      maxExisting >= base + GROUP_SERIAL_BASE - 1 -> maxExisting + 1
+      else -> maxExisting + 1
+    }
+    return nextId
+  }
+
+  private fun Long.toGroupDateCode(): Long {
+    val instant = Instant.fromEpochMilliseconds(this)
+    val localDate = instant.toLocalDateTime(TimeZone.UTC).date
+    return localDate.year * 10000L + localDate.monthNumber * 100L + localDate.dayOfMonth
   }
 
   private fun buildSplitGroupName(payee: String?): String {
@@ -691,5 +715,9 @@ class TransactionRepository(
    */
   private fun currentTimeMillis(): Long {
     return 1704067200000L // 2024-01-01 00:00:00 UTC - Simplified for KMP
+  }
+
+  private companion object {
+    private const val GROUP_SERIAL_BASE = 1000L
   }
 }

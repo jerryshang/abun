@@ -258,6 +258,19 @@ data class TransactionGroup(
   val updatedAt: Long
 )
 
+data class TransactionGroupWithTransactions(
+  val group: TransactionGroup,
+  val transactions: List<TransactionWithDetails>
+)
+
+data class TransactionDeletionContext(
+  val groups: List<TransactionGroupWithTransactions>
+) {
+  companion object {
+    val Empty = TransactionDeletionContext(emptyList())
+  }
+}
+
 /**
  * Loan Metadata (stored as JSON in transaction)
  */
@@ -321,7 +334,8 @@ data class TransactionWithDetails(
   val creditAccount: Account,
   // Cached account types for performance (computed from hierarchy in repository)
   val debitAccountType: AccountType,
-  val creditAccountType: AccountType
+  val creditAccountType: AccountType,
+  val groups: List<TransactionGroup> = emptyList()
 ) {
   /**
    * Infer user-facing transaction type from debit/credit accounts

@@ -119,11 +119,28 @@ class TransactionViewModel(
     }
   }
 
-  fun deleteTransaction(id: Long) {
+  fun deleteTransaction(id: Long, deleteGroupIds: List<Long> = emptyList()) {
     viewModelScope.launch {
       try {
         _isLoading.value = true
-        transactionRepository.deleteTransaction(id)
+        val groupIds = deleteGroupIds.distinct()
+        val transactionIdsToDelete = mutableSetOf(id)
+
+        for (groupId in groupIds) {
+          val groupTransactions = transactionGroupRepository.getTransactionsInGroup(groupId)
+          groupTransactions.forEach { transaction ->
+            transactionIdsToDelete += transaction.id
+          }
+        }
+
+        transactionIdsToDelete.forEach { transactionId ->
+          transactionRepository.deleteTransaction(transactionId)
+        }
+
+        groupIds.forEach { groupId ->
+          transactionGroupRepository.deleteTransactionGroup(groupId)
+        }
+
         refreshTransactions()
         refreshAccounts()
       } catch (e: Exception) {
@@ -132,6 +149,32 @@ class TransactionViewModel(
         _isLoading.value = false
       }
     }
+  }
+
+  suspend fun getTransactionDeletionContext(transactionId: Long): TransactionDeletionContext = try {
+    val groups = transactionRepository.getGroupsForTransaction(transactionId)
+    if (groups.isEmpty()) {
+      TransactionDeletionContext.Empty
+    } else {
+      val groupDetails = groups.map { group ->
+        val transactions = transactionGroupRepository.getTransactionsInGroup(group.id)
+        val detailedTransactions = mutableListOf<TransactionWithDetails>()
+        for (transaction in transactions) {
+          val detailed = transactionRepository.getTransactionWithDetails(transaction.id)
+          if (detailed != null) {
+            detailedTransactions += detailed
+          }
+        }
+        TransactionGroupWithTransactions(
+          group = group,
+          transactions = detailedTransactions
+        )
+      }
+      TransactionDeletionContext(groupDetails)
+    }
+  } catch (e: Exception) {
+    _error.value = "Failed to load transaction details: ${e.message}"
+    TransactionDeletionContext.Empty
   }
 
   /**

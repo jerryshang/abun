@@ -20,17 +20,19 @@ class TransactionGroupRepository(
   suspend fun createTransactionGroup(
     name: String,
     groupType: TransactionGroupType,
-    description: String? = null
+    description: String? = null,
+    id: Long? = null
   ): Long = withContext(Dispatchers.IO) {
     val now = currentTimeMillis()
     queries.insertTransactionGroup(
+      id = id,
       name = name,
       group_type = groupType.name.lowercase(),
       description = description,
       created_at = now,
       updated_at = now
     )
-    queries.getAllTransactionGroups().executeAsList().lastOrNull()?.id ?: -1L
+    id ?: queries.getLastInsertedRowId().executeAsOne()
   }
 
   suspend fun updateTransactionGroup(

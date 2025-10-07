@@ -22,22 +22,27 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -105,6 +110,10 @@ fun FinanceScreen(
   var showAccountSelector by remember { mutableStateOf(false) }
   var selectorAnchorWidth by remember { mutableStateOf(0) }
   var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
+  var transactionPendingDeletion by remember { mutableStateOf<TransactionWithDetails?>(null) }
+  var deletionContext by remember { mutableStateOf<TransactionDeletionContext?>(null) }
+  var deleteAllRelated by remember { mutableStateOf(false) }
+  var isDeletionContextLoading by remember { mutableStateOf(false) }
 
   // Update filtered transactions when selection changes
   LaunchedEffect(selectedAccountId, transactions) {
@@ -113,6 +122,25 @@ fun FinanceScreen(
     } else {
       transactions.filter {
         it.transaction.debitAccountId == selectedAccountId || it.transaction.creditAccountId == selectedAccountId
+      }
+    }
+  }
+
+  LaunchedEffect(transactionPendingDeletion?.transaction?.id) {
+    val transactionId = transactionPendingDeletion?.transaction?.id
+    if (transactionId == null) {
+      deletionContext = null
+      deleteAllRelated = false
+      isDeletionContextLoading = false
+    } else {
+      isDeletionContextLoading = true
+      deleteAllRelated = false
+      try {
+        deletionContext = viewModel.getTransactionDeletionContext(transactionId)
+      } catch (e: Exception) {
+        deletionContext = TransactionDeletionContext.Empty
+      } finally {
+        isDeletionContextLoading = false
       }
     }
   }
@@ -290,29 +318,6 @@ fun FinanceScreen(
           }
 
           if (filteredTransactions.isNotEmpty()) {
-            item {
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-              ) {
-                Text(
-                  text = selectedAccount?.let { "${it.name} history" } ?: "Recent transactions",
-                  style = MaterialTheme.typography.titleMedium,
-                  fontWeight = FontWeight.SemiBold,
-                )
-                TextButton(
-                  onClick = { navController.navigate(Route.AccountDetails(selectedAccountId)) },
-                  contentPadding = PaddingValues(horizontal = 0.dp),
-                ) {
-                  Text(
-                    text = "View all",
-                    style = MaterialTheme.typography.labelLarge,
-                  )
-                }
-              }
-            }
-
             items(filteredTransactions.take(10)) { transactionWithDetails ->
               TransactionCard(
                 transactionWithDetails = transactionWithDetails,
@@ -320,7 +325,7 @@ fun FinanceScreen(
                   handleTransactionClick(navController, transactionWithDetails)
                 },
                 onDelete = {
-                  viewModel.deleteTransaction(transactionWithDetails.transaction.id)
+                  transactionPendingDeletion = transactionWithDetails
                 },
               )
             }
@@ -354,6 +359,34 @@ fun FinanceScreen(
       }
     }
   }
+
+  transactionPendingDeletion?.let { pending ->
+    TransactionDeleteConfirmationDialog(
+      transaction = pending,
+      deletionContext = deletionContext,
+      isLoading = isDeletionContextLoading,
+      deleteAllChecked = deleteAllRelated,
+      onDeleteAllCheckedChange = { deleteAllRelated = it },
+      onDismiss = {
+        transactionPendingDeletion = null
+        deletionContext = null
+        deleteAllRelated = false
+        isDeletionContextLoading = false
+      },
+      onConfirm = {
+        val groupIds = if (deleteAllRelated) {
+          deletionContext?.groups?.map { it.group.id } ?: emptyList()
+        } else {
+          emptyList()
+        }
+        viewModel.deleteTransaction(pending.transaction.id, deleteGroupIds = groupIds)
+        transactionPendingDeletion = null
+        deletionContext = null
+        deleteAllRelated = false
+        isDeletionContextLoading = false
+      }
+    )
+  }
 }
 
 private fun handleTransactionClick(
@@ -367,6 +400,17 @@ private fun handleTransactionClick(
     TransactionType.INCOME -> navController.navigate(Route.RevenueEdit(transactionId))
     TransactionType.TRANSFER -> navController.navigate(Route.TransferEdit(transactionId))
     TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> Unit
+  }
+}
+
+private fun formatGroupTag(groupId: Long): String {
+  val idString = groupId.toString()
+  return if (idString.length > 3) {
+    val datePart = idString.dropLast(3)
+    val serialPart = idString.takeLast(3).padStart(3, '0')
+    "$datePart-$serialPart"
+  } else {
+    idString
   }
 }
 
@@ -515,6 +559,156 @@ fun AccountsSummaryCard(
   }
 }
 
+@Composable
+fun TransactionDeleteConfirmationDialog(
+  transaction: TransactionWithDetails,
+  deletionContext: TransactionDeletionContext?,
+  isLoading: Boolean,
+  deleteAllChecked: Boolean,
+  onDeleteAllCheckedChange: (Boolean) -> Unit,
+  onDismiss: () -> Unit,
+  onConfirm: () -> Unit,
+) {
+  val scrollState = rememberScrollState()
+
+  fun signedAmount(details: TransactionWithDetails): String = when (details.inferType()) {
+    TransactionType.EXPENSE -> "-¥${formatAmount(details.transaction.amount)}"
+    TransactionType.INCOME -> "+¥${formatAmount(details.transaction.amount)}"
+    TransactionType.TRANSFER -> "¥${formatAmount(details.transaction.amount)}"
+    TransactionType.LOAN -> "+¥${formatAmount(details.transaction.amount)}"
+    TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(details.transaction.amount)}"
+  }
+
+  fun labelFor(details: TransactionWithDetails): String {
+    val payee = details.transaction.payee
+    if (!payee.isNullOrBlank()) return payee
+    val raw = details.inferType().name.lowercase().replace('_', ' ')
+    return raw.replaceFirstChar { char ->
+      if (char.isLowerCase()) char.uppercase() else char.toString()
+    }
+  }
+
+  val transactionSummaryLabel = labelFor(transaction)
+  val transactionDate = formatDate(transaction.transaction.transactionDate)
+  val relatedGroups = deletionContext?.groups.orEmpty()
+  val hasGroups = relatedGroups.isNotEmpty()
+  val additionalTransactions = relatedGroups
+    .flatMap { it.transactions }
+    .filter { it.transaction.id != transaction.transaction.id }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = {
+      Text(
+        text = "Delete transaction",
+        style = MaterialTheme.typography.titleLarge,
+      )
+    },
+    text = {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .heightIn(max = 320.dp)
+          .verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        Text(
+          text = "Will you delete the transaction?",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Text(
+          text = "$transactionSummaryLabel — ${signedAmount(transaction)} on $transactionDate",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (isLoading) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+          ) {
+            CircularProgressIndicator(
+              modifier = Modifier.size(16.dp),
+              strokeWidth = 2.dp,
+            )
+            Text(
+              text = "Loading related transactions…",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        } else if (hasGroups) {
+          Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Text(
+              text = "This transaction is part of the following group${if (relatedGroups.size > 1) "s" else ""}:",
+              style = MaterialTheme.typography.bodyMedium,
+              color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            relatedGroups.forEach { groupWithTransactions ->
+              Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+              ) {
+                Text(
+                  text = groupWithTransactions.group.name,
+                  style = MaterialTheme.typography.labelLarge,
+                  fontWeight = FontWeight.SemiBold,
+                  color = MaterialTheme.colorScheme.onSurface,
+                )
+
+                groupWithTransactions.transactions.forEach { groupedTransaction ->
+                  val isTarget = groupedTransaction.transaction.id == transaction.transaction.id
+                  Text(
+                    text = "• ${labelFor(groupedTransaction)} — ${signedAmount(groupedTransaction)} on ${formatDate(groupedTransaction.transaction.transactionDate)}${if (isTarget) " (selected)" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isTarget) {
+                      MaterialTheme.colorScheme.onSurface
+                    } else {
+                      MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                  )
+                }
+              }
+            }
+
+            if (additionalTransactions.isNotEmpty()) {
+              Spacer(modifier = Modifier.height(4.dp))
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+              ) {
+                Checkbox(
+                  checked = deleteAllChecked,
+                  onCheckedChange = onDeleteAllCheckedChange,
+                )
+                Text(
+                  text = "Delete all related transactions",
+                  style = MaterialTheme.typography.bodyMedium,
+                  color = MaterialTheme.colorScheme.onSurface,
+                )
+              }
+            }
+          }
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onConfirm, enabled = !isLoading) {
+        Text("Delete")
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Cancel")
+      }
+    }
+  )
+}
+
 /**
  * Transaction card item
  */
@@ -568,7 +762,6 @@ fun TransactionCard(
           tint = accentColor,
         )
       }
-
       Spacer(modifier = Modifier.width(16.dp))
 
       Column(
@@ -603,8 +796,30 @@ fun TransactionCard(
             overflow = TextOverflow.Ellipsis,
           )
         }
-      }
 
+        if (transactionWithDetails.groups.isNotEmpty()) {
+          Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            transactionWithDetails.groups.forEach { group ->
+              Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+              ) {
+                Text(
+                  text = formatGroupTag(group.id),
+                  modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+              }
+            }
+          }
+        }
+      }
       Spacer(modifier = Modifier.width(16.dp))
 
       Column(

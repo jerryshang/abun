@@ -222,8 +222,14 @@ SELECT * FROM Account WHERE parent_id = 2 AND (config & 1) = 1 ORDER BY name;
 
 -- Queries for Transaction Groups
 insertTransactionGroup:
-INSERT INTO TransactionGroup (name, group_type, description, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO TransactionGroup (id, name, group_type, description, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+getMaxTransactionGroupIdInRange:
+SELECT MAX(id) FROM TransactionGroup WHERE id BETWEEN ? AND ?;
+
+getLastInsertedRowId:
+SELECT last_insert_rowid();
 
 updateTransactionGroup:
 UPDATE TransactionGroup
