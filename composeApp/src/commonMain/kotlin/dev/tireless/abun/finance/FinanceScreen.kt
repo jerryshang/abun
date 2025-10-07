@@ -80,7 +80,7 @@ import com.composables.icons.lucide.PiggyBank
 import com.composables.icons.lucide.Receipt
 import com.composables.icons.lucide.WalletCards
 import dev.tireless.abun.navigation.Route
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -93,7 +93,7 @@ import kotlin.math.sin
 @Composable
 fun FinanceScreen(
   navController: NavHostController,
-  viewModel: TransactionViewModel = koinInject(),
+  viewModel: TransactionViewModel = koinViewModel(),
 ) {
   val transactions by viewModel.transactions.collectAsState()
   val accounts by viewModel.accounts.collectAsState()
@@ -204,34 +204,35 @@ fun FinanceScreen(
                   overflow = TextOverflow.Ellipsis,
                   modifier = Modifier.weight(1f),
                 )
+                if (selectedAccountId != null) {
+                  Surface(
+                    onClick = { viewModel.setSelectedAccount(null) },
+                    modifier = Modifier.size(32.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                  ) {
+                    Box(
+                      modifier = Modifier.fillMaxSize(),
+                      contentAlignment = Alignment.Center,
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear account filter",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                      )
+                    }
+                  }
+                }
                 Icon(
                   imageVector = Icons.Default.ArrowDropDown,
                   contentDescription = if (showAccountSelector) "Collapse account selection" else "Expand account selection",
                   modifier =
                     Modifier
-                      .size(18.dp)
+                      .size(24.dp)
                       .rotate(chevronRotation),
-                  tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-              }
-            }
-
-            if (selectedAccountId != null) {
-              Surface(
-                onClick = { viewModel.setSelectedAccount(null) },
-                modifier = Modifier.align(Alignment.CenterEnd).offset(x = 12.dp),
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-              ) {
-                Icon(
-                  imageVector = Icons.Default.Close,
-                  contentDescription = "Clear account filter",
-                  modifier =
-                    Modifier
-                      .size(16.dp)
-                      .padding(4.dp),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
               }
@@ -825,36 +826,6 @@ fun AccountDetailSummaryCard(
       modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
       verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-          Text(
-            text = account.name,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-          )
-          Text(
-            text = typeLabel,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-        TextButton(
-          onClick = onViewDetails,
-          contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-        ) {
-          Text(
-            text = "Details",
-            style = MaterialTheme.typography.labelLarge,
-          )
-        }
-      }
-
-      HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
       when {
         isLiability -> {
           val debtAmount = kotlin.math.abs(account.currentBalance)
@@ -1035,15 +1006,6 @@ fun EmptyTransactionsState(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
-      TextButton(
-        onClick = onAddTransaction,
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-      ) {
-        Text(
-          text = "Add transaction",
-          style = MaterialTheme.typography.labelLarge,
-        )
-      }
     }
   }
 }

@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,26 +36,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountEditScreen(
   navController: NavHostController,
   accountId: Long?,
-  viewModel: AccountViewModel = koinInject(),
+  viewModel: AccountViewModel = koinViewModel(),
 ) {
   val accounts by viewModel.accounts.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
 
   val existingAccount = accountId?.let { id -> accounts.firstOrNull { it.id == id } }
   val isNewAccount = accountId == null
-
-  LaunchedEffect(accountId, accounts.isEmpty()) {
-    if (!isNewAccount && existingAccount == null) {
-      viewModel.loadAccounts()
-    }
-  }
 
   if (!isNewAccount && existingAccount == null) {
     Scaffold(

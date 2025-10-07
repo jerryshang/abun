@@ -40,6 +40,11 @@ class TransactionRepository(
       list.map { it.toDomain() }
     }
 
+  fun getAllTransactionsWithDetailsFlow(): Flow<List<TransactionWithDetails>> =
+    getAllTransactionsFlow().map { transactions ->
+      buildTransactionDetails(transactions)
+    }
+
   /**
    * Get all transactions
    */
@@ -191,6 +196,26 @@ class TransactionRepository(
       }
 
       val now = Clock.System.now().toEpochMilliseconds()
+
+      if (draft.entries.size == 1) {
+        val entry = draft.entries.first()
+        queries.insertTransaction(
+          amount = entry.amount.toStorageAmount(),
+          debit_account_id = entry.categoryId,
+          credit_account_id = draft.paymentAccountId,
+          transaction_date = draft.transactionDate,
+          transfer_group_id = null,
+          payee = draft.payee,
+          member = draft.member,
+          notes = entry.notes,
+          state = TransactionState.CONFIRMED.name.lowercase(),
+          created_at = now,
+          updated_at = now,
+        )
+        val transactionId = queries.getLastInsertedRowId().executeAsOne()
+        return@withContext listOf(transactionId)
+      }
+
       val groupId = generateSplitGroupId(draft.transactionDate)
       queries.insertTransactionGroup(
         id = groupId,
@@ -239,6 +264,91 @@ class TransactionRepository(
       }
 
       val now = Clock.System.now().toEpochMilliseconds()
+
+      if (draft.entries.size == 1) {
+        val entry = draft.entries.first()
+        val notes = entry.notes
+        if (draft.groupId != null) {
+          val groupId = draft.groupId
+          val existingTransactions =
+            queries.getTransactionsByGroup(groupId).executeAsList().map { it.id }.toSet()
+          val retainedId =
+            entry.transactionId
+              ?: existingTransactions.firstOrNull()
+              ?: run {
+                queries.insertTransaction(
+                  amount = entry.amount.toStorageAmount(),
+                  debit_account_id = entry.categoryId,
+                  credit_account_id = draft.paymentAccountId,
+                  transaction_date = draft.transactionDate,
+                  transfer_group_id = null,
+                  payee = draft.payee,
+                  member = draft.member,
+                  notes = notes,
+                  state = TransactionState.CONFIRMED.name.lowercase(),
+                  created_at = now,
+                  updated_at = now,
+                )
+                queries.getLastInsertedRowId().executeAsOne()
+              }
+
+          queries.updateTransaction(
+            amount = entry.amount.toStorageAmount(),
+            debit_account_id = entry.categoryId,
+            credit_account_id = draft.paymentAccountId,
+            transaction_date = draft.transactionDate,
+            transfer_group_id = null,
+            payee = draft.payee,
+            member = draft.member,
+            notes = notes,
+            state = TransactionState.CONFIRMED.name.lowercase(),
+            updated_at = now,
+            id = retainedId,
+          )
+
+          existingTransactions
+            .filter { it != retainedId }
+            .forEach { transactionId ->
+              queries.removeTransactionFromGroup(transactionId, groupId)
+              queries.deleteTransaction(transactionId)
+            }
+
+          queries.removeTransactionFromGroup(retainedId, groupId)
+          queries.deleteTransactionGroup(groupId)
+        } else {
+          val transactionId = entry.transactionId
+          if (transactionId != null) {
+            queries.updateTransaction(
+              amount = entry.amount.toStorageAmount(),
+              debit_account_id = entry.categoryId,
+              credit_account_id = draft.paymentAccountId,
+              transaction_date = draft.transactionDate,
+              transfer_group_id = null,
+              payee = draft.payee,
+              member = draft.member,
+              notes = notes,
+              state = TransactionState.CONFIRMED.name.lowercase(),
+              updated_at = now,
+              id = transactionId,
+            )
+          } else {
+            queries.insertTransaction(
+              amount = entry.amount.toStorageAmount(),
+              debit_account_id = entry.categoryId,
+              credit_account_id = draft.paymentAccountId,
+              transaction_date = draft.transactionDate,
+              transfer_group_id = null,
+              payee = draft.payee,
+              member = draft.member,
+              notes = notes,
+              state = TransactionState.CONFIRMED.name.lowercase(),
+              created_at = now,
+              updated_at = now,
+            )
+          }
+        }
+        return@withContext
+      }
 
       var groupId = draft.groupId
       if (groupId == null) {
@@ -698,27 +808,31 @@ class TransactionRepository(
    * Get all transactions with enriched details
    */
   suspend fun getAllTransactionsWithDetails(): List<TransactionWithDetails> =
-    withContext(Dispatchers.IO) {
-      getAllTransactions().mapNotNull { transaction ->
-        val debitAccount = accountRepository.getAccountById(transaction.debitAccountId)
-        val creditAccount = accountRepository.getAccountById(transaction.creditAccountId)
-        if (debitAccount == null || creditAccount == null) return@mapNotNull null
+    buildTransactionDetails(getAllTransactions())
 
-        // Get account types from cache
+  private suspend fun buildTransactionDetails(transactions: List<Transaction>): List<TransactionWithDetails> =
+    withContext(Dispatchers.IO) {
+      val detailedTransactions = mutableListOf<TransactionWithDetails>()
+      for (transaction in transactions) {
+        val debitAccount = accountRepository.getAccountById(transaction.debitAccountId) ?: continue
+        val creditAccount = accountRepository.getAccountById(transaction.creditAccountId) ?: continue
+
         val debitAccountType = accountRepository.getAccountType(transaction.debitAccountId)
         val creditAccountType = accountRepository.getAccountType(transaction.creditAccountId)
         val groups =
           queries.getGroupsForTransaction(transaction.id).executeAsList().map { it.toDomainGroup() }
 
-        TransactionWithDetails(
-          transaction = transaction,
-          debitAccount = debitAccount,
-          creditAccount = creditAccount,
-          debitAccountType = debitAccountType,
-          creditAccountType = creditAccountType,
-          groups = groups,
-        )
+        detailedTransactions +=
+          TransactionWithDetails(
+            transaction = transaction,
+            debitAccount = debitAccount,
+            creditAccount = creditAccount,
+            debitAccountType = debitAccountType,
+            creditAccountType = creditAccountType,
+            groups = groups,
+          )
       }
+      detailedTransactions
     }
 
   private fun generateSplitGroupId(transactionDate: Long): Long {

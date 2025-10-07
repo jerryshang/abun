@@ -42,7 +42,7 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import dev.tireless.abun.navigation.Route
 import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * Account Management Screen
@@ -51,7 +51,7 @@ import org.koin.compose.koinInject
 @Composable
 fun AccountManagementScreen(
   navController: NavHostController,
-  viewModel: AccountViewModel = koinInject(),
+  viewModel: AccountViewModel = koinViewModel(),
 ) {
   val accounts by viewModel.accounts.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()

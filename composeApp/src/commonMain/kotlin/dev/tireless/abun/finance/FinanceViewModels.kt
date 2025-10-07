@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 /**
@@ -31,30 +35,27 @@ class TransactionViewModel(
   val selectedAccountId: StateFlow<Long?> = _selectedAccountId.asStateFlow()
 
   init {
-    loadData()
+    observeData()
   }
 
-  private fun loadData() {
+  private fun observeData() {
     viewModelScope.launch {
-      try {
-        _isLoading.value = true
-        _transactions.value = transactionRepository.getAllTransactionsWithDetails()
-        _accounts.value = accountRepository.getActiveAccountsWithBalance()
-      } catch (e: Exception) {
-        _error.value = "Failed to load data: ${e.message}"
-      } finally {
-        _isLoading.value = false
+      combine(
+        transactionRepository.getAllTransactionsWithDetailsFlow(),
+        accountRepository.getActiveAccountsWithBalanceFlow(),
+      ) { transactions, accounts ->
+        transactions to accounts
       }
-    }
-  }
-
-  fun refreshTransactions() {
-    viewModelScope.launch {
-      try {
-        _transactions.value = transactionRepository.getAllTransactionsWithDetails()
-      } catch (e: Exception) {
-        _error.value = "Failed to refresh transactions: ${e.message}"
-      }
+        .onStart { _isLoading.value = true }
+        .catch { e ->
+          _error.value = "Failed to load data: ${e.message}"
+          _isLoading.value = false
+        }
+        .collectLatest { (detailedTransactions, accountBalances) ->
+          _transactions.value = detailedTransactions
+          _accounts.value = accountBalances
+          _isLoading.value = false
+        }
     }
   }
 
@@ -63,8 +64,6 @@ class TransactionViewModel(
       try {
         _isLoading.value = true
         transactionRepository.createTransaction(input)
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to create transaction: ${e.message}"
       } finally {
@@ -78,8 +77,6 @@ class TransactionViewModel(
       try {
         _isLoading.value = true
         transactionRepository.createSplitExpense(draft)
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to create split expense: ${e.message}"
       } finally {
@@ -93,8 +90,6 @@ class TransactionViewModel(
       try {
         _isLoading.value = true
         transactionRepository.updateTransaction(input)
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to update transaction: ${e.message}"
       } finally {
@@ -108,8 +103,6 @@ class TransactionViewModel(
       try {
         _isLoading.value = true
         transactionRepository.updateSplitExpense(draft)
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to update split expense: ${e.message}"
       } finally {
@@ -143,8 +136,6 @@ class TransactionViewModel(
           transactionGroupRepository.deleteTransactionGroup(groupId)
         }
 
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to delete transaction: ${e.message}"
       } finally {
@@ -189,8 +180,6 @@ class TransactionViewModel(
       try {
         _isLoading.value = true
         transactionRepository.createLoan(input, transactionGroupRepository)
-        refreshTransactions()
-        refreshAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to create loan: ${e.message}"
       } finally {
@@ -274,16 +263,6 @@ class TransactionViewModel(
       null
     }
 
-  private fun refreshAccounts() {
-    viewModelScope.launch {
-      try {
-        _accounts.value = accountRepository.getActiveAccountsWithBalance()
-      } catch (e: Exception) {
-        _error.value = "Failed to refresh accounts: ${e.message}"
-      }
-    }
-  }
-
   fun clearError() {
     _error.value = null
   }
@@ -319,20 +298,23 @@ class AccountViewModel(
   val error: StateFlow<String?> = _error.asStateFlow()
 
   init {
-    loadAccounts()
+    observeAccounts()
   }
 
-  fun loadAccounts() {
+  private fun observeAccounts() {
     viewModelScope.launch {
-      try {
-        _isLoading.value = true
-        _accounts.value = accountRepository.getAllAccountsWithBalance()
-        _totalBalance.value = _accounts.value.totalCountableBalance()
-      } catch (e: Exception) {
-        _error.value = "Failed to load accounts: ${e.message}"
-      } finally {
-        _isLoading.value = false
-      }
+      accountRepository
+        .getAllAccountsWithBalanceFlow()
+        .onStart { _isLoading.value = true }
+        .catch { e ->
+          _error.value = "Failed to load accounts: ${e.message}"
+          _isLoading.value = false
+        }
+        .collectLatest { accountBalances ->
+          _accounts.value = accountBalances
+          _totalBalance.value = accountBalances.totalCountableBalance()
+          _isLoading.value = false
+        }
     }
   }
 
@@ -355,7 +337,6 @@ class AccountViewModel(
           }
 
         accountRepository.createAccount(finalInput)
-        loadAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to create account: ${e.message}"
       } finally {
@@ -369,7 +350,6 @@ class AccountViewModel(
       try {
         _isLoading.value = true
         accountRepository.updateAccount(input)
-        loadAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to update account: ${e.message}"
       } finally {
@@ -383,7 +363,6 @@ class AccountViewModel(
       try {
         _isLoading.value = true
         accountRepository.deleteAccount(id)
-        loadAccounts()
       } catch (e: Exception) {
         _error.value = "Failed to delete account: ${e.message}"
       } finally {

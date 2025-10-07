@@ -43,7 +43,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import dev.tireless.abun.time.Timeblock
 import dev.tireless.abun.time.TimeblockViewModel
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 data class TimeSlot(
   val hour: Int,
@@ -360,9 +365,19 @@ private fun generateTimeSlots(
   return slots
 }
 
+@OptIn(ExperimentalTime::class)
 private fun isTimeInFuture(timeString: String): Boolean {
-  // Simplified future check - in real app, compare with current time
-  return timeString > "2024-01-01T12:00:00"
+  return try {
+    val targetMillis =
+      LocalDateTime
+        .parse(timeString)
+        .toInstant(TimeZone.currentSystemDefault())
+        .toEpochMilliseconds()
+    val currentMillis = Clock.System.now().toEpochMilliseconds()
+    targetMillis > currentMillis
+  } catch (_: IllegalArgumentException) {
+    false
+  }
 }
 
 private fun parseHexColor(hexColor: String): Long {

@@ -1,8 +1,13 @@
 package dev.tireless.abun.finance
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import dev.tireless.abun.database.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import dev.tireless.abun.database.Account as DbAccount
@@ -26,9 +31,12 @@ class AccountRepository(
    */
   private suspend fun refreshCache() {
     val accounts = queries.getAllAccounts().executeAsList().map { it.toDomain() }
+    updateCache(accounts)
+  }
+
+  private fun updateCache(accounts: List<Account>) {
     accountCache = accounts.associateBy { it.id }
 
-    // Build type cache by traversing hierarchy
     accountTypeCache =
       accounts.associate { account ->
         account.id to getAccountTypeFromHierarchy(account, accounts)
@@ -72,7 +80,7 @@ class AccountRepository(
   suspend fun getAllAccounts(): List<Account> =
     withContext(Dispatchers.IO) {
       val accounts = queries.getAllAccounts().executeAsList().map { it.toDomain() }
-      refreshCache() // Update cache
+      updateCache(accounts)
       accounts
     }
 
@@ -82,13 +90,7 @@ class AccountRepository(
   suspend fun getAllAccountsWithBalance(): List<AccountWithBalance> =
     withContext(Dispatchers.IO) {
       val accounts = getAllAccounts()
-      val asOfMillis = Clock.System.now().toEpochMilliseconds()
-      accounts.map { account ->
-        AccountWithBalance(
-          account = account,
-          currentBalance = calculateAccountBalance(account.id, asOfMillis),
-        )
-      }
+      accountsWithBalance(accounts)
     }
 
   /**
@@ -105,14 +107,34 @@ class AccountRepository(
   suspend fun getActiveAccountsWithBalance(): List<AccountWithBalance> =
     withContext(Dispatchers.IO) {
       val accounts = getActiveAccounts()
-      val asOfMillis = Clock.System.now().toEpochMilliseconds()
-      accounts.map { account ->
-        AccountWithBalance(
-          account = account,
-          currentBalance = calculateAccountBalance(account.id, asOfMillis),
-        )
-      }
+      accountsWithBalance(accounts)
     }
+
+  fun getAllAccountsWithBalanceFlow(): Flow<List<AccountWithBalance>> {
+    val accountsFlow = queries.getAllAccounts().asFlow().mapToList(Dispatchers.IO)
+    val transactionsFlow = queries.getAllTransactions().asFlow().mapToList(Dispatchers.IO)
+    return accountsFlow
+      .combine(transactionsFlow) { accountEntities, _ ->
+        accountEntities.map { it.toDomain() }
+      }
+      .mapLatest { accounts ->
+        updateCache(accounts)
+        accountsWithBalance(accounts)
+      }
+  }
+
+  fun getActiveAccountsWithBalanceFlow(): Flow<List<AccountWithBalance>> {
+    val activeAccountsFlow = queries.getActiveAccounts().asFlow().mapToList(Dispatchers.IO)
+    val transactionsFlow = queries.getAllTransactions().asFlow().mapToList(Dispatchers.IO)
+    return activeAccountsFlow
+      .combine(transactionsFlow) { accountEntities, _ ->
+        accountEntities.map { it.toDomain() }
+      }
+      .mapLatest { accounts ->
+        refreshCache()
+        accountsWithBalance(accounts)
+      }
+  }
 
   /**
    * Get account by ID
@@ -203,6 +225,16 @@ class AccountRepository(
           ).executeAsOne()
       balanceStorage.toDisplayAmount()
     }
+
+  private suspend fun accountsWithBalance(accounts: List<Account>): List<AccountWithBalance> {
+    val asOfMillis = Clock.System.now().toEpochMilliseconds()
+    return accounts.map { account ->
+      AccountWithBalance(
+        account = account,
+        currentBalance = calculateAccountBalance(account.id, asOfMillis),
+      )
+    }
+  }
 
   /**
    * Delete an account
