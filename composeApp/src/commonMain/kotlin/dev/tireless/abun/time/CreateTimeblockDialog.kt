@@ -129,7 +129,7 @@ fun CreateTimeblockDialog(
                       }
                     }
                     if (selectedTask?.id == task.id) {
-                      Text("✓", color = MaterialTheme.colorScheme.primary)
+                      Text("Selected", color = MaterialTheme.colorScheme.primary)
                     }
                   }
                 }
@@ -184,7 +184,7 @@ fun CreateTimeblockDialog(
                   ) {
                     Text(category.name)
                     if (selectedCategory?.id == category.id) {
-                      Text("✓", color = MaterialTheme.colorScheme.primary)
+                      Text("Selected", color = MaterialTheme.colorScheme.primary)
                     }
                   }
                 }

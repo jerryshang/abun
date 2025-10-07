@@ -92,15 +92,15 @@ fun AccountManagementScreen(
     topBar = {
       TopAppBar(
         windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
-        title = { Text("账户管理") },
+        title = { Text("Account Management") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "返回")
+            Icon(Icons.Default.ArrowBack, "Back")
           }
         },
         actions = {
           IconButton(onClick = { navController.navigate(Route.AccountEdit(null)) }) {
-            Icon(Lucide.Plus, contentDescription = "添加账户")
+            Icon(Lucide.Plus, contentDescription = "Add Account")
           }
         },
       )
@@ -215,7 +215,7 @@ fun AccountCard(
 
       if (!account.isActive) {
         Text(
-          text = "已停用",
+          text = "Disabled",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.error,
         )
@@ -281,7 +281,7 @@ fun AddAccountDialog(
 
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("添加账户") },
+    title = { Text("Add Account") },
     text = {
       Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -289,14 +289,14 @@ fun AddAccountDialog(
         OutlinedTextField(
           value = name,
           onValueChange = { name = it },
-          label = { Text("账户名称") },
+          label = { Text("Account Name") },
           modifier = Modifier.fillMaxWidth(),
         )
 
         OutlinedTextField(
           value = initialBalance,
           onValueChange = { initialBalance = it },
-          label = { Text("初始余额") },
+          label = { Text("Initial Balance") },
           modifier = Modifier.fillMaxWidth(),
           prefix = { Text("¥") },
         )
@@ -313,12 +313,12 @@ fun AddAccountDialog(
         },
         enabled = name.isNotBlank(),
       ) {
-        Text("确认")
+        Text("Confirm")
       }
     },
     dismissButton = {
       TextButton(onClick = onDismiss) {
-        Text("取消")
+        Text("Cancel")
       }
     },
   )
@@ -336,13 +336,13 @@ fun LoadTemplateDialog(
 
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("选择预定义账户模板") },
+    title = { Text("Select Predefined Account Template") },
     text = {
       Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
         Text(
-          text = "选择要加载的账户模板。加载模板将清除所有现有交易和账户。",
+          text = "Select the account template to load. Loading a template will clear all existing transactions and accounts.",
           style = MaterialTheme.typography.bodyMedium,
         )
 
@@ -355,7 +355,7 @@ fun LoadTemplateDialog(
             onClick = { selectedTemplate = AccountTemplateType.MINIMAL },
           )
           Text(
-            text = "最小模板 (5个账户)",
+            text = "Minimal Template (5 accounts)",
             modifier = Modifier.padding(start = 8.dp),
           )
         }
@@ -369,7 +369,7 @@ fun LoadTemplateDialog(
             onClick = { selectedTemplate = AccountTemplateType.STANDARD },
           )
           Text(
-            text = "标准模板 (40+个账户)",
+            text = "Standard Template (40+ accounts)",
             modifier = Modifier.padding(start = 8.dp),
           )
         }
@@ -377,12 +377,12 @@ fun LoadTemplateDialog(
     },
     confirmButton = {
       Button(onClick = { onConfirm(selectedTemplate) }) {
-        Text("下一步")
+        Text("Next")
       }
     },
     dismissButton = {
       TextButton(onClick = onDismiss) {
-        Text("取消")
+        Text("Cancel")
       }
     },
   )
@@ -398,35 +398,35 @@ fun WarningDialog(
 ) {
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("警告") },
+    title = { Text("Warning") },
     text = {
       Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
         Text(
-          text = "加载预定义账户将会:",
+          text = "Loading a predefined account will:",
           style = MaterialTheme.typography.bodyMedium,
           fontWeight = FontWeight.Bold,
         )
         Text(
-          text = "• 删除所有现有交易",
+          text = "- Delete all existing transactions",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.error,
         )
         Text(
-          text = "• 删除除5个根账户外的所有账户",
+          text = "- Remove all accounts except the five root accounts",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.error,
         )
         Text(
-          text = "• 此操作不可恢复!",
+          text = "- This action cannot be undone!",
           style = MaterialTheme.typography.bodyMedium,
           fontWeight = FontWeight.Bold,
           color = MaterialTheme.colorScheme.error,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-          text = "确定要继续吗?",
+          text = "Are you sure you want to continue?",
           style = MaterialTheme.typography.bodyMedium,
         )
       }
@@ -439,12 +439,12 @@ fun WarningDialog(
             containerColor = MaterialTheme.colorScheme.error,
           ),
       ) {
-        Text("确认")
+        Text("Confirm")
       }
     },
     dismissButton = {
       TextButton(onClick = onDismiss) {
-        Text("取消")
+        Text("Cancel")
       }
     },
   )

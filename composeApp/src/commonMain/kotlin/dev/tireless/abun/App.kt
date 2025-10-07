@@ -433,7 +433,7 @@ private fun HomeScreen() {
             )
             quote.source?.let { source ->
               Text(
-                text = "— $source",
+                text = "- $source",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier

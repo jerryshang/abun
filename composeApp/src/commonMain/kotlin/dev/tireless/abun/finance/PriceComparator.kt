@@ -84,10 +84,10 @@ fun PriceComparator(navController: NavHostController) {
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("价格对比") },
+        title = { Text("Price Comparison") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "返回")
+            Icon(Icons.Default.ArrowBack, "Back")
           }
         }
       )
@@ -100,7 +100,7 @@ fun PriceComparator(navController: NavHostController) {
             priceItems = priceItems + PriceItem()
           }
         ) {
-          Icon(Icons.Default.Add, "添加")
+          Icon(Icons.Default.Add, "Add")
         }
       }
     }
@@ -134,19 +134,19 @@ fun PriceComparator(navController: NavHostController) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
                 Text(
-                  "价格",
+                  "Price",
                   modifier = Modifier.weight(1f),
                   style = MaterialTheme.typography.labelLarge,
                   fontWeight = FontWeight.Bold,
                 )
                 Text(
-                  "数量",
+                  "Quantity",
                   modifier = Modifier.weight(1f),
                   style = MaterialTheme.typography.labelLarge,
                   fontWeight = FontWeight.Bold,
                 )
                 Text(
-                  "单价",
+                  "Unit Price",
                   modifier = Modifier.weight(1f),
                   style = MaterialTheme.typography.labelLarge,
                   fontWeight = FontWeight.Bold,
@@ -211,7 +211,7 @@ fun PriceComparator(navController: NavHostController) {
             ) {
               Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("清空")
+              Text("Clear")
             }
           }
         }
@@ -310,7 +310,7 @@ private fun PriceItemCard(
           },
           modifier = Modifier.size(48.dp),
         ) {
-          Icon(Icons.Default.Delete, contentDescription = "删除")
+          Icon(Icons.Default.Delete, contentDescription = "Delete")
         }
       } else {
         Box(modifier = Modifier.size(48.dp))

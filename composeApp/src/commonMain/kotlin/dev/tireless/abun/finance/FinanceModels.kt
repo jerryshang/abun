@@ -120,10 +120,10 @@ enum class TransactionState {
  * Loan Types
  */
 enum class LoanType {
-  INTEREST_FIRST, // 先息后本 (Interest first, principal last)
-  EQUAL_PRINCIPAL, // 等额本金 (Equal principal)
-  EQUAL_INSTALLMENT, // 等额本息 (Equal installment - principal + interest)
-  INTEREST_ONLY; // 只还利息 (Interest only, no principal repayment)
+  INTEREST_FIRST, // Interest first, principal last
+  EQUAL_PRINCIPAL, // Equal principal
+  EQUAL_INSTALLMENT, // Equal installment - principal plus interest
+  INTEREST_ONLY; // Interest only, no principal repayment
 
   companion object {
     fun fromString(value: String): LoanType = values().find { it.name == value.uppercase() } ?: EQUAL_INSTALLMENT

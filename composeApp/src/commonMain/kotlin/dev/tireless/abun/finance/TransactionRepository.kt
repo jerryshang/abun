@@ -17,9 +17,9 @@ import dev.tireless.abun.database.Transaction as DbTransaction
  * Implements double-entry booking with translation layer
  *
  * Translation Layer:
- * - User creates "Expense" → System creates debit to expense account, credit to asset account
- * - User creates "Income" → System creates debit to asset account, credit to revenue account
- * - User creates "Transfer" → System creates debit to destination asset, credit to source asset
+ * - User creates "Expense" -> System creates debit to expense account, credit to asset account
+ * - User creates "Income" -> System creates debit to asset account, credit to revenue account
+ * - User creates "Transfer" -> System creates debit to destination asset, credit to source asset
  */
 class TransactionRepository(
   private val database: AppDatabase,

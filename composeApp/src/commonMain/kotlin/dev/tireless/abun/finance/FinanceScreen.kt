@@ -587,9 +587,9 @@ fun TransactionCard(
           text = buildString {
             append(primaryAccount.name)
             if (secondaryAccount != null) {
-              append(" → ${secondaryAccount.name}")
+            append(" -> ${secondaryAccount.name}")
             }
-            append(" • ${formatDate(transaction.transactionDate)}")
+            append(" - ${formatDate(transaction.transactionDate)}")
           },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,

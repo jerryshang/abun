@@ -94,10 +94,10 @@ fun FutureViewScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("未来视图") },
+        title = { Text("Future View") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "返回")
+            Icon(Icons.Default.ArrowBack, "Back")
           }
         }
       )
@@ -129,12 +129,12 @@ fun FutureViewScreen(
               verticalAlignment = Alignment.CenterVertically
             ) {
               Text(
-                text = "筛选器: ${selectedAccountId?.let { id -> accounts.find { it.id == id }?.name } ?: "全部账户"}",
+                text = "Filter: ${selectedAccountId?.let { id -> accounts.find { it.id == id }?.name } ?: "All Accounts"}",
                 style = MaterialTheme.typography.bodyMedium
               )
               Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "选择账户",
+                contentDescription = "Select Account",
                 modifier = Modifier.size(16.dp)
               )
             }
@@ -154,7 +154,7 @@ fun FutureViewScreen(
                   .padding(16.dp)
               ) {
                 Text(
-                  text = "资产趋势图 (Balance Trend Chart)",
+                  text = "Asset Trend Chart",
                   style = MaterialTheme.typography.titleMedium,
                   fontWeight = FontWeight.SemiBold
                 )
@@ -171,7 +171,7 @@ fun FutureViewScreen(
                 )
                  */
                 Text(
-                  text = "余额趋势图功能暂时禁用",
+                  text = "Balance trend chart temporarily disabled",
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
                   modifier = Modifier.padding(16.dp)
@@ -200,13 +200,13 @@ fun FutureViewScreen(
                 ) {
                   Column {
                     Text(
-                      text = "选择日期: ${selectedDaysAhead}天后",
+                      text = "Days Ahead: ${selectedDaysAhead}",
                       style = MaterialTheme.typography.bodyMedium,
                       color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                      text = "预计余额: ¥${formatAmount(predictedBalance)}",
+                      text = "Projected Balance: ¥${formatAmount(predictedBalance)}",
                       style = MaterialTheme.typography.headlineSmall,
                       fontWeight = FontWeight.Bold,
                       color = if (predictedBalance >= currentBalance) {
@@ -221,13 +221,13 @@ fun FutureViewScreen(
                   Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                   ) {
-                    QuickDateButton("7天", selectedDaysAhead == 7) {
+                    QuickDateButton("7d", selectedDaysAhead == 7) {
                       selectedDaysAhead = 7
                     }
-                    QuickDateButton("30天", selectedDaysAhead == 30) {
+                    QuickDateButton("30d", selectedDaysAhead == 30) {
                       selectedDaysAhead = 30
                     }
-                    QuickDateButton("90天", selectedDaysAhead == 90) {
+                    QuickDateButton("90d", selectedDaysAhead == 90) {
                       selectedDaysAhead = 90
                     }
                   }
@@ -239,7 +239,7 @@ fun FutureViewScreen(
           // Section header
           item {
             Text(
-              text = "即将发生的交易 (Upcoming Transactions)",
+              text = "Upcoming Transactions",
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold,
               modifier = Modifier.padding(horizontal = 16.dp)
@@ -250,7 +250,7 @@ fun FutureViewScreen(
           if (upcomingTransactions.isEmpty()) {
             item {
               Text(
-                text = "暂无计划交易",
+                text = "No scheduled transactions",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -372,14 +372,14 @@ private fun UpcomingTransactionCard(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-          text = "${formatDate(transaction.transactionDate)} • ${primaryAccount.name}",
+          text = "${formatDate(transaction.transactionDate)} - ${primaryAccount.name}",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         if (transaction.state == TransactionState.ESTIMATED) {
           Text(
-            text = "预估金额",
+            text = "Estimated Amount",
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFFF57C00)
           )

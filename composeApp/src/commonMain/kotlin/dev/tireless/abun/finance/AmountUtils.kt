@@ -10,9 +10,9 @@ import kotlin.math.roundToLong
  * floating point precision loss. This supports up to 4 decimal places (.4f precision).
  *
  * Examples:
- * - 100.00 yuan → stored as 1000000
- * - 0.0001 yuan → stored as 1
- * - 99999.9999 yuan → stored as 999999999
+ * - 100.00 yuan -> stored as 1000000
+ * - 0.0001 yuan -> stored as 1
+ * - 99999.9999 yuan -> stored as 999999999
  */
 
 /**

@@ -2,7 +2,8 @@ package dev.tireless.abun.finance
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,7 +48,7 @@ import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun LoanEditScreen(
   navController: NavHostController,
@@ -207,23 +208,36 @@ fun LoanEditScreen(
       }
 
       Text("Repayment Type", style = MaterialTheme.typography.labelLarge)
-      Row(
+      val loanTypeOptions = listOf(
+        LoanType.EQUAL_INSTALLMENT to "Equal P+I",
+        LoanType.EQUAL_PRINCIPAL to "Equal Principal",
+        LoanType.INTEREST_FIRST to "Interest-First",
+      )
+      val loanTypeDescriptions = mapOf(
+        LoanType.EQUAL_INSTALLMENT to "Same payment every period covering principal and interest.",
+        LoanType.EQUAL_PRINCIPAL to "Declining payments as principal is repaid evenly.",
+        LoanType.INTEREST_FIRST to "Pay interest upfront, principal settled later.",
+      )
+
+      FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        listOf(
-          LoanType.EQUAL_INSTALLMENT to "Equal Principal & Interest",
-          LoanType.EQUAL_PRINCIPAL to "Equal Principal",
-          LoanType.INTEREST_FIRST to "Interest First",
-        ).forEach { (type, label) ->
+        loanTypeOptions.forEach { (type, label) ->
           FilterChip(
             selected = selectedLoanType == type,
             onClick = { selectedLoanType = type },
             label = { Text(label) },
-            modifier = Modifier.weight(1f),
           )
         }
       }
+
+      Text(
+        text = loanTypeDescriptions[selectedLoanType].orEmpty(),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
 
       OutlinedTextField(
         value = interestRate,

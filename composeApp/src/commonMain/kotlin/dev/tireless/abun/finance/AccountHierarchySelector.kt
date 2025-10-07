@@ -191,7 +191,7 @@ fun AccountHierarchySelector(
           DropdownMenuItem(
             text = {
               Text(
-                text = if (groupedAccounts.size > 1) "  • ${account.name}" else account.name,
+                text = if (groupedAccounts.size > 1) "  - ${account.name}" else account.name,
                 fontWeight = if (selectedAccountId == account.id) FontWeight.Bold else FontWeight.Normal,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,

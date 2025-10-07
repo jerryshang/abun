@@ -63,10 +63,10 @@ fun AccountEditScreen(
       topBar = {
         TopAppBar(
           windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
-          title = { Text("编辑账户") },
+          title = { Text("Edit Account") },
           navigationIcon = {
             IconButton(onClick = { navController.navigateUp() }) {
-              Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
           },
         )
@@ -84,7 +84,7 @@ fun AccountEditScreen(
         if (isLoading) {
           CircularProgressIndicator()
         } else {
-          Text("未找到账户", style = MaterialTheme.typography.bodyLarge)
+          Text("Account Not Found", style = MaterialTheme.typography.bodyLarge)
         }
       }
     }
@@ -118,10 +118,10 @@ fun AccountEditScreen(
     topBar = {
       TopAppBar(
         windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
-        title = { Text(if (isNewAccount) "创建账户" else "编辑账户") },
+        title = { Text(if (isNewAccount) "Create Account" else "Edit Account") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
           }
         },
         actions = {
@@ -129,7 +129,7 @@ fun AccountEditScreen(
             onClick = { handleSave() },
             enabled = name.isNotBlank(),
           ) {
-            Text(if (isNewAccount) "创建" else "保存")
+            Text(if (isNewAccount) "Create" else "Save")
           }
         },
       )
@@ -147,14 +147,14 @@ fun AccountEditScreen(
         value = name,
         onValueChange = { name = it },
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("名称") },
+        label = { Text("Name") },
       )
 
       OutlinedTextField(
         value = currency,
         onValueChange = { currency = it.uppercase() },
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("币种") },
+        label = { Text("Currency") },
         singleLine = true,
       )
 
@@ -164,7 +164,7 @@ fun AccountEditScreen(
           colorHex = value.take(7)
         },
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("颜色HEX (可选)") },
+        label = { Text("Color HEX (Optional)") },
         placeholder = { Text("#4CAF50") },
         singleLine = true,
       )
@@ -177,19 +177,19 @@ fun AccountEditScreen(
       )
 
       SwitchRow(
-        title = "启用账户",
+        title = "Enable Account",
         checked = isActive,
         onCheckedChange = { isActive = it },
       )
 
       SwitchRow(
-        title = "纳入统计",
+        title = "Include in Reports",
         checked = isCountable,
         onCheckedChange = { isCountable = it },
       )
 
       SwitchRow(
-        title = "在界面中显示",
+        title = "Show in UI",
         checked = isVisible,
         onCheckedChange = { isVisible = it },
       )
@@ -201,7 +201,7 @@ fun AccountEditScreen(
         enabled = name.isNotBlank(),
         modifier = Modifier.fillMaxWidth(),
       ) {
-        Text(if (isNewAccount) "创建账户" else "保存修改")
+        Text(if (isNewAccount) "Create Account" else "Save Changes")
       }
     }
   }
@@ -283,7 +283,7 @@ private fun ParentAccountSelector(
     accounts.filter { it.id != currentAccountId }
   }
   val selectedAccount = options.firstOrNull { it.id == selectedParentId }
-  val fieldText = selectedAccount?.name ?: "无"
+  val fieldText = selectedAccount?.name ?: "None"
   var anchorWidth by remember { mutableStateOf(0) }
 
   ExposedDropdownMenuBox(
@@ -299,7 +299,7 @@ private fun ParentAccountSelector(
           .fillMaxWidth()
           .menuAnchor()
           .onGloballyPositioned { anchorWidth = it.size.width },
-      label = { Text("父账户 (可选)") },
+      label = { Text("Parent Account (Optional)") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
     )
 
@@ -313,7 +313,7 @@ private fun ParentAccountSelector(
       expanded = expanded,
       onExpandedChange = { expanded = it },
       showAllOption = true,
-      allLabel = "无",
+      allLabel = "None",
       menuWidthPx = anchorWidth,
     )
   }

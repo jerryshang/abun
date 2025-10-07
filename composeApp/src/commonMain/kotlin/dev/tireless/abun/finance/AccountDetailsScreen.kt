@@ -63,7 +63,7 @@ fun AccountDetailsScreen(
   val selectedAccount = selectedAccountId?.let { id ->
     accounts.find { it.id == id }
   }
-  val screenTitle = selectedAccount?.name ?: "全部交易"
+  val screenTitle = selectedAccount?.name ?: "All Transactions"
 
   // Filter transactions by account if specified
   val filteredTransactions = if (selectedAccountId != null) {
@@ -78,8 +78,8 @@ fun AccountDetailsScreen(
   val groupedTransactions = filteredTransactions.groupBy { transactionWithDetails ->
     val date = formatDate(transactionWithDetails.transaction.transactionDate)
     when {
-      isToday(transactionWithDetails.transaction.transactionDate) -> "今天"
-      isYesterday(transactionWithDetails.transaction.transactionDate) -> "昨天"
+      isToday(transactionWithDetails.transaction.transactionDate) -> "Today"
+      isYesterday(transactionWithDetails.transaction.transactionDate) -> "Yesterday"
       else -> date
     }
   }
@@ -97,19 +97,19 @@ fun AccountDetailsScreen(
             Text(screenTitle)
             Icon(
               imageVector = Icons.Default.KeyboardArrowDown,
-              contentDescription = "选择账户",
+              contentDescription = "Select Account",
               modifier = Modifier.size(20.dp)
             )
           }
         },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "返回")
+            Icon(Icons.Default.ArrowBack, "Back")
           }
         },
         actions = {
           IconButton(onClick = { showFilterDialog = true }) {
-            Icon(Icons.Default.FilterList, "筛选")
+            Icon(Icons.Default.FilterList, "Filter")
           }
         }
       )
@@ -140,7 +140,7 @@ fun AccountDetailsScreen(
                   .padding(16.dp)
               ) {
                 Text(
-                  text = "当前余额",
+                  text = "Current Balance",
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
