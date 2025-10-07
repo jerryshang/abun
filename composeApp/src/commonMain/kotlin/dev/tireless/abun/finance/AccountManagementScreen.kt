@@ -7,13 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -35,14 +36,19 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Dot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import dev.tireless.abun.navigation.Route
@@ -60,6 +66,27 @@ fun AccountManagementScreen(
 ) {
   val accounts by viewModel.accounts.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
+
+  val accountsByParent = remember(accounts) { accounts.groupBy { it.parentId } }
+  val expandedAccounts = remember { mutableStateMapOf<Long, Boolean>() }
+
+  LaunchedEffect(accounts) {
+    val ids = accounts.map { it.id }.toSet()
+    expandedAccounts.keys.retainAll(ids)
+    ids.forEach { id ->
+      if (expandedAccounts[id] == null) {
+        expandedAccounts[id] = false
+      }
+    }
+  }
+
+  val displayItems = remember(accounts, accountsByParent, expandedAccounts.toMap()) {
+    buildAccountDisplayItems(
+      accounts = accounts,
+      accountsByParent = accountsByParent,
+      expandedAccounts = expandedAccounts.toMap(),
+    )
+  }
 
   Scaffold(
     topBar = {
@@ -95,10 +122,19 @@ fun AccountManagementScreen(
           contentPadding = PaddingValues(16.dp),
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          items(accounts) { account ->
+          items(displayItems.size) { index ->
+            val item = displayItems[index]
             AccountCard(
-              account = account,
-              onClick = { navController.navigate(Route.AccountEdit(account.id)) },
+              account = item.account,
+              depth = item.depth,
+              hasChildren = item.hasChildren,
+              isExpanded = item.isExpanded,
+              onToggleExpand = {
+                if (item.hasChildren) {
+                  expandedAccounts[item.account.id] = !(expandedAccounts[item.account.id] ?: false)
+                }
+              },
+              onClick = { navController.navigate(Route.AccountEdit(item.account.id)) },
             )
           }
         }
@@ -114,15 +150,21 @@ fun AccountManagementScreen(
 @Composable
 fun AccountCard(
   account: AccountWithBalance,
+  depth: Int,
+  hasChildren: Boolean,
+  isExpanded: Boolean,
+  onToggleExpand: () -> Unit,
   onClick: () -> Unit,
 ) {
   val accentColor = hexToColorOrNull(account.colorHex) ?: MaterialTheme.colorScheme.secondary
   val containerColor = accentColor.copy(alpha = 0.08f)
+  val indent = 20.dp * depth
 
   Card(
     modifier =
       Modifier
         .fillMaxWidth()
+        .padding(start = indent)
         .clickable(onClick = onClick),
     colors = CardDefaults.cardColors(containerColor = containerColor),
 //    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -135,36 +177,95 @@ fun AccountCard(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Column {
-        Text(
-          text = account.name,
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.Bold,
-        )
-        Text(
-          text = account.currency,
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-
-      Column(horizontalAlignment = Alignment.End) {
-        Text(
-          text = "¥${formatAmount(account.currentBalance)}",
-          style = MaterialTheme.typography.titleLarge,
-          fontWeight = FontWeight.Bold,
-          color = if (account.currentBalance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-        )
-        if (!account.isActive) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        if (hasChildren) {
+          IconButton(onClick = onToggleExpand, modifier = Modifier.size(28.dp)) {
+            Icon(
+              imageVector = if (isExpanded) Lucide.ChevronDown else Lucide.ChevronRight,
+              contentDescription = if (isExpanded) "Collapse" else "Expand",
+            )
+          }
+        } else {
+          Box(
+            modifier = Modifier.size(28.dp),
+            contentAlignment = Alignment.Center,
+          ) {
+            Icon(
+              imageVector = Lucide.Dot,
+              contentDescription = null,
+            )
+          }
+        }
+        Column {
           Text(
-            text = "已停用",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
+            text = account.name,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+          )
+          Text(
+            text = account.currency,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }
+
+      if (!account.isActive) {
+        Text(
+          text = "已停用",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.error,
+        )
+      }
     }
   }
+}
+
+private data class AccountDisplayItem(
+  val account: AccountWithBalance,
+  val depth: Int,
+  val hasChildren: Boolean,
+  val isExpanded: Boolean,
+)
+
+private fun buildAccountDisplayItems(
+  accounts: List<AccountWithBalance>,
+  accountsByParent: Map<Long?, List<AccountWithBalance>>,
+  expandedAccounts: Map<Long, Boolean>,
+): List<AccountDisplayItem> {
+  val orderedItems = mutableListOf<AccountDisplayItem>()
+  val visited = mutableSetOf<Long>()
+  val accountLookup = accounts.associateBy { it.id }
+
+  fun traverse(account: AccountWithBalance, depth: Int) {
+    if (!visited.add(account.id)) return
+    val children = accountsByParent[account.id]?.sortedBy { it.name } ?: emptyList()
+    val hasChildren = children.isNotEmpty()
+    val isExpanded = expandedAccounts[account.id] ?: false
+    orderedItems += AccountDisplayItem(account, depth, hasChildren, isExpanded)
+    if (hasChildren && isExpanded) {
+      children.forEach { child -> traverse(child, depth + 1) }
+    }
+  }
+
+  val rootAccounts = accountsByParent[null]?.sortedBy { it.name } ?: emptyList()
+  rootAccounts.forEach { traverse(it, 0) }
+
+  val orphanAccounts = accounts
+    .asSequence()
+    .filter { account ->
+      val parentId = account.parentId
+      parentId != null && parentId !in accountLookup
+    }
+    .sortedBy { it.name }
+    .toList()
+
+  orphanAccounts.forEach { traverse(it, 0) }
+
+  return orderedItems
 }
 
 /**
