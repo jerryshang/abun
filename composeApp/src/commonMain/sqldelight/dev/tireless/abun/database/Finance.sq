@@ -314,8 +314,23 @@ UPDATE `Transaction` SET state = ?, updated_at = ? WHERE id = ?;
 calculateAccountBalance:
 SELECT
   COALESCE(
-    (SELECT SUM(amount) FROM `Transaction` WHERE debit_account_id = ?) -
-    (SELECT SUM(amount) FROM `Transaction` WHERE credit_account_id = ?),
+    (
+      SELECT SUM(amount)
+      FROM `Transaction`
+      WHERE debit_account_id = :accountId
+        AND transaction_date <= :asOfDate
+        AND state = 'confirmed'
+    ),
+    0
+  ) -
+  COALESCE(
+    (
+      SELECT SUM(amount)
+      FROM `Transaction`
+      WHERE credit_account_id = :accountId
+        AND transaction_date <= :asOfDate
+        AND state = 'confirmed'
+    ),
     0
   ) AS balance;
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import dev.tireless.abun.database.Account as DbAccount
 
 /**
@@ -74,11 +75,12 @@ class AccountRepository(private val database: AppDatabase) {
    * Get all accounts with calculated balances as Flow
    */
   fun getAllAccountsWithBalanceFlow(): Flow<List<AccountWithBalance>> = queries.getAllAccounts().asFlow().mapToList(Dispatchers.IO).map { list ->
+    val asOfMillis = Clock.System.now().toEpochMilliseconds()
     list.map { dbAccount ->
       val account = dbAccount.toDomain()
       AccountWithBalance(
         account = account,
-        currentBalance = calculateAccountBalance(account.id)
+        currentBalance = calculateAccountBalance(account.id, asOfMillis)
       )
     }
   }
@@ -97,10 +99,11 @@ class AccountRepository(private val database: AppDatabase) {
    */
   suspend fun getAllAccountsWithBalance(): List<AccountWithBalance> = withContext(Dispatchers.IO) {
     val accounts = getAllAccounts()
+    val asOfMillis = Clock.System.now().toEpochMilliseconds()
     accounts.map { account ->
       AccountWithBalance(
         account = account,
-        currentBalance = calculateAccountBalance(account.id)
+        currentBalance = calculateAccountBalance(account.id, asOfMillis)
       )
     }
   }
@@ -117,10 +120,11 @@ class AccountRepository(private val database: AppDatabase) {
    */
   suspend fun getActiveAccountsWithBalance(): List<AccountWithBalance> = withContext(Dispatchers.IO) {
     val accounts = getActiveAccounts()
+    val asOfMillis = Clock.System.now().toEpochMilliseconds()
     accounts.map { account ->
       AccountWithBalance(
         account = account,
-        currentBalance = calculateAccountBalance(account.id)
+        currentBalance = calculateAccountBalance(account.id, asOfMillis)
       )
     }
   }
@@ -194,8 +198,14 @@ class AccountRepository(private val database: AppDatabase) {
    * Uses debit/credit double-entry: balance = total debits - total credits
    * Returns balance in storage format (Long), converted to display format (Double)
    */
-  suspend fun calculateAccountBalance(accountId: Long): Double = withContext(Dispatchers.IO) {
-    val balanceStorage = queries.calculateAccountBalance(accountId, accountId).executeAsOne()
+  suspend fun calculateAccountBalance(
+    accountId: Long,
+    asOfMillis: Long = Clock.System.now().toEpochMilliseconds()
+  ): Double = withContext(Dispatchers.IO) {
+    val balanceStorage = queries.calculateAccountBalance(
+      accountId = accountId,
+      asOfDate = asOfMillis
+    ).executeAsOne()
     balanceStorage.toDisplayAmount()
   }
 
@@ -344,7 +354,5 @@ class AccountRepository(private val database: AppDatabase) {
   /**
    * Get current timestamp in milliseconds (KMP-compatible)
    */
-  private fun currentTimeMillis(): Long {
-    return 1704067200000L // 2024-01-01 00:00:00 UTC - Simplified for KMP
-  }
+  private fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
 }

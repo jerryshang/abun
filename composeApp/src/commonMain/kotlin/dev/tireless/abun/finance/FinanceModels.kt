@@ -357,6 +357,18 @@ data class TransactionWithDetails(
   }
 }
 
+/**
+ * Sum balances for user-visible net worth calculation.
+ * Includes only active, countable asset and liability accounts.
+ */
+fun List<AccountWithBalance>.totalCountableBalance(): Double = this
+  .filter { accountWithBalance ->
+    accountWithBalance.isActive &&
+      accountWithBalance.isCountable &&
+      (accountWithBalance.parentId == RootAccountIds.ASSET || accountWithBalance.parentId == RootAccountIds.LIABILITY)
+  }
+  .sumOf { it.currentBalance }
+
 fun TransactionWithDetails.toEditPayload(): TransactionEditPayload? {
   val transactionType = inferType()
   val transaction = transaction

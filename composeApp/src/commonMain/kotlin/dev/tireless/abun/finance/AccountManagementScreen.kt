@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -34,12 +33,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,9 +107,9 @@ fun AccountManagementScreen(
   ) { paddingValues ->
     Box(
       modifier =
-        Modifier
-          .fillMaxSize()
-          .padding(paddingValues),
+      Modifier
+        .fillMaxSize()
+        .padding(paddingValues),
     ) {
       if (isLoading) {
         CircularProgressIndicator(
@@ -141,7 +140,6 @@ fun AccountManagementScreen(
       }
     }
   }
-
 }
 
 /**
@@ -162,18 +160,18 @@ fun AccountCard(
 
   Card(
     modifier =
-      Modifier
-        .fillMaxWidth()
-        .padding(start = indent)
-        .clickable(onClick = onClick),
+    Modifier
+      .fillMaxWidth()
+      .padding(start = indent)
+      .clickable(onClick = onClick),
     colors = CardDefaults.cardColors(containerColor = containerColor),
 //    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
   ) {
     Row(
       modifier =
-        Modifier
-          .fillMaxWidth()
-          .padding(16.dp),
+      Modifier
+        .fillMaxWidth()
+        .padding(16.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -435,9 +433,9 @@ fun WarningDialog(
       Button(
         onClick = onConfirm,
         colors =
-          ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.error,
-          ),
+        ButtonDefaults.buttonColors(
+          containerColor = MaterialTheme.colorScheme.error,
+        ),
       ) {
         Text("Confirm")
       }

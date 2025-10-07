@@ -16,4 +16,3 @@ fun hexToColorOrNull(hex: String?): Color? {
   }
   return Color(colorLong)
 }
-

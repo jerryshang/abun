@@ -37,15 +37,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.House
 import com.composables.icons.lucide.Library
@@ -53,8 +53,8 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Package2
 import com.composables.icons.lucide.Settings
 import dev.tireless.abun.finance.AccountDetailsScreen
-import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.AccountEditScreen
+import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.AccountViewModel
 import dev.tireless.abun.finance.ExpenseEditScreen
 import dev.tireless.abun.finance.FinanceScreen
@@ -64,10 +64,10 @@ import dev.tireless.abun.finance.PriceComparator
 import dev.tireless.abun.finance.RevenueEditScreen
 import dev.tireless.abun.finance.SplitExpenseDraft
 import dev.tireless.abun.finance.TransactionViewModel
-import dev.tireless.abun.finance.toEditPayload
 import dev.tireless.abun.finance.TransferEditScreen
-import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.finance.toEditPayload
 import dev.tireless.abun.mental.QuickNoteScreen
+import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
@@ -327,8 +327,7 @@ private fun BottomNavigationBar(navController: NavHostController) {
   }
 }
 
-private fun NavDestination?.matchesAny(routes: Set<String>) =
-  routes.any { matchesRoute(it) }
+private fun NavDestination?.matchesAny(routes: Set<String>) = routes.any { matchesRoute(it) }
 
 private fun NavDestination?.matchesRoute(route: String?): Boolean {
   if (route.isNullOrEmpty()) return false

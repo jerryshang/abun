@@ -272,7 +272,7 @@ class AccountViewModel(
       try {
         _isLoading.value = true
         _accounts.value = accountRepository.getAllAccountsWithBalance()
-        _totalBalance.value = _accounts.value.filter { it.isActive && it.isCountable }.sumOf { it.currentBalance }
+        _totalBalance.value = _accounts.value.totalCountableBalance()
       } catch (e: Exception) {
         _error.value = "Failed to load accounts: ${e.message}"
       } finally {

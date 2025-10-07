@@ -12,9 +12,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -74,10 +74,10 @@ fun AccountEditScreen(
     ) { paddingValues ->
       Column(
         modifier =
-          Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(24.dp),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
       ) {
@@ -137,10 +137,10 @@ fun AccountEditScreen(
   ) { paddingValues ->
     Column(
       modifier =
-        Modifier
-          .fillMaxSize()
-          .padding(paddingValues)
-          .padding(horizontal = 24.dp, vertical = 16.dp),
+      Modifier
+        .fillMaxSize()
+        .padding(paddingValues)
+        .padding(horizontal = 24.dp, vertical = 16.dp),
       verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
       OutlinedTextField(
@@ -295,10 +295,10 @@ private fun ParentAccountSelector(
       onValueChange = {},
       readOnly = true,
       modifier =
-        Modifier
-          .fillMaxWidth()
-          .menuAnchor()
-          .onGloballyPositioned { anchorWidth = it.size.width },
+      Modifier
+        .fillMaxWidth()
+        .menuAnchor()
+        .onGloballyPositioned { anchorWidth = it.size.width },
       label = { Text("Parent Account (Optional)") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
     )

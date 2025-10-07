@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -173,9 +172,9 @@ fun AccountHierarchySelector(
                 imageVector = if (expandedGroup == groupName) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
                 contentDescription = if (expandedGroup == groupName) "Collapse" else "Expand",
                 modifier =
-                  Modifier
-                    .size(20.dp)
-                    .rotate(if (expandedGroup == groupName) 0f else -90f),
+                Modifier
+                  .size(20.dp)
+                  .rotate(if (expandedGroup == groupName) 0f else -90f),
               )
             }
           },

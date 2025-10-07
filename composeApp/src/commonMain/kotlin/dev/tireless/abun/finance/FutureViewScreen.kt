@@ -200,7 +200,7 @@ fun FutureViewScreen(
                 ) {
                   Column {
                     Text(
-                      text = "Days Ahead: ${selectedDaysAhead}",
+                      text = "Days Ahead: $selectedDaysAhead",
                       style = MaterialTheme.typography.bodyMedium,
                       color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
