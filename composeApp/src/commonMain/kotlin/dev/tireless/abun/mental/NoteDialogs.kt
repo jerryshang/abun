@@ -21,12 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import dev.tireless.abun.database.Notes
-import dev.tireless.abun.mental.Dimensions
 
 @Composable
 fun CreateNoteDialog(
   onDismiss: () -> Unit,
-  onCreate: (title: String, content: String) -> Unit
+  onCreate: (title: String, content: String) -> Unit,
 ) {
   var title by remember { mutableStateOf("") }
   var content by remember { mutableStateOf("") }
@@ -41,10 +40,11 @@ fun CreateNoteDialog(
           onValueChange = { title = it },
           label = { Text("Title") },
           modifier = Modifier.fillMaxWidth(),
-          keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Next,
-            capitalization = KeyboardCapitalization.Words
-          )
+          keyboardOptions =
+            KeyboardOptions(
+              imeAction = ImeAction.Next,
+              capitalization = KeyboardCapitalization.Words,
+            ),
         )
 
         Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
@@ -56,10 +56,11 @@ fun CreateNoteDialog(
           modifier = Modifier.fillMaxWidth(),
           minLines = 3,
           maxLines = 6,
-          keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Done,
-            capitalization = KeyboardCapitalization.Sentences
-          )
+          keyboardOptions =
+            KeyboardOptions(
+              imeAction = ImeAction.Done,
+              capitalization = KeyboardCapitalization.Sentences,
+            ),
         )
       }
     },
@@ -70,7 +71,7 @@ fun CreateNoteDialog(
             onCreate(title.trim(), content.trim())
           }
         },
-        enabled = title.isNotBlank()
+        enabled = title.isNotBlank(),
       ) {
         Text("Create")
       }
@@ -79,7 +80,7 @@ fun CreateNoteDialog(
       TextButton(onClick = onDismiss) {
         Text("Cancel")
       }
-    }
+    },
   )
 }
 
@@ -87,7 +88,7 @@ fun CreateNoteDialog(
 fun EditNoteDialog(
   note: Notes,
   onDismiss: () -> Unit,
-  onSave: (title: String, content: String) -> Unit
+  onSave: (title: String, content: String) -> Unit,
 ) {
   var title by remember { mutableStateOf(note.title) }
   var content by remember { mutableStateOf(note.content) }
@@ -102,10 +103,11 @@ fun EditNoteDialog(
           onValueChange = { title = it },
           label = { Text("Title") },
           modifier = Modifier.fillMaxWidth(),
-          keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Next,
-            capitalization = KeyboardCapitalization.Words
-          )
+          keyboardOptions =
+            KeyboardOptions(
+              imeAction = ImeAction.Next,
+              capitalization = KeyboardCapitalization.Words,
+            ),
         )
 
         Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
@@ -117,16 +119,17 @@ fun EditNoteDialog(
           modifier = Modifier.fillMaxWidth(),
           minLines = 3,
           maxLines = 6,
-          keyboardOptions = KeyboardOptions(
-            imeAction = ImeAction.Done,
-            capitalization = KeyboardCapitalization.Sentences
-          )
+          keyboardOptions =
+            KeyboardOptions(
+              imeAction = ImeAction.Done,
+              capitalization = KeyboardCapitalization.Sentences,
+            ),
         )
       }
     },
     confirmButton = {
       Row(
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
       ) {
         Button(
           onClick = {
@@ -134,7 +137,7 @@ fun EditNoteDialog(
               onSave(title.trim(), content.trim())
             }
           },
-          enabled = title.isNotBlank()
+          enabled = title.isNotBlank(),
         ) {
           Text("Save")
         }
@@ -144,6 +147,6 @@ fun EditNoteDialog(
       TextButton(onClick = onDismiss) {
         Text("Cancel")
       }
-    }
+    },
   )
 }

@@ -11,14 +11,25 @@ object AccountConfig {
   const val VISIBLE = 1 shl 2 // bit2: 1=visible in UI, 0=invisible
 
   fun isActive(config: Long): Boolean = (config and ACTIVE.toLong()) != 0L
+
   fun isCountable(config: Long): Boolean = (config and COUNTABLE.toLong()) != 0L
+
   fun isVisible(config: Long): Boolean = (config and VISIBLE.toLong()) != 0L
 
-  fun setActive(config: Long, active: Boolean): Long = if (active) config or ACTIVE.toLong() else config and ACTIVE.toLong().inv()
+  fun setActive(
+    config: Long,
+    active: Boolean,
+  ): Long = if (active) config or ACTIVE.toLong() else config and ACTIVE.toLong().inv()
 
-  fun setCountable(config: Long, countable: Boolean): Long = if (countable) config or COUNTABLE.toLong() else config and COUNTABLE.toLong().inv()
+  fun setCountable(
+    config: Long,
+    countable: Boolean,
+  ): Long = if (countable) config or COUNTABLE.toLong() else config and COUNTABLE.toLong().inv()
 
-  fun setVisible(config: Long, visible: Boolean): Long = if (visible) config or VISIBLE.toLong() else config and VISIBLE.toLong().inv()
+  fun setVisible(
+    config: Long,
+    visible: Boolean,
+  ): Long = if (visible) config or VISIBLE.toLong() else config and VISIBLE.toLong().inv()
 }
 
 /**
@@ -41,21 +52,23 @@ enum class AccountType {
   LIABILITY, // Debts owed (loans, credit cards)
   EQUITY, // Owner's stake
   REVENUE, // Income streams (salary, sales)
-  EXPENSE; // Costs incurred (food, rent, utilities)
+  EXPENSE, // Costs incurred (food, rent, utilities)
+  ;
 
   companion object {
-    fun fromString(value: String): AccountType = values().find { it.name == value.uppercase() } ?: ASSET
+    fun fromString(value: String): AccountType = entries.find { it.name == value.uppercase() } ?: ASSET
 
     /**
      * Get the root account ID for this account type
      */
-    fun AccountType.getRootId(): Long = when (this) {
-      ASSET -> RootAccountIds.ASSET
-      LIABILITY -> RootAccountIds.LIABILITY
-      EQUITY -> RootAccountIds.EQUITY
-      REVENUE -> RootAccountIds.REVENUE
-      EXPENSE -> RootAccountIds.EXPENSE
-    }
+    fun AccountType.getRootId(): Long =
+      when (this) {
+        ASSET -> RootAccountIds.ASSET
+        LIABILITY -> RootAccountIds.LIABILITY
+        EQUITY -> RootAccountIds.EQUITY
+        REVENUE -> RootAccountIds.REVENUE
+        EXPENSE -> RootAccountIds.EXPENSE
+      }
   }
 }
 
@@ -68,10 +81,11 @@ enum class TransactionType {
   INCOME,
   TRANSFER,
   LOAN,
-  LOAN_PAYMENT;
+  LOAN_PAYMENT,
+  ;
 
   companion object {
-    fun fromString(value: String): TransactionType = values().find { it.name == value.uppercase() } ?: EXPENSE
+    fun fromString(value: String): TransactionType = entries.find { it.name == value.uppercase() } ?: EXPENSE
   }
 }
 
@@ -82,10 +96,11 @@ enum class RecurringFrequency {
   DAILY,
   WEEKLY,
   MONTHLY,
-  YEARLY;
+  YEARLY,
+  ;
 
   companion object {
-    fun fromString(value: String): RecurringFrequency = values().find { it.name == value.uppercase() } ?: MONTHLY
+    fun fromString(value: String): RecurringFrequency = entries.find { it.name == value.uppercase() } ?: MONTHLY
   }
 }
 
@@ -96,10 +111,11 @@ enum class TransactionGroupType {
   LOAN,
   INSTALLMENT,
   SPLIT,
-  CUSTOM;
+  CUSTOM,
+  ;
 
   companion object {
-    fun fromString(value: String): TransactionGroupType = values().find { it.name == value.uppercase() } ?: CUSTOM
+    fun fromString(value: String): TransactionGroupType = entries.find { it.name == value.uppercase() } ?: CUSTOM
   }
 }
 
@@ -109,10 +125,11 @@ enum class TransactionGroupType {
 enum class TransactionState {
   PLANNED, // Fixed recurring payments (rent, loan payments)
   ESTIMATED, // Variable recurring payments (utilities, electric)
-  CONFIRMED; // Manually logged transactions
+  CONFIRMED, // Manually logged transactions
+  ;
 
   companion object {
-    fun fromString(value: String): TransactionState = values().find { it.name == value.uppercase() } ?: CONFIRMED
+    fun fromString(value: String): TransactionState = entries.find { it.name == value.uppercase() } ?: CONFIRMED
   }
 }
 
@@ -123,10 +140,10 @@ enum class LoanType {
   INTEREST_FIRST, // Interest first, principal last
   EQUAL_PRINCIPAL, // Equal principal
   EQUAL_INSTALLMENT, // Equal installment - principal plus interest
-  INTEREST_ONLY; // Interest only, no principal repayment
+  ;
 
   companion object {
-    fun fromString(value: String): LoanType = values().find { it.name == value.uppercase() } ?: EQUAL_INSTALLMENT
+    fun fromString(value: String): LoanType = entries.find { it.name == value.uppercase() } ?: EQUAL_INSTALLMENT
   }
 }
 
@@ -152,7 +169,7 @@ data class Account(
   // Credit limit stored as Long (actual * 10000), -1 for non-liability accounts
   val creditLimitStorage: Long = -1L,
   val createdAt: Long,
-  val updatedAt: Long
+  val updatedAt: Long,
 ) {
   /**
    * Check if account is active
@@ -199,7 +216,7 @@ data class Account(
  */
 data class AccountWithBalance(
   val account: Account,
-  val currentBalance: Double
+  val currentBalance: Double,
 ) {
   // Delegate properties
   val id get() = account.id
@@ -235,7 +252,7 @@ data class Transaction(
   val notes: String? = null,
   val state: TransactionState = TransactionState.CONFIRMED,
   val createdAt: Long,
-  val updatedAt: Long
+  val updatedAt: Long,
 ) {
   /**
    * Get amount as display value (Double)
@@ -255,16 +272,16 @@ data class TransactionGroup(
   val groupType: TransactionGroupType,
   val description: String? = null,
   val createdAt: Long,
-  val updatedAt: Long
+  val updatedAt: Long,
 )
 
 data class TransactionGroupWithTransactions(
   val group: TransactionGroup,
-  val transactions: List<TransactionWithDetails>
+  val transactions: List<TransactionWithDetails>,
 )
 
 data class TransactionDeletionContext(
-  val groups: List<TransactionGroupWithTransactions>
+  val groups: List<TransactionGroupWithTransactions>,
 ) {
   companion object {
     val Empty = TransactionDeletionContext(emptyList())
@@ -289,7 +306,7 @@ data class LoanMetadata(
   // For specific payment calculation
   val principalAmount: Double? = null,
   // For specific payment calculation
-  val interestAmount: Double? = null
+  val interestAmount: Double? = null,
 )
 
 /**
@@ -306,7 +323,7 @@ data class TransactionTemplate(
   val member: String? = null,
   val notes: String? = null,
   val createdAt: Long,
-  val updatedAt: Long
+  val updatedAt: Long,
 )
 
 /**
@@ -322,7 +339,7 @@ data class RecurringTransaction(
   val nextOccurrence: Long,
   val isActive: Boolean = true,
   val createdAt: Long,
-  val updatedAt: Long
+  val updatedAt: Long,
 )
 
 /**
@@ -335,94 +352,100 @@ data class TransactionWithDetails(
   // Cached account types for performance (computed from hierarchy in repository)
   val debitAccountType: AccountType,
   val creditAccountType: AccountType,
-  val groups: List<TransactionGroup> = emptyList()
+  val groups: List<TransactionGroup> = emptyList(),
 ) {
   /**
    * Infer user-facing transaction type from debit/credit accounts
    */
-  fun inferType(): TransactionType = when {
-    // Transfer: Both accounts are assets
-    debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
-    // Expense: Debit is expense account
-    debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
-    // Income: Credit is revenue account
-    creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
-    // Loan-related
-    debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
-    else -> TransactionType.EXPENSE // Default fallback
-  }
+  fun inferType(): TransactionType =
+    when {
+      // Transfer: Both accounts are assets
+      debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+      // Expense: Debit is expense account
+      debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+      // Income: Credit is revenue account
+      creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+      // Loan-related
+      debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+      else -> TransactionType.EXPENSE // Default fallback
+    }
 
   /**
    * Get the primary user-facing account (asset account for expense/income, source for transfer)
    */
-  fun getPrimaryAccount(): Account = when (inferType()) {
-    TransactionType.EXPENSE -> creditAccount // The account paying (asset being credited)
-    TransactionType.INCOME -> debitAccount // The account receiving (asset being debited)
-    TransactionType.TRANSFER -> creditAccount // Source account
-    else -> debitAccount
-  }
+  fun getPrimaryAccount(): Account =
+    when (inferType()) {
+      TransactionType.EXPENSE -> creditAccount // The account paying (asset being credited)
+      TransactionType.INCOME -> debitAccount // The account receiving (asset being debited)
+      TransactionType.TRANSFER -> creditAccount // Source account
+      else -> debitAccount
+    }
 
   /**
    * Get the secondary account (null for expense/income, destination for transfer)
    */
-  fun getSecondaryAccount(): Account? = when (inferType()) {
-    TransactionType.TRANSFER -> debitAccount // Destination account
-    else -> null
-  }
+  fun getSecondaryAccount(): Account? =
+    when (inferType()) {
+      TransactionType.TRANSFER -> debitAccount // Destination account
+      else -> null
+    }
 }
 
 /**
  * Sum balances for user-visible net worth calculation.
  * Includes only active, countable asset and liability accounts.
  */
-fun List<AccountWithBalance>.totalCountableBalance(): Double = this
-  .filter { accountWithBalance ->
-    accountWithBalance.isActive &&
-      accountWithBalance.isCountable &&
-      (accountWithBalance.parentId == RootAccountIds.ASSET || accountWithBalance.parentId == RootAccountIds.LIABILITY)
-  }
-  .sumOf { it.currentBalance }
+fun List<AccountWithBalance>.totalCountableBalance(): Double =
+  this
+    .filter { accountWithBalance ->
+      accountWithBalance.isActive &&
+        accountWithBalance.isCountable &&
+        (accountWithBalance.parentId == RootAccountIds.ASSET || accountWithBalance.parentId == RootAccountIds.LIABILITY)
+    }.sumOf { it.currentBalance }
 
 fun TransactionWithDetails.toEditPayload(): TransactionEditPayload? {
   val transactionType = inferType()
   val transaction = transaction
 
   return when (transactionType) {
-    TransactionType.EXPENSE -> TransactionEditPayload(
-      id = transaction.id,
-      type = transactionType,
-      amount = transaction.amount,
-      transactionDate = transaction.transactionDate,
-      accountId = transaction.debitAccountId,
-      toAccountId = transaction.creditAccountId,
-      payee = transaction.payee,
-      member = transaction.member,
-      notes = transaction.notes,
-    )
+    TransactionType.EXPENSE ->
+      TransactionEditPayload(
+        id = transaction.id,
+        type = transactionType,
+        amount = transaction.amount,
+        transactionDate = transaction.transactionDate,
+        accountId = transaction.debitAccountId,
+        toAccountId = transaction.creditAccountId,
+        payee = transaction.payee,
+        member = transaction.member,
+        notes = transaction.notes,
+      )
 
-    TransactionType.INCOME -> TransactionEditPayload(
-      id = transaction.id,
-      type = transactionType,
-      amount = transaction.amount,
-      transactionDate = transaction.transactionDate,
-      accountId = transaction.creditAccountId,
-      toAccountId = transaction.debitAccountId,
-      payee = transaction.payee,
-      member = transaction.member,
-      notes = transaction.notes,
-    )
+    TransactionType.INCOME ->
+      TransactionEditPayload(
+        id = transaction.id,
+        type = transactionType,
+        amount = transaction.amount,
+        transactionDate = transaction.transactionDate,
+        accountId = transaction.creditAccountId,
+        toAccountId = transaction.debitAccountId,
+        payee = transaction.payee,
+        member = transaction.member,
+        notes = transaction.notes,
+      )
 
-    TransactionType.TRANSFER -> TransactionEditPayload(
-      id = transaction.id,
-      type = transactionType,
-      amount = transaction.amount,
-      transactionDate = transaction.transactionDate,
-      accountId = transaction.creditAccountId,
-      toAccountId = transaction.debitAccountId,
-      payee = transaction.payee,
-      member = transaction.member,
-      notes = transaction.notes,
-    )
+    TransactionType.TRANSFER ->
+      TransactionEditPayload(
+        id = transaction.id,
+        type = transactionType,
+        amount = transaction.amount,
+        transactionDate = transaction.transactionDate,
+        accountId = transaction.creditAccountId,
+        toAccountId = transaction.debitAccountId,
+        payee = transaction.payee,
+        member = transaction.member,
+        notes = transaction.notes,
+      )
 
     TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> null
   }
@@ -431,13 +454,17 @@ fun TransactionWithDetails.toEditPayload(): TransactionEditPayload? {
 /**
  * Helper extension to infer transaction type from account types
  */
-fun Transaction.inferTypeFromAccountTypes(debitAccountType: AccountType, creditAccountType: AccountType): TransactionType = when {
-  debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
-  debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
-  creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
-  debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
-  else -> TransactionType.EXPENSE
-}
+fun Transaction.inferTypeFromAccountTypes(
+  debitAccountType: AccountType,
+  creditAccountType: AccountType,
+): TransactionType =
+  when {
+    debitAccountType == AccountType.ASSET && creditAccountType == AccountType.ASSET -> TransactionType.TRANSFER
+    debitAccountType == AccountType.EXPENSE -> TransactionType.EXPENSE
+    creditAccountType == AccountType.REVENUE -> TransactionType.INCOME
+    debitAccountType == AccountType.LIABILITY || creditAccountType == AccountType.LIABILITY -> TransactionType.LOAN
+    else -> TransactionType.EXPENSE
+  }
 
 /**
  * Statistics data models
@@ -447,7 +474,7 @@ data class PeriodSummary(
   val totalExpense: Double,
   val netAmount: Double,
   val startDate: Long,
-  val endDate: Long
+  val endDate: Long,
 )
 
 /**
@@ -465,7 +492,7 @@ data class CreateAccountInput(
   val billDate: Int? = null,
   val paymentDate: Int? = null,
   // User provides as Double, will be converted to storage
-  val creditLimit: Double? = null
+  val creditLimit: Double? = null,
 ) {
   init {
     require(billDate == null || billDate in 1..28) { "billDate must be between 1 and 28" }
@@ -492,7 +519,7 @@ data class UpdateAccountInput(
   val billDate: Int? = null,
   val paymentDate: Int? = null,
   // User provides as Double, will be converted to storage
-  val creditLimit: Double? = null
+  val creditLimit: Double? = null,
 ) {
   init {
     require(billDate == null || billDate in 1..28) { "billDate must be between 1 and 28" }
@@ -517,7 +544,7 @@ data class CreateTransactionInput(
   val toAccountId: Long? = null, // For TRANSFER only
   val payee: String? = null,
   val member: String? = null,
-  val notes: String? = null
+  val notes: String? = null,
 )
 
 data class SplitExpenseEntry(
@@ -562,7 +589,7 @@ data class UpdateTransactionInput(
   val toAccountId: Long? = null,
   val payee: String? = null,
   val member: String? = null,
-  val notes: String? = null
+  val notes: String? = null,
 )
 
 data class CreateLoanInput(
@@ -575,7 +602,7 @@ data class CreateLoanInput(
   val paymentDay: Int, // Day of month to pay (1-31)
   val startDate: Long, // Loan creation date
   val payee: String? = null,
-  val notes: String? = null
+  val notes: String? = null,
 )
 
 /**
@@ -584,5 +611,5 @@ data class CreateLoanInput(
 data class LoanPayment(
   val principal: Double,
   val interest: Double,
-  val total: Double
+  val total: Double,
 )

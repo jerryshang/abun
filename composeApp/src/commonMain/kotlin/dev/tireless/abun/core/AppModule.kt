@@ -2,7 +2,11 @@ package dev.tireless.abun.core
 
 import dev.tireless.abun.Greeting
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.finance.*
+import dev.tireless.abun.finance.AccountRepository
+import dev.tireless.abun.finance.AccountViewModel
+import dev.tireless.abun.finance.TransactionGroupRepository
+import dev.tireless.abun.finance.TransactionRepository
+import dev.tireless.abun.finance.TransactionViewModel
 import dev.tireless.abun.mental.NoteRepository
 import dev.tireless.abun.mental.NoteViewModel
 import dev.tireless.abun.mental.QuoteViewModel
@@ -19,24 +23,7 @@ val appModule =
   module {
     single { Greeting() }
     single { get<DatabaseDriverFactory>().createDriver() }
-    single {
-      val database = AppDatabase(get())
-      // Initialize default data when database is created
-      // Note: The 5 root accounts (Asset, Liability, Equity, Revenue, Expense)
-      // are automatically initialized by SQLDelight on database creation
-      val categoryRepository = CategoryRepository(database)
-      kotlinx.coroutines.runBlocking {
-        try {
-          println("Initializing default database data...")
-          categoryRepository.initializeDefaultData()
-          println("Default data initialization completed")
-        } catch (e: Exception) {
-          println("Failed to initialize default data: ${e.message}")
-          e.printStackTrace()
-        }
-      }
-      database
-    }
+    single { AppDatabase(get()) }
     single { QuotesRepository(get()) }
     single { NoteRepository(get()) }
     single { CategoryRepository(get()) }
@@ -47,7 +34,6 @@ val appModule =
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository
     single { TransactionGroupRepository(get(), get()) } // database, transactionRepository
-    single { AccountLoaderService(get(), get()) } // accountRepository, transactionRepository
   }
 
 val viewModelModule =
@@ -58,7 +44,7 @@ val viewModelModule =
     factory { CategoryViewModel(get()) }
     // Finance ViewModels
     factory { TransactionViewModel(get(), get(), get()) }
-    factory { AccountViewModel(get(), get()) } // accountRepository, accountLoaderService
+    factory { AccountViewModel(get()) } // accountRepository, accountLoaderService
   }
 
 val allModules =

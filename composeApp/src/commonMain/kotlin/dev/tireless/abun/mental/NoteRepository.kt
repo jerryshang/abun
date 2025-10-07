@@ -10,41 +10,50 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 class NoteRepository(
   private val database: AppDatabase,
 ) {
-  fun getAllNotes(): Flow<List<Notes>> = database.noteQueries
-    .selectAllNotes()
-    .asFlow()
-    .mapToList(Dispatchers.IO)
-
-  suspend fun getNoteById(id: Long): Notes? = withContext(Dispatchers.IO) {
+  fun getAllNotes(): Flow<List<Notes>> =
     database.noteQueries
-      .selectNoteById(id)
+      .selectAllNotes()
       .asFlow()
-      .mapToOneOrNull(Dispatchers.IO)
-      .first()
-  }
+      .mapToList(Dispatchers.IO)
+
+  suspend fun getNoteById(id: Long): Notes? =
+    withContext(Dispatchers.IO) {
+      database.noteQueries
+        .selectNoteById(id)
+        .asFlow()
+        .mapToOneOrNull(Dispatchers.IO)
+        .first()
+    }
 
   suspend fun insertNote(
     title: String,
     content: String,
-    createdAt: String,
-    updatedAt: String,
-  ): Long = withContext(Dispatchers.IO) {
-    database.noteQueries.insertNote(title, content, createdAt, updatedAt)
-    database.noteQueries.selectAllNotes().executeAsList().lastOrNull()?.id ?: 0L
-  }
+  ): Long =
+    withContext(Dispatchers.IO) {
+      val now = Clock.System.now().toEpochMilliseconds()
+      database.noteQueries.insertNote(title, content, now, now)
+      database.noteQueries
+        .selectAllNotes()
+        .executeAsList()
+        .lastOrNull()
+        ?.id ?: 0L
+    }
 
   suspend fun updateNote(
     id: Long,
     title: String,
     content: String,
-    updatedAt: String,
   ) {
+    val now = Clock.System.now().toEpochMilliseconds()
     withContext(Dispatchers.IO) {
-      database.noteQueries.updateNote(title, content, updatedAt, id)
+      database.noteQueries.updateNote(title, content, now, id)
     }
   }
 
@@ -54,8 +63,9 @@ class NoteRepository(
     }
   }
 
-  fun searchNotes(query: String): Flow<List<Notes>> = database.noteQueries
-    .searchNotes(query, query)
-    .asFlow()
-    .mapToList(Dispatchers.IO)
+  fun searchNotes(query: String): Flow<List<Notes>> =
+    database.noteQueries
+      .searchNotes(query, query)
+      .asFlow()
+      .mapToList(Dispatchers.IO)
 }

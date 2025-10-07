@@ -3,8 +3,8 @@ CREATE TABLE categories (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   color TEXT NOT NULL, -- Hex color code
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
 
 -- Tasks table
@@ -14,8 +14,8 @@ CREATE TABLE tasks (
   description TEXT,
   category_id INTEGER NOT NULL,
   strategy TEXT NOT NULL DEFAULT 'plan', -- plan, todo, do, check
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
   FOREIGN KEY (category_id) REFERENCES categories (id)
 );
 
@@ -25,8 +25,8 @@ CREATE TABLE timeblocks (
   start_time TEXT NOT NULL, -- ISO timestamp
   end_time TEXT NOT NULL,   -- ISO timestamp
   task_id INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
   FOREIGN KEY (task_id) REFERENCES tasks (id)
 );
 
@@ -36,7 +36,7 @@ CREATE TABLE alarms (
   timeblock_id INTEGER NOT NULL,
   minutes_before INTEGER NOT NULL, -- Minutes before timeblock start
   is_enabled INTEGER NOT NULL DEFAULT 1, -- Boolean (0/1)
-  created_at TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
   FOREIGN KEY (timeblock_id) REFERENCES timeblocks (id) ON DELETE CASCADE
 );
 

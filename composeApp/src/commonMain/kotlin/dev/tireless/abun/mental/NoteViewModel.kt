@@ -3,12 +3,13 @@ package dev.tireless.abun.mental
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.tireless.abun.database.Notes
-import dev.tireless.abun.mental.NoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 class NoteViewModel(
   private val noteRepository: NoteRepository,
 ) : ViewModel() {
@@ -43,11 +44,13 @@ class NoteViewModel(
     }
   }
 
-  fun createNote(title: String, content: String) {
+  fun createNote(
+    title: String,
+    content: String,
+  ) {
     viewModelScope.launch {
       try {
-        val now = getCurrentTimestamp()
-        noteRepository.insertNote(title, content, now, now)
+        noteRepository.insertNote(title, content)
         loadNotes() // Refresh the list
       } catch (e: Exception) {
         e.printStackTrace()
@@ -55,11 +58,14 @@ class NoteViewModel(
     }
   }
 
-  fun updateNote(id: Long, title: String, content: String) {
+  fun updateNote(
+    id: Long,
+    title: String,
+    content: String,
+  ) {
     viewModelScope.launch {
       try {
-        val now = getCurrentTimestamp()
-        noteRepository.updateNote(id, title, content, now)
+        noteRepository.updateNote(id, title, content)
         loadNotes() // Refresh the list
       } catch (e: Exception) {
         e.printStackTrace()
@@ -97,11 +103,5 @@ class NoteViewModel(
         e.printStackTrace()
       }
     }
-  }
-
-  private fun getCurrentTimestamp(): String {
-    // Generate a simple timestamp using a counter approach for KMP compatibility
-    // This ensures unique timestamps while avoiding platform-specific APIs
-    return "2024-${(1..12).random()}-${(1..28).random()} ${(0..23).random()}:${(0..59).random()}:${(0..59).random()}"
   }
 }

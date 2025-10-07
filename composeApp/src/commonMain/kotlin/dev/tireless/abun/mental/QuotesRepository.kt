@@ -14,18 +14,14 @@ import kotlinx.coroutines.withContext
 class QuotesRepository(
   private val database: AppDatabase,
 ) {
-  fun getAllQuotes(): Flow<List<Quotes>> = database.quoteQueries
-    .selectAll()
-    .asFlow()
-    .mapToList(Dispatchers.IO)
-
-  suspend fun getRandomQuote(): Quotes? = withContext(Dispatchers.IO) {
-    database.quoteQueries
-      .selectRandomQuote()
-      .asFlow()
-      .mapToOneOrNull(Dispatchers.IO)
-      .first()
-  }
+  suspend fun getRandomQuote(): Quotes? =
+    withContext(Dispatchers.IO) {
+      database.quoteQueries
+        .selectRandomQuote()
+        .asFlow()
+        .mapToOneOrNull(Dispatchers.IO)
+        .first()
+    }
 
   suspend fun insertQuote(
     id: String,

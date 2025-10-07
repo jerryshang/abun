@@ -6,19 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,20 +21,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -79,13 +69,14 @@ fun AccountManagementScreen(
     }
   }
 
-  val displayItems = remember(accounts, accountsByParent, expandedAccounts.toMap()) {
-    buildAccountDisplayItems(
-      accounts = accounts,
-      accountsByParent = accountsByParent,
-      expandedAccounts = expandedAccounts.toMap(),
-    )
-  }
+  val displayItems =
+    remember(accounts, accountsByParent, expandedAccounts.toMap()) {
+      buildAccountDisplayItems(
+        accounts = accounts,
+        accountsByParent = accountsByParent,
+        expandedAccounts = expandedAccounts.toMap(),
+      )
+    }
 
   Scaffold(
     topBar = {
@@ -107,9 +98,9 @@ fun AccountManagementScreen(
   ) { paddingValues ->
     Box(
       modifier =
-      Modifier
-        .fillMaxSize()
-        .padding(paddingValues),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
     ) {
       if (isLoading) {
         CircularProgressIndicator(
@@ -160,18 +151,17 @@ fun AccountCard(
 
   Card(
     modifier =
-    Modifier
-      .fillMaxWidth()
-      .padding(start = indent)
-      .clickable(onClick = onClick),
+      Modifier
+        .fillMaxWidth()
+        .padding(start = indent)
+        .clickable(onClick = onClick),
     colors = CardDefaults.cardColors(containerColor = containerColor),
-//    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
   ) {
     Row(
       modifier =
-      Modifier
-        .fillMaxWidth()
-        .padding(16.dp),
+        Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -238,7 +228,10 @@ private fun buildAccountDisplayItems(
   val visited = mutableSetOf<Long>()
   val accountLookup = accounts.associateBy { it.id }
 
-  fun traverse(account: AccountWithBalance, depth: Int) {
+  fun traverse(
+    account: AccountWithBalance,
+    depth: Int,
+  ) {
     if (!visited.add(account.id)) return
     val children = accountsByParent[account.id]?.sortedBy { it.name } ?: emptyList()
     val hasChildren = children.isNotEmpty()
@@ -252,198 +245,16 @@ private fun buildAccountDisplayItems(
   val rootAccounts = accountsByParent[null]?.sortedBy { it.name } ?: emptyList()
   rootAccounts.forEach { traverse(it, 0) }
 
-  val orphanAccounts = accounts
-    .asSequence()
-    .filter { account ->
-      val parentId = account.parentId
-      parentId != null && parentId !in accountLookup
-    }
-    .sortedBy { it.name }
-    .toList()
+  val orphanAccounts =
+    accounts
+      .asSequence()
+      .filter { account ->
+        val parentId = account.parentId
+        parentId != null && parentId !in accountLookup
+      }.sortedBy { it.name }
+      .toList()
 
   orphanAccounts.forEach { traverse(it, 0) }
 
   return orderedItems
-}
-
-/**
- * Add Account Dialog
- */
-@Composable
-fun AddAccountDialog(
-  onDismiss: () -> Unit,
-  onConfirm: (CreateAccountInput) -> Unit,
-) {
-  var name by remember { mutableStateOf("") }
-  var initialBalance by remember { mutableStateOf("0") }
-
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Add Account") },
-    text = {
-      Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        OutlinedTextField(
-          value = name,
-          onValueChange = { name = it },
-          label = { Text("Account Name") },
-          modifier = Modifier.fillMaxWidth(),
-        )
-
-        OutlinedTextField(
-          value = initialBalance,
-          onValueChange = { initialBalance = it },
-          label = { Text("Initial Balance") },
-          modifier = Modifier.fillMaxWidth(),
-          prefix = { Text("¥") },
-        )
-      }
-    },
-    confirmButton = {
-      Button(
-        onClick = {
-          onConfirm(
-            CreateAccountInput(
-              name = name,
-            ),
-          )
-        },
-        enabled = name.isNotBlank(),
-      ) {
-        Text("Confirm")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    },
-  )
-}
-
-/**
- * Load Template Dialog
- */
-@Composable
-fun LoadTemplateDialog(
-  onDismiss: () -> Unit,
-  onConfirm: (AccountTemplateType) -> Unit,
-) {
-  var selectedTemplate by remember { mutableStateOf(AccountTemplateType.MINIMAL) }
-
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Select Predefined Account Template") },
-    text = {
-      Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        Text(
-          text = "Select the account template to load. Loading a template will clear all existing transactions and accounts.",
-          style = MaterialTheme.typography.bodyMedium,
-        )
-
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          RadioButton(
-            selected = selectedTemplate == AccountTemplateType.MINIMAL,
-            onClick = { selectedTemplate = AccountTemplateType.MINIMAL },
-          )
-          Text(
-            text = "Minimal Template (5 accounts)",
-            modifier = Modifier.padding(start = 8.dp),
-          )
-        }
-
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          RadioButton(
-            selected = selectedTemplate == AccountTemplateType.STANDARD,
-            onClick = { selectedTemplate = AccountTemplateType.STANDARD },
-          )
-          Text(
-            text = "Standard Template (40+ accounts)",
-            modifier = Modifier.padding(start = 8.dp),
-          )
-        }
-      }
-    },
-    confirmButton = {
-      Button(onClick = { onConfirm(selectedTemplate) }) {
-        Text("Next")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    },
-  )
-}
-
-/**
- * Warning Dialog for data clearing
- */
-@Composable
-fun WarningDialog(
-  onDismiss: () -> Unit,
-  onConfirm: () -> Unit,
-) {
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Warning") },
-    text = {
-      Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        Text(
-          text = "Loading a predefined account will:",
-          style = MaterialTheme.typography.bodyMedium,
-          fontWeight = FontWeight.Bold,
-        )
-        Text(
-          text = "- Delete all existing transactions",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.error,
-        )
-        Text(
-          text = "- Remove all accounts except the five root accounts",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.error,
-        )
-        Text(
-          text = "- This action cannot be undone!",
-          style = MaterialTheme.typography.bodyMedium,
-          fontWeight = FontWeight.Bold,
-          color = MaterialTheme.colorScheme.error,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-          text = "Are you sure you want to continue?",
-          style = MaterialTheme.typography.bodyMedium,
-        )
-      }
-    },
-    confirmButton = {
-      Button(
-        onClick = onConfirm,
-        colors =
-        ButtonDefaults.buttonColors(
-          containerColor = MaterialTheme.colorScheme.error,
-        ),
-      ) {
-        Text("Confirm")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    },
-  )
 }

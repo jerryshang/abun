@@ -66,16 +66,19 @@ fun FutureViewScreen(
   var selectedDaysAhead by remember { mutableStateOf(30) }
 
   // Get planned and estimated transactions
-  val upcomingTransactions = transactions.filter {
-    it.transaction.state == TransactionState.PLANNED || it.transaction.state == TransactionState.ESTIMATED
-  }.sortedBy { it.transaction.transactionDate }
+  val upcomingTransactions =
+    transactions
+      .filter {
+        it.transaction.state == TransactionState.PLANNED || it.transaction.state == TransactionState.ESTIMATED
+      }.sortedBy { it.transaction.transactionDate }
 
   // Calculate current balance
-  val currentBalance = if (selectedAccountId != null) {
-    accounts.find { it.id == selectedAccountId }?.currentBalance ?: 0.0
-  } else {
-    accounts.filter { it.isActive }.sumOf { it.currentBalance }
-  }
+  val currentBalance =
+    if (selectedAccountId != null) {
+      accounts.find { it.id == selectedAccountId }?.currentBalance ?: 0.0
+    } else {
+      accounts.filter { it.isActive }.sumOf { it.currentBalance }
+    }
 
   // Note: Balance trend generation disabled - needs refactoring for TransactionWithDetails
   val balanceTrendData = emptyList<Pair<String, Double>>()
@@ -99,43 +102,45 @@ fun FutureViewScreen(
           IconButton(onClick = { navController.navigateUp() }) {
             Icon(Icons.Default.ArrowBack, "Back")
           }
-        }
+        },
       )
-    }
+    },
   ) { paddingValues ->
     Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
     ) {
       if (isLoading) {
         CircularProgressIndicator(
-          modifier = Modifier.align(Alignment.Center)
+          modifier = Modifier.align(Alignment.Center),
         )
       } else {
         LazyColumn(
           modifier = Modifier.fillMaxSize(),
-          verticalArrangement = Arrangement.spacedBy(16.dp)
+          verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
           // Account filter
           item {
             Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable {
-                  // TODO: Show account selector
-                },
-              verticalAlignment = Alignment.CenterVertically
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 16.dp, vertical = 8.dp)
+                  .clickable {
+                    // TODO: Show account selector
+                  },
+              verticalAlignment = Alignment.CenterVertically,
             ) {
               Text(
                 text = "Filter: ${selectedAccountId?.let { id -> accounts.find { it.id == id }?.name } ?: "All Accounts"}",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
               )
               Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Select Account",
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
               )
             }
           }
@@ -143,20 +148,22 @@ fun FutureViewScreen(
           // Balance Trend Chart
           item {
             Card(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-              elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 16.dp),
+              elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             ) {
               Column(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(16.dp)
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
               ) {
                 Text(
                   text = "Asset Trend Chart",
                   style = MaterialTheme.typography.titleMedium,
-                  fontWeight = FontWeight.SemiBold
+                  fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -174,7 +181,7 @@ fun FutureViewScreen(
                   text = "Balance trend chart temporarily disabled",
                   style = MaterialTheme.typography.bodyMedium,
                   color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  modifier = Modifier.padding(16.dp)
+                  modifier = Modifier.padding(16.dp),
                 )
               }
             }
@@ -183,43 +190,46 @@ fun FutureViewScreen(
           // Date selector and predicted balance
           item {
             Card(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-              elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 16.dp),
+              elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             ) {
               Column(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(16.dp)
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
               ) {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
+                  verticalAlignment = Alignment.CenterVertically,
                 ) {
                   Column {
                     Text(
                       text = "Days Ahead: $selectedDaysAhead",
                       style = MaterialTheme.typography.bodyMedium,
-                      color = MaterialTheme.colorScheme.onSurfaceVariant
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                       text = "Projected Balance: ¥${formatAmount(predictedBalance)}",
                       style = MaterialTheme.typography.headlineSmall,
                       fontWeight = FontWeight.Bold,
-                      color = if (predictedBalance >= currentBalance) {
-                        Color(0xFF388E3C)
-                      } else {
-                        Color(0xFFF57C00)
-                      }
+                      color =
+                        if (predictedBalance >= currentBalance) {
+                          Color(0xFF388E3C)
+                        } else {
+                          Color(0xFFF57C00)
+                        },
                     )
                   }
 
                   // Quick date selectors
                   Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                   ) {
                     QuickDateButton("7d", selectedDaysAhead == 7) {
                       selectedDaysAhead = 7
@@ -242,7 +252,7 @@ fun FutureViewScreen(
               text = "Upcoming Transactions",
               style = MaterialTheme.typography.titleMedium,
               fontWeight = FontWeight.SemiBold,
-              modifier = Modifier.padding(horizontal = 16.dp)
+              modifier = Modifier.padding(horizontal = 16.dp),
             )
           }
 
@@ -253,13 +263,13 @@ fun FutureViewScreen(
                 text = "No scheduled transactions",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
               )
             }
           } else {
             items(upcomingTransactions) { transactionWithDetails ->
               UpcomingTransactionCard(
-                transactionWithDetails = transactionWithDetails
+                transactionWithDetails = transactionWithDetails,
               )
             }
           }
@@ -276,30 +286,32 @@ fun FutureViewScreen(
 private fun QuickDateButton(
   label: String,
   isSelected: Boolean,
-  onClick: () -> Unit
+  onClick: () -> Unit,
 ) {
   Box(
-    modifier = Modifier
-      .size(60.dp, 32.dp)
-      .background(
-        color = if (isSelected) {
-          MaterialTheme.colorScheme.primary
-        } else {
-          MaterialTheme.colorScheme.surfaceVariant
-        },
-        shape = MaterialTheme.shapes.small
-      )
-      .clickable(onClick = onClick),
-    contentAlignment = Alignment.Center
+    modifier =
+      Modifier
+        .size(60.dp, 32.dp)
+        .background(
+          color =
+            if (isSelected) {
+              MaterialTheme.colorScheme.primary
+            } else {
+              MaterialTheme.colorScheme.surfaceVariant
+            },
+          shape = MaterialTheme.shapes.small,
+        ).clickable(onClick = onClick),
+    contentAlignment = Alignment.Center,
   ) {
     Text(
       text = label,
       style = MaterialTheme.typography.labelSmall,
-      color = if (isSelected) {
-        MaterialTheme.colorScheme.onPrimary
-      } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-      }
+      color =
+        if (isSelected) {
+          MaterialTheme.colorScheme.onPrimary
+        } else {
+          MaterialTheme.colorScheme.onSurfaceVariant
+        },
     )
   }
 }
@@ -308,64 +320,69 @@ private fun QuickDateButton(
  * Upcoming transaction card
  */
 @Composable
-private fun UpcomingTransactionCard(
-  transactionWithDetails: TransactionWithDetails
-) {
+private fun UpcomingTransactionCard(transactionWithDetails: TransactionWithDetails) {
   val transaction = transactionWithDetails.transaction
   val transactionType = transactionWithDetails.inferType()
   val primaryAccount = transactionWithDetails.getPrimaryAccount()
 
   Card(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 16.dp),
+    modifier =
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    colors = CardDefaults.cardColors(
-      containerColor = when (transaction.state) {
-        TransactionState.PLANNED -> Color(0xFFE8F5E9)
-        TransactionState.ESTIMATED -> Color(0xFFFFF3E0)
-        else -> MaterialTheme.colorScheme.surface
-      }
-    )
+    colors =
+      CardDefaults.cardColors(
+        containerColor =
+          when (transaction.state) {
+            TransactionState.PLANNED -> Color(0xFFE8F5E9)
+            TransactionState.ESTIMATED -> Color(0xFFFFF3E0)
+            else -> MaterialTheme.colorScheme.surface
+          },
+      ),
   ) {
     Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp),
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
       horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
     ) {
       Column(modifier = Modifier.weight(1f)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           Box(
-            modifier = Modifier
-              .size(24.dp)
-              .background(
-                color = when (transactionType) {
-                  TransactionType.INCOME -> Color(0xFF388E3C)
-                  TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Color(0xFFF57C00)
-                  else -> Color(0xFF1976D2)
-                },
-                shape = CircleShape
-              ),
-            contentAlignment = Alignment.Center
+            modifier =
+              Modifier
+                .size(24.dp)
+                .background(
+                  color =
+                    when (transactionType) {
+                      TransactionType.INCOME -> Color(0xFF388E3C)
+                      TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Color(0xFFF57C00)
+                      else -> Color(0xFF1976D2)
+                    },
+                  shape = CircleShape,
+                ),
+            contentAlignment = Alignment.Center,
           ) {
             Icon(
-              imageVector = when (transactionType) {
-                TransactionType.INCOME -> Icons.Default.Add
-                TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Icons.Default.Remove
-                else -> Icons.Default.Add
-              },
+              imageVector =
+                when (transactionType) {
+                  TransactionType.INCOME -> Icons.Default.Add
+                  TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Icons.Default.Remove
+                  else -> Icons.Default.Add
+                },
               contentDescription = null,
               modifier = Modifier.size(16.dp),
-              tint = Color.White
+              tint = Color.White,
             )
           }
           Spacer(modifier = Modifier.size(8.dp))
           Text(
             text = transaction.payee ?: transactionType.name,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
           )
         }
 
@@ -374,31 +391,33 @@ private fun UpcomingTransactionCard(
         Text(
           text = "${formatDate(transaction.transactionDate)} - ${primaryAccount.name}",
           style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         if (transaction.state == TransactionState.ESTIMATED) {
           Text(
             text = "Estimated Amount",
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFFF57C00)
+            color = Color(0xFFF57C00),
           )
         }
       }
 
       Text(
-        text = when (transactionType) {
-          TransactionType.INCOME -> "+¥${formatAmount(transaction.amount)}"
-          TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(transaction.amount)}"
-          else -> "¥${formatAmount(transaction.amount)}"
-        },
+        text =
+          when (transactionType) {
+            TransactionType.INCOME -> "+¥${formatAmount(transaction.amount)}"
+            TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(transaction.amount)}"
+            else -> "¥${formatAmount(transaction.amount)}"
+          },
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        color = when (transactionType) {
-          TransactionType.INCOME -> Color(0xFF388E3C)
-          TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Color(0xFFF57C00)
-          else -> Color(0xFF1976D2)
-        }
+        color =
+          when (transactionType) {
+            TransactionType.INCOME -> Color(0xFF388E3C)
+            TransactionType.EXPENSE, TransactionType.LOAN_PAYMENT -> Color(0xFFF57C00)
+            else -> Color(0xFF1976D2)
+          },
       )
     }
   }
@@ -409,7 +428,7 @@ private fun UpcomingTransactionCard(
  */
 data class BalanceDataPoint(
   val day: Int,
-  val balance: Double
+  val balance: Double,
 )
 
 /**
@@ -463,7 +482,7 @@ private fun generateBalanceTrend(
 @Composable
 fun BalanceTrendChart(
   data: List<BalanceDataPoint>,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
 ) {
   val primaryColor = MaterialTheme.colorScheme.primary
 
@@ -485,13 +504,13 @@ fun BalanceTrendChart(
       color = Color.Gray,
       start = Offset(padding, height - padding),
       end = Offset(width - padding, height - padding),
-      strokeWidth = 2f
+      strokeWidth = 2f,
     )
     drawLine(
       color = Color.Gray,
       start = Offset(padding, padding),
       end = Offset(padding, height - padding),
-      strokeWidth = 2f
+      strokeWidth = 2f,
     )
 
     // Draw line
@@ -500,11 +519,12 @@ fun BalanceTrendChart(
 
     data.forEachIndexed { index, point ->
       val x = padding + index * xStep
-      val normalizedY = if (adjustedRange > 0) {
-        ((point.balance - (minBalance - adjustedRange * 0.1)) / adjustedRange).toFloat()
-      } else {
-        0.5f
-      }
+      val normalizedY =
+        if (adjustedRange > 0) {
+          ((point.balance - (minBalance - adjustedRange * 0.1)) / adjustedRange).toFloat()
+        } else {
+          0.5f
+        }
       val y = height - padding - normalizedY * (height - 2 * padding)
 
       if (index == 0) {
@@ -517,7 +537,7 @@ fun BalanceTrendChart(
       drawCircle(
         color = primaryColor,
         radius = 4f,
-        center = Offset(x, y)
+        center = Offset(x, y),
       )
     }
 
@@ -525,7 +545,7 @@ fun BalanceTrendChart(
     drawPath(
       path = path,
       color = primaryColor,
-      style = Stroke(width = 3f, cap = StrokeCap.Round)
+      style = Stroke(width = 3f, cap = StrokeCap.Round),
     )
   }
 }

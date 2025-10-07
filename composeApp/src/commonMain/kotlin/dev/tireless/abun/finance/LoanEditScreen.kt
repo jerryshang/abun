@@ -148,11 +148,11 @@ fun LoanEditScreen(
   ) { paddingValues ->
     Column(
       modifier =
-      Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(16.dp)
-        .verticalScroll(rememberScrollState()),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(16.dp)
+          .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       OutlinedTextField(
@@ -161,17 +161,17 @@ fun LoanEditScreen(
         label = { Text("Amount") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier =
-        Modifier
-          .fillMaxWidth()
-          .focusRequester(focusRequester)
-          .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-              if (amount.selection.length != amount.text.length) {
-                amount = amount.copy(selection = TextRange(0, amount.text.length))
+          Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { focusState ->
+              if (focusState.isFocused) {
+                if (amount.selection.length != amount.text.length) {
+                  amount = amount.copy(selection = TextRange(0, amount.text.length))
+                }
+                keyboardController?.show()
               }
-              keyboardController?.show()
-            }
-          },
+            },
         prefix = { Text("¥") },
         singleLine = true,
       )
@@ -187,9 +187,9 @@ fun LoanEditScreen(
           label = { Text("Deposit Account") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isAccountMenuExpanded) },
           modifier =
-          Modifier
-            .fillMaxWidth()
-            .menuAnchor(),
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         DropdownMenu(
           expanded = isAccountMenuExpanded,
@@ -208,16 +208,18 @@ fun LoanEditScreen(
       }
 
       Text("Repayment Type", style = MaterialTheme.typography.labelLarge)
-      val loanTypeOptions = listOf(
-        LoanType.EQUAL_INSTALLMENT to "Equal P+I",
-        LoanType.EQUAL_PRINCIPAL to "Equal Principal",
-        LoanType.INTEREST_FIRST to "Interest-First",
-      )
-      val loanTypeDescriptions = mapOf(
-        LoanType.EQUAL_INSTALLMENT to "Same payment every period covering principal and interest.",
-        LoanType.EQUAL_PRINCIPAL to "Declining payments as principal is repaid evenly.",
-        LoanType.INTEREST_FIRST to "Pay interest upfront, principal settled later.",
-      )
+      val loanTypeOptions =
+        listOf(
+          LoanType.EQUAL_INSTALLMENT to "Equal P+I",
+          LoanType.EQUAL_PRINCIPAL to "Equal Principal",
+          LoanType.INTEREST_FIRST to "Interest-First",
+        )
+      val loanTypeDescriptions =
+        mapOf(
+          LoanType.EQUAL_INSTALLMENT to "Same payment every period covering principal and interest.",
+          LoanType.EQUAL_PRINCIPAL to "Declining payments as principal is repaid evenly.",
+          LoanType.INTEREST_FIRST to "Pay interest upfront, principal settled later.",
+        )
 
       FlowRow(
         modifier = Modifier.fillMaxWidth(),

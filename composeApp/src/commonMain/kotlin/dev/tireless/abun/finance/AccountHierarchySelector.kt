@@ -49,7 +49,7 @@ enum class AccountFilter {
  * @param accounts List of all accounts
  * @param filter Type of accounts to display
  * @param selectedAccountId Currently selected account ID (null for "All")
- * @param onAccountSelected Callback when an account is selected (null for "All")
+ * @param onAccountSelect Callback when an account is selected (null for "All")
  * @param expanded Whether the dropdown is expanded
  * @param onExpandedChange Callback when expansion state changes
  * @param showAllOption Whether to show "All" option (default true)
@@ -59,7 +59,7 @@ fun AccountHierarchySelector(
   accounts: List<AccountWithBalance>,
   filter: AccountFilter,
   selectedAccountId: Long?,
-  onAccountSelected: (Long?) -> Unit,
+  onAccountSelect: (Long?) -> Unit,
   expanded: Boolean,
   onExpandedChange: (Boolean) -> Unit,
   showAllOption: Boolean = true,
@@ -93,42 +93,44 @@ fun AccountHierarchySelector(
     }
 
   // Group accounts by parent category
-  val groupedAccounts = remember(filteredAccounts, filter) {
-    when (filter) {
-      AccountFilter.ALL ->
-        buildMap<String, List<AccountWithBalance>> {
-          val assets = filteredAccounts.filter { it.parentId == RootAccountIds.ASSET }
-          if (assets.isNotEmpty()) put("Assets", assets)
-          val liabilities = filteredAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
-          if (liabilities.isNotEmpty()) put("Liabilities", liabilities)
-          val revenue = filteredAccounts.filter { it.parentId == RootAccountIds.REVENUE }
-          if (revenue.isNotEmpty()) put("Revenue", revenue)
-          val expenses = filteredAccounts.filter { it.parentId == RootAccountIds.EXPENSE }
-          if (expenses.isNotEmpty()) put("Expenses", expenses)
-        }
+  val groupedAccounts =
+    remember(filteredAccounts, filter) {
+      when (filter) {
+        AccountFilter.ALL ->
+          buildMap<String, List<AccountWithBalance>> {
+            val assets = filteredAccounts.filter { it.parentId == RootAccountIds.ASSET }
+            if (assets.isNotEmpty()) put("Assets", assets)
+            val liabilities = filteredAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
+            if (liabilities.isNotEmpty()) put("Liabilities", liabilities)
+            val revenue = filteredAccounts.filter { it.parentId == RootAccountIds.REVENUE }
+            if (revenue.isNotEmpty()) put("Revenue", revenue)
+            val expenses = filteredAccounts.filter { it.parentId == RootAccountIds.EXPENSE }
+            if (expenses.isNotEmpty()) put("Expenses", expenses)
+          }
 
-      AccountFilter.NORMAL_ACCOUNTS ->
-        buildMap {
-          val assets = filteredAccounts.filter { it.parentId == RootAccountIds.ASSET }
-          if (assets.isNotEmpty()) put("Assets", assets)
-          val liabilities = filteredAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
-          if (liabilities.isNotEmpty()) put("Liabilities", liabilities)
-        }
+        AccountFilter.NORMAL_ACCOUNTS ->
+          buildMap {
+            val assets = filteredAccounts.filter { it.parentId == RootAccountIds.ASSET }
+            if (assets.isNotEmpty()) put("Assets", assets)
+            val liabilities = filteredAccounts.filter { it.parentId == RootAccountIds.LIABILITY }
+            if (liabilities.isNotEmpty()) put("Liabilities", liabilities)
+          }
 
-      AccountFilter.EXPENSES -> mapOf("Expenses" to filteredAccounts)
-      AccountFilter.REVENUE -> mapOf("Revenue" to filteredAccounts)
+        AccountFilter.EXPENSES -> mapOf("Expenses" to filteredAccounts)
+        AccountFilter.REVENUE -> mapOf("Revenue" to filteredAccounts)
+      }
     }
-  }
 
   val groupKeys = groupedAccounts.keys.toList()
   var expandedGroup by remember(groupKeys) { mutableStateOf<String?>(null) }
 
   val density = LocalDensity.current
-  val dropdownModifier = if (menuWidthPx != null && menuWidthPx > 0) {
-    modifier.width(with(density) { menuWidthPx.toDp() })
-  } else {
-    modifier
-  }
+  val dropdownModifier =
+    if (menuWidthPx != null && menuWidthPx > 0) {
+      modifier.width(with(density) { menuWidthPx.toDp() })
+    } else {
+      modifier
+    }
 
   DropdownMenu(
     expanded = expanded,
@@ -145,7 +147,7 @@ fun AccountHierarchySelector(
           )
         },
         onClick = {
-          onAccountSelected(null)
+          onAccountSelect(null)
           onExpandedChange(false)
         },
       )
@@ -172,9 +174,9 @@ fun AccountHierarchySelector(
                 imageVector = if (expandedGroup == groupName) Icons.Default.KeyboardArrowDown else Icons.Default.ArrowDropDown,
                 contentDescription = if (expandedGroup == groupName) "Collapse" else "Expand",
                 modifier =
-                Modifier
-                  .size(20.dp)
-                  .rotate(if (expandedGroup == groupName) 0f else -90f),
+                  Modifier
+                    .size(20.dp)
+                    .rotate(if (expandedGroup == groupName) 0f else -90f),
               )
             }
           },
@@ -199,7 +201,7 @@ fun AccountHierarchySelector(
               )
             },
             onClick = {
-              onAccountSelected(account.id)
+              onAccountSelect(account.id)
               onExpandedChange(false)
             },
           )

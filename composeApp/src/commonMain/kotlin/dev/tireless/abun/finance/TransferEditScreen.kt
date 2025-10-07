@@ -61,8 +61,8 @@ fun TransferEditScreen(
     mutableStateOf(
       TextFieldValue(
         text = initialAmountText,
-        selection = TextRange(0, initialAmountText.length)
-      )
+        selection = TextRange(0, initialAmountText.length),
+      ),
     )
   }
   var selectedSourceAccountId by remember(existingTransaction) {
@@ -87,15 +87,17 @@ fun TransferEditScreen(
     }
   }
 
-  val assetAccounts = remember(accounts) {
-    accounts.filter { account ->
-      account.parentId == RootAccountIds.ASSET
+  val assetAccounts =
+    remember(accounts) {
+      accounts.filter { account ->
+        account.parentId == RootAccountIds.ASSET
+      }
     }
-  }
 
-  val destinationAccounts = remember(assetAccounts, selectedSourceAccountId) {
-    assetAccounts.filter { account -> account.id != selectedSourceAccountId }
-  }
+  val destinationAccounts =
+    remember(assetAccounts, selectedSourceAccountId) {
+      assetAccounts.filter { account -> account.id != selectedSourceAccountId }
+    }
 
   LaunchedEffect(assetAccounts) {
     if (selectedSourceAccountId == null && assetAccounts.isNotEmpty()) {
@@ -123,10 +125,11 @@ fun TransferEditScreen(
         },
         actions = {
           val amountValue = amount.text.toDoubleOrNull()
-          val canSave = amountValue?.let { it > 0 } == true &&
-            selectedSourceAccountId != null &&
-            selectedDestinationAccountId != null &&
-            selectedDestinationAccountId != selectedSourceAccountId
+          val canSave =
+            amountValue?.let { it > 0 } == true &&
+              selectedSourceAccountId != null &&
+              selectedDestinationAccountId != null &&
+              selectedDestinationAccountId != selectedSourceAccountId
 
           TextButton(
             enabled = canSave,
@@ -144,8 +147,8 @@ fun TransferEditScreen(
                     toAccountId = selectedDestinationAccountId!!,
                     payee = payee.takeIf { it.isNotBlank() },
                     member = existingTransaction.member,
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
+                    notes = notes.takeIf { it.isNotBlank() },
+                  ),
                 )
               } else {
                 onCreate(
@@ -157,51 +160,53 @@ fun TransferEditScreen(
                     toAccountId = selectedDestinationAccountId!!,
                     payee = payee.takeIf { it.isNotBlank() },
                     member = null,
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
+                    notes = notes.takeIf { it.isNotBlank() },
+                  ),
                 )
               }
               navController.navigateUp()
-            }
+            },
           ) {
             Text(if (isEditing) "Update" else "Save")
           }
         },
-        scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+        scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState()),
       )
-    }
+    },
   ) { paddingValues ->
     Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(16.dp)
-        .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(16.dp)
+          .verticalScroll(rememberScrollState()),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       OutlinedTextField(
         value = amount,
         onValueChange = { amount = it },
         label = { Text("Amount") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier
-          .fillMaxWidth()
-          .focusRequester(focusRequester)
-          .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-              if (amount.selection.length != amount.text.length) {
-                amount = amount.copy(selection = TextRange(0, amount.text.length))
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { focusState ->
+              if (focusState.isFocused) {
+                if (amount.selection.length != amount.text.length) {
+                  amount = amount.copy(selection = TextRange(0, amount.text.length))
+                }
+                keyboardController?.show()
               }
-              keyboardController?.show()
-            }
-          },
+            },
         prefix = { Text("¥") },
-        singleLine = true
+        singleLine = true,
       )
 
       ExposedDropdownMenuBox(
         expanded = isSourceMenuExpanded,
-        onExpandedChange = { isSourceMenuExpanded = it }
+        onExpandedChange = { isSourceMenuExpanded = it },
       ) {
         OutlinedTextField(
           value = assetAccounts.find { it.id == selectedSourceAccountId }?.name ?: "",
@@ -209,33 +214,34 @@ fun TransferEditScreen(
           readOnly = true,
           label = { Text("Source Account") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isSourceMenuExpanded) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         DropdownMenu(
           expanded = isSourceMenuExpanded,
-          onDismissRequest = { isSourceMenuExpanded = false }
+          onDismissRequest = { isSourceMenuExpanded = false },
         ) {
           assetAccounts.forEach { account ->
             DropdownMenuItem(
               text = {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
+                  horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                   Text(account.name)
                   Text(
                     "¥${formatAmount(account.currentBalance)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 }
               },
               onClick = {
                 selectedSourceAccountId = account.id
                 isSourceMenuExpanded = false
-              }
+              },
             )
           }
         }
@@ -243,7 +249,7 @@ fun TransferEditScreen(
 
       ExposedDropdownMenuBox(
         expanded = isDestinationMenuExpanded,
-        onExpandedChange = { isDestinationMenuExpanded = it }
+        onExpandedChange = { isDestinationMenuExpanded = it },
       ) {
         OutlinedTextField(
           value = destinationAccounts.find { it.id == selectedDestinationAccountId }?.name ?: "",
@@ -251,33 +257,34 @@ fun TransferEditScreen(
           readOnly = true,
           label = { Text("Destination Account") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDestinationMenuExpanded) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         DropdownMenu(
           expanded = isDestinationMenuExpanded,
-          onDismissRequest = { isDestinationMenuExpanded = false }
+          onDismissRequest = { isDestinationMenuExpanded = false },
         ) {
           destinationAccounts.forEach { account ->
             DropdownMenuItem(
               text = {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
+                  horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                   Text(account.name)
                   Text(
                     "¥${formatAmount(account.currentBalance)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 }
               },
               onClick = {
                 selectedDestinationAccountId = account.id
                 isDestinationMenuExpanded = false
-              }
+              },
             )
           }
         }
@@ -288,7 +295,7 @@ fun TransferEditScreen(
         onValueChange = { payee = it },
         label = { Text("Purpose (optional)") },
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true
+        singleLine = true,
       )
 
       OutlinedTextField(
@@ -297,7 +304,7 @@ fun TransferEditScreen(
         label = { Text("Notes (optional)") },
         modifier = Modifier.fillMaxWidth(),
         minLines = 2,
-        maxLines = 4
+        maxLines = 4,
       )
     }
   }

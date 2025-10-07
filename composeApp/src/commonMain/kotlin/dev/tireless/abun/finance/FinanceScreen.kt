@@ -1,13 +1,8 @@
 package dev.tireless.abun.finance
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,7 +32,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -62,6 +56,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,7 +103,7 @@ fun FinanceScreen(
 
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAccountSelector by remember { mutableStateOf(false) }
-  var selectorAnchorWidth by remember { mutableStateOf(0) }
+  var selectorAnchorWidth by remember { mutableIntStateOf(0) }
   var filteredTransactions by remember { mutableStateOf<List<TransactionWithDetails>>(emptyList()) }
   var transactionPendingDeletion by remember { mutableStateOf<TransactionWithDetails?>(null) }
   var deletionContext by remember { mutableStateOf<TransactionDeletionContext?>(null) }
@@ -117,13 +112,14 @@ fun FinanceScreen(
 
   // Update filtered transactions when selection changes
   LaunchedEffect(selectedAccountId, transactions) {
-    filteredTransactions = if (selectedAccountId == null) {
-      transactions
-    } else {
-      transactions.filter {
-        it.transaction.debitAccountId == selectedAccountId || it.transaction.creditAccountId == selectedAccountId
+    filteredTransactions =
+      if (selectedAccountId == null) {
+        transactions
+      } else {
+        transactions.filter {
+          it.transaction.debitAccountId == selectedAccountId || it.transaction.creditAccountId == selectedAccountId
+        }
       }
-    }
   }
 
   LaunchedEffect(transactionPendingDeletion?.transaction?.id) {
@@ -146,21 +142,21 @@ fun FinanceScreen(
   }
 
   // Get selected account name
-  val selectedAccount = selectedAccountId?.let { id ->
-    accounts.find { it.id == id }
-  }
-
-  // Calculate predicted balance (placeholder logic)
+  val selectedAccount =
+    selectedAccountId?.let { id ->
+      accounts.find { it.id == id }
+    }
 
   Scaffold(
     topBar = {
       TopAppBar(
         windowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
-        colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.surface,
-          scrolledContainerColor = MaterialTheme.colorScheme.surface,
-          titleContentColor = MaterialTheme.colorScheme.onSurface,
-        ),
+        colors =
+          TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+          ),
         title = {
           val accountLabel = selectedAccount?.name ?: "All accounts"
           val chevronRotation by animateFloatAsState(
@@ -177,17 +173,20 @@ fun FinanceScreen(
               color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
               tonalElevation = 0.dp,
               shadowElevation = 0.dp,
-              modifier = Modifier.onGloballyPositioned { coords -> selectorAnchorWidth = coords.size.width }
+              modifier =
+                Modifier.onGloballyPositioned { coords ->
+                  selectorAnchorWidth = coords.size.width
+                },
             ) {
               Row(
                 modifier =
-                Modifier
-                  .fillMaxWidth()
-                  .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                  ) { showAccountSelector = !showAccountSelector }
-                  .padding(horizontal = 14.dp, vertical = 10.dp),
+                  Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                      interactionSource = remember { MutableInteractionSource() },
+                      indication = null,
+                    ) { showAccountSelector = !showAccountSelector }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
               ) {
@@ -208,9 +207,10 @@ fun FinanceScreen(
                 Icon(
                   imageVector = Icons.Default.ArrowDropDown,
                   contentDescription = if (showAccountSelector) "Collapse account selection" else "Expand account selection",
-                  modifier = Modifier
-                    .size(18.dp)
-                    .rotate(chevronRotation),
+                  modifier =
+                    Modifier
+                      .size(18.dp)
+                      .rotate(chevronRotation),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
               }
@@ -228,9 +228,10 @@ fun FinanceScreen(
                 Icon(
                   imageVector = Icons.Default.Close,
                   contentDescription = "Clear account filter",
-                  modifier = Modifier
-                    .size(16.dp)
-                    .padding(4.dp),
+                  modifier =
+                    Modifier
+                      .size(16.dp)
+                      .padding(4.dp),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
               }
@@ -240,7 +241,7 @@ fun FinanceScreen(
               accounts = accounts,
               filter = AccountFilter.NORMAL_ACCOUNTS,
               selectedAccountId = selectedAccountId,
-              onAccountSelected = { viewModel.setSelectedAccount(it) },
+              onAccountSelect = { viewModel.setSelectedAccount(it) },
               expanded = showAccountSelector,
               onExpandedChange = { showAccountSelector = it },
               showAllOption = true,
@@ -288,9 +289,9 @@ fun FinanceScreen(
   ) { paddingValues ->
     Box(
       modifier =
-      Modifier
-        .fillMaxSize()
-        .padding(paddingValues),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
     ) {
       if (isLoading) {
         CircularProgressIndicator(
@@ -345,9 +346,9 @@ fun FinanceScreen(
       error?.let { errorMessage ->
         Snackbar(
           modifier =
-          Modifier
-            .align(Alignment.BottomCenter)
-            .padding(16.dp),
+            Modifier
+              .align(Alignment.BottomCenter)
+              .padding(16.dp),
           action = {
             TextButton(onClick = { viewModel.clearError() }) {
               Text("Close")
@@ -374,17 +375,18 @@ fun FinanceScreen(
         isDeletionContextLoading = false
       },
       onConfirm = {
-        val groupIds = if (deleteAllRelated) {
-          deletionContext?.groups?.map { it.group.id } ?: emptyList()
-        } else {
-          emptyList()
-        }
+        val groupIds =
+          if (deleteAllRelated) {
+            deletionContext?.groups?.map { it.group.id } ?: emptyList()
+          } else {
+            emptyList()
+          }
         viewModel.deleteTransaction(pending.transaction.id, deleteGroupIds = groupIds)
         transactionPendingDeletion = null
         deletionContext = null
         deleteAllRelated = false
         isDeletionContextLoading = false
-      }
+      },
     )
   }
 }
@@ -411,115 +413,6 @@ private fun formatGroupTag(groupId: Long): String {
     "$datePart-$serialPart"
   } else {
     idString
-  }
-}
-
-/**
- * Account list section showing all accounts (collapsible)
- */
-@Composable
-fun AccountListSection(
-  accounts: List<AccountWithBalance>,
-  onManageAccounts: () -> Unit,
-  onAccountClick: (Long) -> Unit,
-) {
-  var isExpanded by remember { mutableStateOf(false) }
-  val rotation by animateFloatAsState(
-    targetValue = if (isExpanded) 180f else 0f,
-  )
-
-  Column(
-    modifier = Modifier.fillMaxWidth(),
-  ) {
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      Row(
-        modifier = Modifier.clickable { isExpanded = !isExpanded },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-      ) {
-        Surface(
-          modifier = Modifier.size(32.dp),
-          shape = CircleShape,
-          color = MaterialTheme.colorScheme.surface,
-          tonalElevation = 0.dp,
-          shadowElevation = 0.dp,
-          border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-        ) {
-          Box(contentAlignment = Alignment.Center) {
-            Icon(
-              imageVector = Icons.Default.KeyboardArrowDown,
-              contentDescription = if (isExpanded) "Collapse" else "Expand",
-              modifier = Modifier
-                .size(16.dp)
-                .rotate(rotation),
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
-        Text(
-          text = "Accounts",
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.SemiBold,
-        )
-      }
-      TextButton(
-        onClick = onManageAccounts,
-        contentPadding = PaddingValues(horizontal = 0.dp),
-      ) {
-        Text(
-          text = "Manage",
-          style = MaterialTheme.typography.labelLarge,
-        )
-      }
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
-
-    AnimatedVisibility(
-      visible = isExpanded,
-      enter = expandVertically() + fadeIn(),
-      exit = shrinkVertically() + fadeOut(),
-    ) {
-      val activeAccounts = accounts.filter { it.isActive }
-
-      Surface(
-        shape = RoundedCornerShape(24.dp),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
-      ) {
-        Column {
-          activeAccounts.forEachIndexed { index, account ->
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onAccountClick(account.id) }
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Text(
-                text = account.name,
-                style = MaterialTheme.typography.bodyLarge,
-              )
-              Text(
-                text = "¥${formatAmount(account.currentBalance)}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = if (account.currentBalance < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-              )
-            }
-            if (index < activeAccounts.lastIndex) {
-              HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-            }
-          }
-        }
-      }
-    }
   }
 }
 
@@ -571,18 +464,24 @@ fun TransactionDeleteConfirmationDialog(
 ) {
   val scrollState = rememberScrollState()
 
-  fun signedAmount(details: TransactionWithDetails): String = when (details.inferType()) {
-    TransactionType.EXPENSE -> "-¥${formatAmount(details.transaction.amount)}"
-    TransactionType.INCOME -> "+¥${formatAmount(details.transaction.amount)}"
-    TransactionType.TRANSFER -> "¥${formatAmount(details.transaction.amount)}"
-    TransactionType.LOAN -> "+¥${formatAmount(details.transaction.amount)}"
-    TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(details.transaction.amount)}"
-  }
+  fun signedAmount(details: TransactionWithDetails): String =
+    when (details.inferType()) {
+      TransactionType.EXPENSE -> "-¥${formatAmount(details.transaction.amount)}"
+      TransactionType.INCOME -> "+¥${formatAmount(details.transaction.amount)}"
+      TransactionType.TRANSFER -> "¥${formatAmount(details.transaction.amount)}"
+      TransactionType.LOAN -> "+¥${formatAmount(details.transaction.amount)}"
+      TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(details.transaction.amount)}"
+    }
 
   fun labelFor(details: TransactionWithDetails): String {
     val payee = details.transaction.payee
     if (!payee.isNullOrBlank()) return payee
-    val raw = details.inferType().name.lowercase().replace('_', ' ')
+    val raw =
+      details
+        .inferType()
+        .name
+        .lowercase()
+        .replace('_', ' ')
     return raw.replaceFirstChar { char ->
       if (char.isLowerCase()) char.uppercase() else char.toString()
     }
@@ -592,9 +491,10 @@ fun TransactionDeleteConfirmationDialog(
   val transactionDate = formatDate(transaction.transaction.transactionDate)
   val relatedGroups = deletionContext?.groups.orEmpty()
   val hasGroups = relatedGroups.isNotEmpty()
-  val additionalTransactions = relatedGroups
-    .flatMap { it.transactions }
-    .filter { it.transaction.id != transaction.transaction.id }
+  val additionalTransactions =
+    relatedGroups
+      .flatMap { it.transactions }
+      .filter { it.transaction.id != transaction.transaction.id }
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -606,10 +506,11 @@ fun TransactionDeleteConfirmationDialog(
     },
     text = {
       Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .heightIn(max = 320.dp)
-          .verticalScroll(scrollState),
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .heightIn(max = 320.dp)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
         Text(
@@ -663,13 +564,18 @@ fun TransactionDeleteConfirmationDialog(
                 groupWithTransactions.transactions.forEach { groupedTransaction ->
                   val isTarget = groupedTransaction.transaction.id == transaction.transaction.id
                   Text(
-                    text = "• ${labelFor(groupedTransaction)} — ${signedAmount(groupedTransaction)} on ${formatDate(groupedTransaction.transaction.transactionDate)}${if (isTarget) " (selected)" else ""}",
+                    text = "• ${labelFor(groupedTransaction)} — ${signedAmount(groupedTransaction)} on ${
+                      formatDate(
+                        groupedTransaction.transaction.transactionDate,
+                      )
+                    }${if (isTarget) " (selected)" else ""}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isTarget) {
-                      MaterialTheme.colorScheme.onSurface
-                    } else {
-                      MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    color =
+                      if (isTarget) {
+                        MaterialTheme.colorScheme.onSurface
+                      } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                      },
                   )
                 }
               }
@@ -705,7 +611,7 @@ fun TransactionDeleteConfirmationDialog(
       TextButton(onClick = onDismiss) {
         Text("Cancel")
       }
-    }
+    },
   )
 }
 
@@ -737,9 +643,10 @@ fun TransactionCard(
   val backgroundColor = accentColor.copy(alpha = 0.12f)
 
   Surface(
-    modifier = Modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick),
+    modifier =
+      Modifier
+        .fillMaxWidth()
+        .clickable(onClick = onClick),
     shape = RoundedCornerShape(24.dp),
     tonalElevation = 1.dp,
     shadowElevation = 0.dp,
@@ -750,9 +657,10 @@ fun TransactionCard(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       Box(
-        modifier = Modifier
-          .size(44.dp)
-          .background(color = accentColor.copy(alpha = 0.18f), shape = CircleShape),
+        modifier =
+          Modifier
+            .size(44.dp)
+            .background(color = accentColor.copy(alpha = 0.18f), shape = CircleShape),
         contentAlignment = Alignment.Center,
       ) {
         Icon(
@@ -776,13 +684,14 @@ fun TransactionCard(
         )
 
         Text(
-          text = buildString {
-            append(primaryAccount.name)
-            if (secondaryAccount != null) {
-              append(" -> ${secondaryAccount.name}")
-            }
-            append(" - ${formatDate(transaction.transactionDate)}")
-          },
+          text =
+            buildString {
+              append(primaryAccount.name)
+              if (secondaryAccount != null) {
+                append(" -> ${secondaryAccount.name}")
+              }
+              append(" - ${formatDate(transaction.transactionDate)}")
+            },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -828,22 +737,23 @@ fun TransactionCard(
       ) {
         Text(
           text =
-          when (transactionType) {
-            TransactionType.EXPENSE -> "-¥${formatAmount(transaction.amount)}"
-            TransactionType.INCOME -> "+¥${formatAmount(transaction.amount)}"
-            TransactionType.TRANSFER -> "¥${formatAmount(transaction.amount)}"
-            TransactionType.LOAN -> "+¥${formatAmount(transaction.amount)}"
-            TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(transaction.amount)}"
-          },
+            when (transactionType) {
+              TransactionType.EXPENSE -> "-¥${formatAmount(transaction.amount)}"
+              TransactionType.INCOME -> "+¥${formatAmount(transaction.amount)}"
+              TransactionType.TRANSFER -> "¥${formatAmount(transaction.amount)}"
+              TransactionType.LOAN -> "+¥${formatAmount(transaction.amount)}"
+              TransactionType.LOAN_PAYMENT -> "-¥${formatAmount(transaction.amount)}"
+            },
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.SemiBold,
           color = accentColor,
         )
 
         Surface(
-          modifier = Modifier
-            .size(32.dp)
-            .clickable(onClick = onDelete),
+          modifier =
+            Modifier
+              .size(32.dp)
+              .clickable(onClick = onDelete),
           shape = CircleShape,
           color = MaterialTheme.colorScheme.surface,
           tonalElevation = 0.dp,
@@ -872,11 +782,12 @@ private fun resolveTransactionColor(transactionWithDetails: TransactionWithDetai
   val primaryAccount = transactionWithDetails.getPrimaryAccount()
   val secondaryAccount = transactionWithDetails.getSecondaryAccount()
 
-  val colorHex = when (transactionType) {
-    TransactionType.EXPENSE, TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> transactionWithDetails.debitAccount.colorHex
-    TransactionType.INCOME -> transactionWithDetails.creditAccount.colorHex
-    TransactionType.TRANSFER -> primaryAccount.colorHex ?: secondaryAccount?.colorHex
-  }
+  val colorHex =
+    when (transactionType) {
+      TransactionType.EXPENSE, TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> transactionWithDetails.debitAccount.colorHex
+      TransactionType.INCOME -> transactionWithDetails.creditAccount.colorHex
+      TransactionType.TRANSFER -> primaryAccount.colorHex ?: secondaryAccount?.colorHex
+    }
 
   return hexToColorOrNull(colorHex)
 }
@@ -894,13 +805,14 @@ fun AccountDetailSummaryCard(
 ) {
   val isLiability = account.parentId == RootAccountIds.LIABILITY
   val isAsset = account.parentId == RootAccountIds.ASSET
-  val typeLabel = when (account.parentId) {
-    RootAccountIds.ASSET -> "Asset account"
-    RootAccountIds.LIABILITY -> "Liability account"
-    RootAccountIds.REVENUE -> "Revenue account"
-    RootAccountIds.EXPENSE -> "Expense account"
-    else -> "Account"
-  }
+  val typeLabel =
+    when (account.parentId) {
+      RootAccountIds.ASSET -> "Asset account"
+      RootAccountIds.LIABILITY -> "Liability account"
+      RootAccountIds.REVENUE -> "Revenue account"
+      RootAccountIds.EXPENSE -> "Expense account"
+      else -> "Account"
+    }
 
   Surface(
     modifier = modifier,
@@ -982,7 +894,10 @@ fun AccountDetailSummaryCard(
                     color = if (availableCredit > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
                   )
                 }
-                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                  horizontalAlignment = Alignment.End,
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                   Text(
                     text = "Credit limit",
                     style = MaterialTheme.typography.labelMedium,
@@ -998,11 +913,12 @@ fun AccountDetailSummaryCard(
 
               val usage = (debtAmount / creditLimit).coerceIn(0.0, 1.0)
               val usagePercent = (usage * 100).toInt()
-              val usageColor = when {
-                usagePercent >= 90 -> MaterialTheme.colorScheme.error
-                usagePercent >= 70 -> MaterialTheme.colorScheme.tertiary
-                else -> MaterialTheme.colorScheme.secondary
-              }
+              val usageColor =
+                when {
+                  usagePercent >= 90 -> MaterialTheme.colorScheme.error
+                  usagePercent >= 70 -> MaterialTheme.colorScheme.tertiary
+                  else -> MaterialTheme.colorScheme.secondary
+                }
 
               Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1010,9 +926,10 @@ fun AccountDetailSummaryCard(
               ) {
                 androidx.compose.material3.LinearProgressIndicator(
                   progress = { usage.toFloat() },
-                  modifier = Modifier
-                    .weight(1f)
-                    .height(8.dp),
+                  modifier =
+                    Modifier
+                      .weight(1f)
+                      .height(8.dp),
                   color = usageColor,
                   trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
@@ -1095,9 +1012,10 @@ fun EmptyTransactionsState(
     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
   ) {
     Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp, vertical = 40.dp),
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 24.dp, vertical = 40.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -1155,11 +1073,12 @@ fun formatDate(timestamp: Long): String {
   }
 
   // Month calculation
-  val daysInMonths = if (isLeapYear(year)) {
-    listOf(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-  } else {
-    listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-  }
+  val daysInMonths =
+    if (isLeapYear(year)) {
+      listOf(31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    } else {
+      listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    }
 
   var month = 1
   for (daysInMonth in daysInMonths) {
@@ -1206,12 +1125,13 @@ fun FanOutFAB(
     val sweepAngle = startAngle - endAngle // Total sweep angle
 
     // Button configurations with Lucide icons
-    val buttons = listOf(
-      Triple(Lucide.Receipt, "Expense", onAddExpense),
-      Triple(Lucide.PiggyBank, "Income", onAddIncome),
-      Triple(Lucide.ArrowRightLeft, "Transfer", onAddTransfer),
-      Triple(Lucide.Landmark, "Loan", onCreateLoan)
-    )
+    val buttons =
+      listOf(
+        Triple(Lucide.Receipt, "Expense", onAddExpense),
+        Triple(Lucide.PiggyBank, "Income", onAddIncome),
+        Triple(Lucide.ArrowRightLeft, "Transfer", onAddTransfer),
+        Triple(Lucide.Landmark, "Loan", onCreateLoan),
+      )
 
     // Fan-out buttons in arc
     buttons.forEachIndexed { index, (icon, description, onClick) ->
@@ -1223,34 +1143,36 @@ fun FanOutFAB(
       // Animated scale and alpha
       val scale by animateFloatAsState(
         targetValue = if (isExpanded) 1f else 0f,
-        animationSpec = spring(
-          dampingRatio = Spring.DampingRatioMediumBouncy,
-          stiffness = Spring.StiffnessLow
-        )
+        animationSpec =
+          spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow,
+          ),
       )
       val alpha by animateFloatAsState(
         targetValue = if (isExpanded) 1f else 0f,
-        animationSpec = spring(
-          dampingRatio = Spring.DampingRatioMediumBouncy,
-          stiffness = Spring.StiffnessLow
-        )
+        animationSpec =
+          spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow,
+          ),
       )
 
       if (scale > 0.01f) {
         IconButton(
           onClick = onClick,
-          modifier = Modifier
-            .offset { IntOffset(offsetX, offsetY) }
-            .size(48.dp)
-            .graphicsLayer {
-              scaleX = scale
-              scaleY = scale
-              this.alpha = alpha
-            }
-            .background(
-              color = MaterialTheme.colorScheme.secondaryContainer,
-              shape = androidx.compose.foundation.shape.CircleShape
-            )
+          modifier =
+            Modifier
+              .offset { IntOffset(offsetX, offsetY) }
+              .size(48.dp)
+              .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+              }.background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = androidx.compose.foundation.shape.CircleShape,
+              ),
         ) {
           Icon(
             imageVector = icon,
@@ -1290,9 +1212,10 @@ fun FabMenuItem(
   ) {
     // Label
     Card(
-      colors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surface,
-      ),
+      colors =
+        CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+        ),
       elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
       Text(

@@ -30,16 +30,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.time.Category
-import dev.tireless.abun.time.Task
-import dev.tireless.abun.time.TimeblockViewModel
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun CreateTimeblockDialog(
   viewModel: TimeblockViewModel,
   onDismiss: () -> Unit,
-  selectedDate: String = "2024-01-01"
+  selectedDate: String = "2024-01-01",
 ) {
   val tasks by viewModel.tasks.collectAsState()
   val categories by viewModel.categories.collectAsState()
@@ -60,71 +59,72 @@ fun CreateTimeblockDialog(
     title = {
       Text(
         text = if (showCreateTask) "Create New Task" else "Create Timeblock",
-        style = MaterialTheme.typography.headlineSmall
+        style = MaterialTheme.typography.headlineSmall,
       )
     },
     text = {
       Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         if (!showCreateTask) {
           // Timeblock creation form
           Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
           ) {
             OutlinedTextField(
               value = startTime,
               onValueChange = { startTime = it },
               label = { Text("Start Time") },
               placeholder = { Text("09:00") },
-              modifier = Modifier.weight(1f)
+              modifier = Modifier.weight(1f),
             )
             OutlinedTextField(
               value = endTime,
               onValueChange = { endTime = it },
               label = { Text("End Time") },
               placeholder = { Text("10:00") },
-              modifier = Modifier.weight(1f)
+              modifier = Modifier.weight(1f),
             )
           }
 
           // Task selection
           Text(
             text = "Select Task:",
-            style = MaterialTheme.typography.labelLarge
+            style = MaterialTheme.typography.labelLarge,
           )
 
           Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
           ) {
             Column(
               modifier = Modifier.padding(16.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
+              verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
               tasks.forEach { task ->
                 OutlinedButton(
                   onClick = { selectedTask = task },
-                  modifier = Modifier.fillMaxWidth()
+                  modifier = Modifier.fillMaxWidth(),
                 ) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                   ) {
                     Column {
                       Text(
                         text = task.name,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                       )
                       task.categoryName?.let { categoryName ->
                         Text(
                           text = categoryName,
                           style = MaterialTheme.typography.bodySmall,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant
+                          color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                       }
                     }
@@ -138,7 +138,7 @@ fun CreateTimeblockDialog(
               // Create new task button
               Button(
                 onClick = { showCreateTask = true },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
               ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -152,7 +152,7 @@ fun CreateTimeblockDialog(
             value = taskName,
             onValueChange = { taskName = it },
             label = { Text("Task Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
           )
 
           OutlinedTextField(
@@ -160,27 +160,27 @@ fun CreateTimeblockDialog(
             onValueChange = { taskDescription = it },
             label = { Text("Description (Optional)") },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3
+            minLines = 3,
           )
 
           // Category selection
           Text("Select Category:")
           Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
           ) {
             Column(
               modifier = Modifier.padding(16.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
+              verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
               categories.forEach { category ->
                 OutlinedButton(
                   onClick = { selectedCategory = category },
-                  modifier = Modifier.fillMaxWidth()
+                  modifier = Modifier.fillMaxWidth(),
                 ) {
                   Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                   ) {
                     Text(category.name)
                     if (selectedCategory?.id == category.id) {
@@ -206,11 +206,11 @@ fun CreateTimeblockDialog(
                 endTime = endDateTime,
                 taskId = task.id,
                 onSuccess = { onDismiss() },
-                onError = { /* Handle error */ }
+                onError = { /* Handle error */ },
               )
             }
           },
-          enabled = selectedTask != null && !isLoading
+          enabled = selectedTask != null && !isLoading,
         ) {
           Text("Create Timeblock")
         }
@@ -225,27 +225,28 @@ fun CreateTimeblockDialog(
                 onSuccess = { taskId ->
                   // Switch back to timeblock creation with the new task selected
                   showCreateTask = false
-                  selectedTask = Task(
-                    id = taskId,
-                    name = taskName,
-                    description = taskDescription.ifBlank { null },
-                    categoryId = selectedCategory!!.id,
-                    strategy = "plan", // Default strategy for newly created tasks
-                    createdAt = "",
-                    updatedAt = "",
-                    categoryName = selectedCategory!!.name,
-                    categoryColor = selectedCategory!!.color
-                  )
+                  selectedTask =
+                    Task(
+                      id = taskId,
+                      name = taskName,
+                      description = taskDescription.ifBlank { null },
+                      categoryId = selectedCategory!!.id,
+                      strategy = "plan", // Default strategy for newly created tasks
+                      createdAt = Clock.System.now(),
+                      updatedAt = Clock.System.now(),
+                      categoryName = selectedCategory!!.name,
+                      categoryColor = selectedCategory!!.color,
+                    )
                   // Reset task creation form
                   taskName = ""
                   taskDescription = ""
                   selectedCategory = null
                 },
-                onError = { /* Handle error */ }
+                onError = { /* Handle error */ },
               )
             }
           },
-          enabled = taskName.isNotBlank() && selectedCategory != null && !isLoading
+          enabled = taskName.isNotBlank() && selectedCategory != null && !isLoading,
         ) {
           Text("Create Task")
         }
@@ -263,10 +264,10 @@ fun CreateTimeblockDialog(
           } else {
             onDismiss()
           }
-        }
+        },
       ) {
         Text(if (showCreateTask) "Back" else "Cancel")
       }
-    }
+    },
   )
 }

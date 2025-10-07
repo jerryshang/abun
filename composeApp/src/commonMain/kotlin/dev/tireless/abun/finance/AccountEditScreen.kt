@@ -74,10 +74,10 @@ fun AccountEditScreen(
     ) { paddingValues ->
       Column(
         modifier =
-        Modifier
-          .fillMaxSize()
-          .padding(paddingValues)
-          .padding(24.dp),
+          Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
       ) {
@@ -92,12 +92,29 @@ fun AccountEditScreen(
   }
 
   var name by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.name ?: "") }
-  var currency by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.currency ?: "CNY") }
-  var colorHex by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.colorHex.orEmpty()) }
-  var isActive by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.isActive ?: true) }
+  var currency by remember(accountId, existingAccount) {
+    mutableStateOf(
+      existingAccount?.currency ?: "CNY",
+    )
+  }
+  var colorHex by remember(
+    accountId,
+    existingAccount,
+  ) { mutableStateOf(existingAccount?.colorHex.orEmpty()) }
+  var isActive by remember(accountId, existingAccount) {
+    mutableStateOf(
+      existingAccount?.isActive ?: true,
+    )
+  }
   var parentId by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.parentId) }
-  var isVisible by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.isVisibleInUi ?: true) }
-  var isCountable by remember(accountId, existingAccount) { mutableStateOf(existingAccount?.isCountable ?: true) }
+  var isVisible by remember(
+    accountId,
+    existingAccount,
+  ) { mutableStateOf(existingAccount?.isVisibleInUi ?: true) }
+  var isCountable by remember(
+    accountId,
+    existingAccount,
+  ) { mutableStateOf(existingAccount?.isCountable ?: true) }
 
   fun handleSave() {
     saveAccount(
@@ -137,10 +154,10 @@ fun AccountEditScreen(
   ) { paddingValues ->
     Column(
       modifier =
-      Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(horizontal = 24.dp, vertical = 16.dp),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(horizontal = 24.dp, vertical = 16.dp),
       verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
       OutlinedTextField(
@@ -248,7 +265,7 @@ private fun saveAccount(
         isCountable = isCountable,
         isVisibleInUi = isVisible,
         colorHex = colorHex.takeIf { it.isNotBlank() },
-      )
+      ),
     )
   } else {
     viewModel.updateAccount(
@@ -265,7 +282,7 @@ private fun saveAccount(
         billDate = account.billDate,
         paymentDate = account.paymentDate,
         creditLimit = account.creditLimit,
-      )
+      ),
     )
   }
 }
@@ -279,9 +296,10 @@ private fun ParentAccountSelector(
   onParentSelected: (Long?) -> Unit,
 ) {
   var expanded by remember { mutableStateOf(false) }
-  val options = remember(accounts, currentAccountId) {
-    accounts.filter { it.id != currentAccountId }
-  }
+  val options =
+    remember(accounts, currentAccountId) {
+      accounts.filter { it.id != currentAccountId }
+    }
   val selectedAccount = options.firstOrNull { it.id == selectedParentId }
   val fieldText = selectedAccount?.name ?: "None"
   var anchorWidth by remember { mutableStateOf(0) }
@@ -295,10 +313,10 @@ private fun ParentAccountSelector(
       onValueChange = {},
       readOnly = true,
       modifier =
-      Modifier
-        .fillMaxWidth()
-        .menuAnchor()
-        .onGloballyPositioned { anchorWidth = it.size.width },
+        Modifier
+          .fillMaxWidth()
+          .menuAnchor()
+          .onGloballyPositioned { anchorWidth = it.size.width },
       label = { Text("Parent Account (Optional)") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
     )
@@ -307,7 +325,7 @@ private fun ParentAccountSelector(
       accounts = options,
       filter = AccountFilter.ALL,
       selectedAccountId = selectedParentId,
-      onAccountSelected = {
+      onAccountSelect = {
         onParentSelected(it)
       },
       expanded = expanded,

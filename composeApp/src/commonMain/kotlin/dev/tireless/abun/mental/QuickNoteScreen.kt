@@ -43,13 +43,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.tireless.abun.database.Notes
-import dev.tireless.abun.mental.Dimensions
-import dev.tireless.abun.mental.NoteViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickNoteScreen() {
+fun QuickNoteScreen(modifier: Modifier = Modifier) {
   val viewModel: NoteViewModel = koinViewModel()
   val notes by viewModel.notes.collectAsState()
   val selectedNote by viewModel.selectedNote.collectAsState()
@@ -68,7 +66,7 @@ fun QuickNoteScreen() {
       onDelete = {
         viewModel.deleteNote(selectedNote!!.id)
         viewModel.selectNote(null)
-      }
+      },
     )
   } else {
     // List view
@@ -80,22 +78,23 @@ fun QuickNoteScreen() {
             IconButton(onClick = { showCreateDialog = true }) {
               Icon(Icons.Default.Add, contentDescription = "Add Note")
             }
-          }
+          },
         )
       },
       floatingActionButton = {
         FloatingActionButton(
-          onClick = { showCreateDialog = true }
+          onClick = { showCreateDialog = true },
         ) {
           Icon(Icons.Default.Add, contentDescription = "Add Note")
         }
-      }
+      },
     ) { paddingValues ->
       Column(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(paddingValues)
-          .padding(horizontal = Dimensions.PaddingMedium, vertical = Dimensions.PaddingSmall)
+        modifier =
+          Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(horizontal = Dimensions.PaddingMedium, vertical = Dimensions.PaddingSmall),
       ) {
         // Search bar
         OutlinedTextField(
@@ -106,7 +105,7 @@ fun QuickNoteScreen() {
             Icon(Icons.Default.Search, contentDescription = "Search")
           },
           modifier = Modifier.fillMaxWidth(),
-          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         )
 
         Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
@@ -115,55 +114,57 @@ fun QuickNoteScreen() {
         if (isLoading) {
           Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
           ) {
             CircularProgressIndicator()
           }
         } else if (notes.isEmpty()) {
           Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
           ) {
             Column(
               horizontalAlignment = Alignment.CenterHorizontally,
-              verticalArrangement = Arrangement.Center
+              verticalArrangement = Arrangement.Center,
             ) {
               Icon(
                 Icons.Default.Search,
                 contentDescription = null,
                 modifier = Modifier.size(Dimensions.IconLarge),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
               )
               Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
               Text(
-                text = if (searchQuery.isBlank()) {
-                  "No notes yet"
-                } else {
-                  "No notes found"
-                },
+                text =
+                  if (searchQuery.isBlank()) {
+                    "No notes yet"
+                  } else {
+                    "No notes found"
+                  },
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
               )
               Spacer(modifier = Modifier.height(8.dp))
               Text(
-                text = if (searchQuery.isBlank()) {
-                  "Create your first note to get started"
-                } else {
-                  "Try a different search term"
-                },
+                text =
+                  if (searchQuery.isBlank()) {
+                    "Create your first note to get started"
+                  } else {
+                    "Try a different search term"
+                  },
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             }
           }
         } else {
           LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
           ) {
             items(notes) { note ->
               NoteCard(
                 note = note,
-                onClick = { viewModel.selectNote(note) }
+                onClick = { viewModel.selectNote(note) },
               )
             }
           }
@@ -179,7 +180,7 @@ fun QuickNoteScreen() {
       onCreate = { title, content ->
         viewModel.createNote(title, content)
         showCreateDialog = false
-      }
+      },
     )
   }
 
@@ -191,7 +192,7 @@ fun QuickNoteScreen() {
       onSave = { title, content ->
         viewModel.updateNote(selectedNote!!.id, title, content)
         showEditDialog = false
-      }
+      },
     )
   }
 }
@@ -199,25 +200,26 @@ fun QuickNoteScreen() {
 @Composable
 private fun NoteCard(
   note: Notes,
-  onClick: () -> Unit
+  onClick: () -> Unit,
 ) {
   Card(
     onClick = onClick,
     modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surfaceVariant
-    ),
-    elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.CardElevation)
+    colors =
+      CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+      ),
+    elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.CardElevation),
   ) {
     Column(
-      modifier = Modifier.padding(Dimensions.PaddingMedium)
+      modifier = Modifier.padding(Dimensions.PaddingMedium),
     ) {
       Text(
         text = note.title,
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
       )
 
       if (note.content.isNotBlank()) {
@@ -227,7 +229,7 @@ private fun NoteCard(
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
           maxLines = 2,
-          overflow = TextOverflow.Ellipsis
+          overflow = TextOverflow.Ellipsis,
         )
       }
 
@@ -235,7 +237,7 @@ private fun NoteCard(
       Text(
         text = "Updated: ${note.updated_at}",
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
       )
     }
   }
@@ -247,7 +249,7 @@ private fun NoteDetailScreen(
   note: Notes,
   onBack: () -> Unit,
   onEdit: () -> Unit,
-  onDelete: () -> Unit
+  onDelete: () -> Unit,
 ) {
   Scaffold(
     topBar = {
@@ -265,29 +267,32 @@ private fun NoteDetailScreen(
           IconButton(onClick = onDelete) {
             Icon(Icons.Default.Delete, contentDescription = "Delete")
           }
-        }
+        },
       )
-    }
+    },
   ) { paddingValues ->
     Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(horizontal = 16.dp, vertical = 8.dp)
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
       Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-          containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors =
+          CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+          ),
       ) {
         Text(
           text = note.content,
           style = MaterialTheme.typography.bodyLarge,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(Dimensions.PaddingMedium)
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(Dimensions.PaddingMedium),
         )
       }
 
@@ -295,30 +300,30 @@ private fun NoteDetailScreen(
 
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
       ) {
         Column(modifier = Modifier.weight(1f)) {
           Text(
             text = "Created",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
           )
           Text(
-            text = note.created_at,
+            text = note.created_at.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
         Column(modifier = Modifier.weight(1f)) {
           Text(
             text = "Updated",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
           )
           Text(
-            text = note.updated_at,
+            text = note.updated_at.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
       }

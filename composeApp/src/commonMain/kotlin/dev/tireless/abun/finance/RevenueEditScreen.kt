@@ -61,8 +61,8 @@ fun RevenueEditScreen(
     mutableStateOf(
       TextFieldValue(
         text = initialAmountText,
-        selection = TextRange(0, initialAmountText.length)
-      )
+        selection = TextRange(0, initialAmountText.length),
+      ),
     )
   }
   var selectedDestinationAccountId by remember(existingTransaction) {
@@ -88,17 +88,19 @@ fun RevenueEditScreen(
     }
   }
 
-  val destinationAccounts = remember(accounts) {
-    accounts.filter { account ->
-      account.parentId == RootAccountIds.ASSET
+  val destinationAccounts =
+    remember(accounts) {
+      accounts.filter { account ->
+        account.parentId == RootAccountIds.ASSET
+      }
     }
-  }
 
-  val revenueAccounts = remember(accounts) {
-    accounts.filter { account ->
-      account.parentId == RootAccountIds.REVENUE
+  val revenueAccounts =
+    remember(accounts) {
+      accounts.filter { account ->
+        account.parentId == RootAccountIds.REVENUE
+      }
     }
-  }
 
   LaunchedEffect(destinationAccounts, revenueAccounts) {
     if (selectedDestinationAccountId == null && destinationAccounts.isNotEmpty()) {
@@ -121,9 +123,10 @@ fun RevenueEditScreen(
         },
         actions = {
           val amountValue = amount.text.toDoubleOrNull()
-          val canSave = amountValue?.let { it > 0 } == true &&
-            selectedDestinationAccountId != null &&
-            selectedRevenueAccountId != null
+          val canSave =
+            amountValue?.let { it > 0 } == true &&
+              selectedDestinationAccountId != null &&
+              selectedRevenueAccountId != null
 
           TextButton(
             enabled = canSave,
@@ -140,8 +143,8 @@ fun RevenueEditScreen(
                     toAccountId = selectedDestinationAccountId!!,
                     payee = payee.takeIf { it.isNotBlank() },
                     member = member.takeIf { it.isNotBlank() },
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
+                    notes = notes.takeIf { it.isNotBlank() },
+                  ),
                 )
               } else {
                 onCreate(
@@ -153,51 +156,53 @@ fun RevenueEditScreen(
                     toAccountId = selectedDestinationAccountId!!,
                     payee = payee.takeIf { it.isNotBlank() },
                     member = member.takeIf { it.isNotBlank() },
-                    notes = notes.takeIf { it.isNotBlank() }
-                  )
+                    notes = notes.takeIf { it.isNotBlank() },
+                  ),
                 )
               }
               navController.navigateUp()
-            }
+            },
           ) {
             Text(if (isEditing) "Update" else "Save")
           }
         },
-        scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+        scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState()),
       )
-    }
+    },
   ) { paddingValues ->
     Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(16.dp)
-        .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(16.dp)
+          .verticalScroll(rememberScrollState()),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       OutlinedTextField(
         value = amount,
         onValueChange = { amount = it },
         label = { Text("Amount") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier
-          .fillMaxWidth()
-          .focusRequester(focusRequester)
-          .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-              if (amount.selection.length != amount.text.length) {
-                amount = amount.copy(selection = TextRange(0, amount.text.length))
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { focusState ->
+              if (focusState.isFocused) {
+                if (amount.selection.length != amount.text.length) {
+                  amount = amount.copy(selection = TextRange(0, amount.text.length))
+                }
+                keyboardController?.show()
               }
-              keyboardController?.show()
-            }
-          },
+            },
         prefix = { Text("¥") },
-        singleLine = true
+        singleLine = true,
       )
 
       ExposedDropdownMenuBox(
         expanded = isDestinationMenuExpanded,
-        onExpandedChange = { isDestinationMenuExpanded = it }
+        onExpandedChange = { isDestinationMenuExpanded = it },
       ) {
         OutlinedTextField(
           value = destinationAccounts.find { it.id == selectedDestinationAccountId }?.name ?: "",
@@ -205,33 +210,34 @@ fun RevenueEditScreen(
           readOnly = true,
           label = { Text("Destination Account") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDestinationMenuExpanded) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         DropdownMenu(
           expanded = isDestinationMenuExpanded,
-          onDismissRequest = { isDestinationMenuExpanded = false }
+          onDismissRequest = { isDestinationMenuExpanded = false },
         ) {
           destinationAccounts.forEach { account ->
             DropdownMenuItem(
               text = {
                 Row(
                   modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween
+                  horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                   Text(account.name)
                   Text(
                     "¥${formatAmount(account.currentBalance)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 }
               },
               onClick = {
                 selectedDestinationAccountId = account.id
                 isDestinationMenuExpanded = false
-              }
+              },
             )
           }
         }
@@ -239,7 +245,7 @@ fun RevenueEditScreen(
 
       ExposedDropdownMenuBox(
         expanded = isRevenueMenuExpanded,
-        onExpandedChange = { isRevenueMenuExpanded = it }
+        onExpandedChange = { isRevenueMenuExpanded = it },
       ) {
         OutlinedTextField(
           value = revenueAccounts.find { it.id == selectedRevenueAccountId }?.name ?: "",
@@ -247,13 +253,14 @@ fun RevenueEditScreen(
           readOnly = true,
           label = { Text("Revenue Category") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRevenueMenuExpanded) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor()
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         DropdownMenu(
           expanded = isRevenueMenuExpanded,
-          onDismissRequest = { isRevenueMenuExpanded = false }
+          onDismissRequest = { isRevenueMenuExpanded = false },
         ) {
           revenueAccounts.forEach { account ->
             DropdownMenuItem(
@@ -261,7 +268,7 @@ fun RevenueEditScreen(
               onClick = {
                 selectedRevenueAccountId = account.id
                 isRevenueMenuExpanded = false
-              }
+              },
             )
           }
         }
@@ -272,7 +279,7 @@ fun RevenueEditScreen(
         onValueChange = { payee = it },
         label = { Text("Source (optional)") },
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true
+        singleLine = true,
       )
 
       OutlinedTextField(
@@ -280,7 +287,7 @@ fun RevenueEditScreen(
         onValueChange = { member = it },
         label = { Text("Member (optional)") },
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true
+        singleLine = true,
       )
 
       OutlinedTextField(
@@ -289,7 +296,7 @@ fun RevenueEditScreen(
         label = { Text("Notes (optional)") },
         modifier = Modifier.fillMaxWidth(),
         minLines = 2,
-        maxLines = 4
+        maxLines = 4,
       )
     }
   }

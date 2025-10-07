@@ -52,7 +52,6 @@ import com.composables.icons.lucide.Library
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Package2
 import com.composables.icons.lucide.Settings
-import dev.tireless.abun.finance.AccountDetailsScreen
 import dev.tireless.abun.finance.AccountEditScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.AccountViewModel
@@ -91,13 +90,13 @@ fun App() {
     ) { paddingValues ->
       Box(
         modifier =
-        Modifier
-          .fillMaxSize()
-          .padding(paddingValues),
+          Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
       ) {
         NavHost(
           navController = navController,
-          startDestination = Route.Material
+          startDestination = Route.Material,
         ) {
           // Main tabs
           composable<Route.Home> {
@@ -116,7 +115,7 @@ fun App() {
             SettingsScreen(
               navController = navController,
               themePreference = themePreference,
-              onThemePreferenceChange = { themePreference = it }
+              onThemePreferenceChange = { themePreference = it },
             )
           }
 
@@ -139,7 +138,7 @@ fun App() {
             val accounts by viewModel.accounts.collectAsState()
             val loadedDraft by produceState<SplitExpenseDraft?>(
               initialValue = null,
-              key1 = route.transactionId
+              key1 = route.transactionId,
             ) {
               value = route.transactionId?.let { id -> viewModel.getSplitExpenseDraft(id) }
             }
@@ -153,7 +152,7 @@ fun App() {
               },
               onUpdate = { draft ->
                 viewModel.updateSplitExpense(draft)
-              }
+              },
             )
           }
           composable<Route.RevenueEdit> { backStackEntry ->
@@ -161,9 +160,10 @@ fun App() {
             val viewModel: TransactionViewModel = koinInject()
             val accounts by viewModel.accounts.collectAsState()
             val transactions by viewModel.transactions.collectAsState()
-            val existingTransaction = route.transactionId?.let { id ->
-              transactions.find { it.transaction.id == id }?.toEditPayload()
-            }
+            val existingTransaction =
+              route.transactionId?.let { id ->
+                transactions.find { it.transaction.id == id }?.toEditPayload()
+              }
             RevenueEditScreen(
               navController = navController,
               accounts = accounts,
@@ -173,7 +173,7 @@ fun App() {
               },
               onUpdate = { input ->
                 viewModel.updateTransaction(input)
-              }
+              },
             )
           }
           composable<Route.TransferEdit> { backStackEntry ->
@@ -181,9 +181,10 @@ fun App() {
             val viewModel: TransactionViewModel = koinInject()
             val accounts by viewModel.accounts.collectAsState()
             val transactions by viewModel.transactions.collectAsState()
-            val existingTransaction = route.transactionId?.let { id ->
-              transactions.find { it.transaction.id == id }?.toEditPayload()
-            }
+            val existingTransaction =
+              route.transactionId?.let { id ->
+                transactions.find { it.transaction.id == id }?.toEditPayload()
+              }
             TransferEditScreen(
               navController = navController,
               accounts = accounts,
@@ -193,7 +194,7 @@ fun App() {
               },
               onUpdate = { input ->
                 viewModel.updateTransaction(input)
-              }
+              },
             )
           }
           composable<Route.LoanEdit> {
@@ -204,7 +205,7 @@ fun App() {
               onConfirm = { input ->
                 viewModel.createLoan(input)
               },
-              accounts = accounts
+              accounts = accounts,
             )
           }
           composable<Route.PriceComparison> {
@@ -212,13 +213,6 @@ fun App() {
           }
           composable<Route.FutureView> {
             FutureViewScreen(navController)
-          }
-          composable<Route.AccountDetails> { backStackEntry ->
-            val accountDetails: Route.AccountDetails = backStackEntry.toRoute()
-            AccountDetailsScreen(
-              accountId = accountDetails.accountId,
-              navController = navController
-            )
           }
 
           // Timeblock sub-screens
@@ -242,11 +236,11 @@ private fun BottomNavigationBar(navController: NavHostController) {
     contentColor = MaterialTheme.colorScheme.onSurface,
     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     tonalElevation = 4.dp,
-    shadowElevation = 16.dp
+    shadowElevation = 16.dp,
   ) {
     NavigationBar(
       containerColor = Color.Transparent,
-      contentColor = MaterialTheme.colorScheme.onSurface
+      contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
       NavigationBarItem(
         icon = { Icon(imageVector = Lucide.House, contentDescription = "Home") },
@@ -337,22 +331,24 @@ private fun NavDestination?.matchesRoute(route: String?): Boolean {
 }
 
 private val HomeRoutes = setOfNotNull(Route.Home::class.qualifiedName)
-private val MaterialRoutes = setOfNotNull(
-  Route.Material::class.qualifiedName,
-  Route.AccountManagement::class.qualifiedName,
-  Route.ExpenseEdit::class.qualifiedName,
-  Route.RevenueEdit::class.qualifiedName,
-  Route.TransferEdit::class.qualifiedName,
-  Route.LoanEdit::class.qualifiedName,
-  Route.PriceComparison::class.qualifiedName,
-  Route.FutureView::class.qualifiedName,
-  Route.AccountDetails::class.qualifiedName,
-)
+private val MaterialRoutes =
+  setOfNotNull(
+    Route.Material::class.qualifiedName,
+    Route.AccountManagement::class.qualifiedName,
+    Route.ExpenseEdit::class.qualifiedName,
+    Route.RevenueEdit::class.qualifiedName,
+    Route.TransferEdit::class.qualifiedName,
+    Route.LoanEdit::class.qualifiedName,
+    Route.PriceComparison::class.qualifiedName,
+    Route.FutureView::class.qualifiedName,
+    Route.AccountDetails::class.qualifiedName,
+  )
 private val MentalRoutes = setOfNotNull(Route.Mental::class.qualifiedName)
-private val TimeRoutes = setOfNotNull(
-  Route.Time::class.qualifiedName,
-  Route.TimeCategoryManagement::class.qualifiedName,
-)
+private val TimeRoutes =
+  setOfNotNull(
+    Route.Time::class.qualifiedName,
+    Route.TimeCategoryManagement::class.qualifiedName,
+  )
 private val SettingsRoutes = setOfNotNull(Route.Settings::class.qualifiedName)
 
 @Composable
@@ -368,12 +364,13 @@ private fun HomeScreen() {
   Surface(
     modifier = Modifier.fillMaxSize(),
     color = MaterialTheme.colorScheme.background,
-    contentColor = MaterialTheme.colorScheme.onBackground
+    contentColor = MaterialTheme.colorScheme.onBackground,
   ) {
     Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(24.dp),
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(24.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
       Button(
@@ -392,21 +389,23 @@ private fun HomeScreen() {
       AnimatedVisibility(showContent) {
         val greetingText = remember { greeting.greet() }
         Card(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 24.dp)
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(top = 24.dp),
         ) {
           Column(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(16.dp),
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
           ) {
             Image(painterResource(Res.drawable.compose_multiplatform), null)
             Text(
               "Compose: $greetingText",
               style = MaterialTheme.typography.titleMedium,
-              modifier = Modifier.padding(top = 12.dp)
+              modifier = Modifier.padding(top = 12.dp),
             )
           }
         }
@@ -414,31 +413,34 @@ private fun HomeScreen() {
 
       currentQuote?.let { quote ->
         Card(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 24.dp)
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(top = 24.dp),
         ) {
           Column(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
           ) {
             Text(
               text = "${quote.content}",
               style = MaterialTheme.typography.bodyLarge,
               textAlign = TextAlign.Center,
-              modifier = Modifier.fillMaxWidth()
+              modifier = Modifier.fillMaxWidth(),
             )
             quote.source?.let { source ->
               Text(
                 text = "- $source",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                  .padding(top = 8.dp)
-                  .fillMaxWidth(),
-                textAlign = TextAlign.Center
+                modifier =
+                  Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Center,
               )
             }
           }
@@ -452,14 +454,14 @@ private fun HomeScreen() {
 private fun SettingsScreen(
   navController: NavHostController,
   themePreference: ThemePreference,
-  onThemePreferenceChange: (ThemePreference) -> Unit
+  onThemePreferenceChange: (ThemePreference) -> Unit,
 ) {
   Column(
     modifier =
-    Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background)
-      .padding(16.dp),
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .padding(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     Text(
@@ -470,53 +472,57 @@ private fun SettingsScreen(
 
     // Appearance Section
     Card(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 16.dp)
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(bottom = 16.dp),
     ) {
       Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
       ) {
         Text(
           "Appearance",
           style = MaterialTheme.typography.titleLarge,
-          modifier = Modifier.padding(bottom = 8.dp)
+          modifier = Modifier.padding(bottom = 8.dp),
         )
         Text(
           "Choose how the app adapts to light or dark mode.",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(bottom = 16.dp)
+          modifier = Modifier.padding(bottom = 16.dp),
         )
         listOf(
           ThemePreference.SYSTEM,
           ThemePreference.LIGHT,
-          ThemePreference.DARK
+          ThemePreference.DARK,
         ).forEach { preference ->
           Row(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(vertical = 6.dp)
-              .clickable { onThemePreferenceChange(preference) },
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clickable { onThemePreferenceChange(preference) },
+            verticalAlignment = Alignment.CenterVertically,
           ) {
             RadioButton(
               selected = themePreference == preference,
-              onClick = { onThemePreferenceChange(preference) }
+              onClick = { onThemePreferenceChange(preference) },
             )
             Column(
-              modifier = Modifier.padding(start = 12.dp)
+              modifier = Modifier.padding(start = 12.dp),
             ) {
-              val title = when (preference) {
-                ThemePreference.SYSTEM -> "Use system theme"
-                ThemePreference.LIGHT -> "Light theme"
-                ThemePreference.DARK -> "Dark theme"
-              }
-              val description = when (preference) {
-                ThemePreference.SYSTEM -> "Match your device setting"
-                ThemePreference.LIGHT -> "Always use the light palette"
-                ThemePreference.DARK -> "Always use the dark palette"
-              }
+              val title =
+                when (preference) {
+                  ThemePreference.SYSTEM -> "Use system theme"
+                  ThemePreference.LIGHT -> "Light theme"
+                  ThemePreference.DARK -> "Dark theme"
+                }
+              val description =
+                when (preference) {
+                  ThemePreference.SYSTEM -> "Match your device setting"
+                  ThemePreference.LIGHT -> "Always use the light palette"
+                  ThemePreference.DARK -> "Always use the dark palette"
+                }
               Text(
                 title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -534,27 +540,28 @@ private fun SettingsScreen(
 
     // Category Management Section
     Card(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 16.dp)
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(bottom = 16.dp),
     ) {
       Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
       ) {
         Text(
           "Category Management",
           style = MaterialTheme.typography.titleLarge,
-          modifier = Modifier.padding(bottom = 8.dp)
+          modifier = Modifier.padding(bottom = 8.dp),
         )
         Text(
           "Manage your timeblock categories and colors",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(bottom = 16.dp)
+          modifier = Modifier.padding(bottom = 16.dp),
         )
         Button(
           onClick = { navController.navigate(Route.TimeCategoryManagement) },
-          modifier = Modifier.fillMaxWidth()
+          modifier = Modifier.fillMaxWidth(),
         ) {
           Text("Manage Categories")
         }

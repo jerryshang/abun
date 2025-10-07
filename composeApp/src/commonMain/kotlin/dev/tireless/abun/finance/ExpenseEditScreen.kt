@@ -242,11 +242,11 @@ fun ExpenseEditScreen(
         if (bannerMessage != null) {
           Row(
             modifier =
-            Modifier
-              .fillMaxWidth()
-              .background(
-                if (isSuccessBanner) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-              ).padding(horizontal = 12.dp, vertical = 6.dp),
+              Modifier
+                .fillMaxWidth()
+                .background(
+                  if (isSuccessBanner) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                ).padding(horizontal = 12.dp, vertical = 6.dp),
           ) {
             Text(
               text = bannerMessage,
@@ -268,11 +268,11 @@ fun ExpenseEditScreen(
 
     Column(
       modifier =
-      Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-        .padding(horizontal = 16.dp, vertical = 20.dp)
-        .verticalScroll(rememberScrollState()),
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues)
+          .padding(horizontal = 16.dp, vertical = 20.dp)
+          .verticalScroll(rememberScrollState()),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       val dateInteractionSource = remember { MutableInteractionSource() }
@@ -315,15 +315,15 @@ fun ExpenseEditScreen(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         singleLine = true,
         modifier =
-        Modifier
-          .fillMaxWidth()
-          .focusRequester(focusRequester)
-          .onFocusChanged { state ->
-            if (state.isFocused) {
-              amount = amount.copy(selection = TextRange(0, amount.text.length))
-              keyboardController?.show()
-            }
-          },
+          Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { state ->
+              if (state.isFocused) {
+                amount = amount.copy(selection = TextRange(0, amount.text.length))
+                keyboardController?.show()
+              }
+            },
       )
 
       OutlinedTextField(
@@ -368,14 +368,14 @@ fun ExpenseEditScreen(
               }
           },
           onRemove =
-          if (expenseEntries.size > 1) {
-            {
-              expenseEntries =
-                expenseEntries.filterIndexed { entryIndex, _ -> entryIndex != index }
-            }
-          } else {
-            null
-          },
+            if (expenseEntries.size > 1) {
+              {
+                expenseEntries =
+                  expenseEntries.filterIndexed { entryIndex, _ -> entryIndex != index }
+              }
+            } else {
+              null
+            },
           onAddNew = {
             expenseEntries =
               expenseEntries + ExpenseEntryState(categoryId = expenseAccounts.firstOrNull()?.id)
@@ -440,9 +440,9 @@ private fun PaymentAccountSelector(
       label = { Text("Payment Account") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier =
-      Modifier
-        .fillMaxWidth()
-        .menuAnchor(),
+        Modifier
+          .fillMaxWidth()
+          .menuAnchor(),
     )
     ExposedDropdownMenu(
       expanded = expanded,
@@ -519,9 +519,9 @@ private fun ExpenseEntryRow(
           label = { Text("Category") },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
           modifier =
-          Modifier
-            .fillMaxWidth()
-            .menuAnchor(),
+            Modifier
+              .fillMaxWidth()
+              .menuAnchor(),
         )
         ExposedDropdownMenu(
           expanded = expanded,

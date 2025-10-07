@@ -13,9 +13,8 @@ import kotlinx.coroutines.launch
 class TransactionViewModel(
   private val transactionRepository: TransactionRepository,
   private val accountRepository: AccountRepository,
-  private val transactionGroupRepository: TransactionGroupRepository
+  private val transactionGroupRepository: TransactionGroupRepository,
 ) : ViewModel() {
-
   private val _transactions = MutableStateFlow<List<TransactionWithDetails>>(emptyList())
   val transactions: StateFlow<List<TransactionWithDetails>> = _transactions.asStateFlow()
 
@@ -119,7 +118,10 @@ class TransactionViewModel(
     }
   }
 
-  fun deleteTransaction(id: Long, deleteGroupIds: List<Long> = emptyList()) {
+  fun deleteTransaction(
+    id: Long,
+    deleteGroupIds: List<Long> = emptyList(),
+  ) {
     viewModelScope.launch {
       try {
         _isLoading.value = true
@@ -151,31 +153,33 @@ class TransactionViewModel(
     }
   }
 
-  suspend fun getTransactionDeletionContext(transactionId: Long): TransactionDeletionContext = try {
-    val groups = transactionRepository.getGroupsForTransaction(transactionId)
-    if (groups.isEmpty()) {
-      TransactionDeletionContext.Empty
-    } else {
-      val groupDetails = groups.map { group ->
-        val transactions = transactionGroupRepository.getTransactionsInGroup(group.id)
-        val detailedTransactions = mutableListOf<TransactionWithDetails>()
-        for (transaction in transactions) {
-          val detailed = transactionRepository.getTransactionWithDetails(transaction.id)
-          if (detailed != null) {
-            detailedTransactions += detailed
+  suspend fun getTransactionDeletionContext(transactionId: Long): TransactionDeletionContext =
+    try {
+      val groups = transactionRepository.getGroupsForTransaction(transactionId)
+      if (groups.isEmpty()) {
+        TransactionDeletionContext.Empty
+      } else {
+        val groupDetails =
+          groups.map { group ->
+            val transactions = transactionGroupRepository.getTransactionsInGroup(group.id)
+            val detailedTransactions = mutableListOf<TransactionWithDetails>()
+            for (transaction in transactions) {
+              val detailed = transactionRepository.getTransactionWithDetails(transaction.id)
+              if (detailed != null) {
+                detailedTransactions += detailed
+              }
+            }
+            TransactionGroupWithTransactions(
+              group = group,
+              transactions = detailedTransactions,
+            )
           }
-        }
-        TransactionGroupWithTransactions(
-          group = group,
-          transactions = detailedTransactions
-        )
+        TransactionDeletionContext(groupDetails)
       }
-      TransactionDeletionContext(groupDetails)
+    } catch (e: Exception) {
+      _error.value = "Failed to load transaction details: ${e.message}"
+      TransactionDeletionContext.Empty
     }
-  } catch (e: Exception) {
-    _error.value = "Failed to load transaction details: ${e.message}"
-    TransactionDeletionContext.Empty
-  }
 
   /**
    * Create a loan with scheduled payments
@@ -195,70 +199,80 @@ class TransactionViewModel(
     }
   }
 
-  suspend fun getTransactionsByAccountWithDetails(accountId: Long): List<TransactionWithDetails> = try {
-    transactionRepository.getTransactionsByAccount(accountId).mapNotNull { transaction ->
-      transactionRepository.getTransactionWithDetails(transaction.id)
-    }
-  } catch (e: Exception) {
-    _error.value = "Failed to load transactions: ${e.message}"
-    emptyList()
-  }
-
-  suspend fun getTransactionsByDateRangeWithDetails(startDate: Long, endDate: Long): List<TransactionWithDetails> = try {
-    transactionRepository.getTransactionsByDateRange(startDate, endDate).mapNotNull { transaction ->
-      transactionRepository.getTransactionWithDetails(transaction.id)
-    }
-  } catch (e: Exception) {
-    _error.value = "Failed to load transactions: ${e.message}"
-    emptyList()
-  }
-
-  suspend fun getSplitExpenseDraft(transactionId: Long): SplitExpenseDraft? = try {
-    val transaction = transactionRepository.getTransactionById(transactionId) ?: return null
-    val groups = transactionRepository.getGroupsForTransaction(transactionId)
-    val splitGroup = groups.firstOrNull { it.groupType == TransactionGroupType.SPLIT }
-
-    val (entries, paymentAccountId) = if (splitGroup != null) {
-      val groupedTransactions = transactionGroupRepository.getTransactionsInGroup(splitGroup.id)
-      val paymentId = groupedTransactions.firstOrNull()?.creditAccountId ?: transaction.creditAccountId
-      val mappedEntries = groupedTransactions.map { groupedTransaction ->
-        SplitExpenseEntry(
-          transactionId = groupedTransaction.id,
-          categoryId = groupedTransaction.debitAccountId,
-          amount = groupedTransaction.amount,
-          notes = groupedTransaction.notes
-        )
+  suspend fun getTransactionsByAccountWithDetails(accountId: Long): List<TransactionWithDetails> =
+    try {
+      transactionRepository.getTransactionsByAccount(accountId).mapNotNull { transaction ->
+        transactionRepository.getTransactionWithDetails(transaction.id)
       }
-      mappedEntries to paymentId
-    } else {
-      listOf(
-        SplitExpenseEntry(
-          transactionId = transaction.id,
-          categoryId = transaction.debitAccountId,
-          amount = transaction.amount,
-          notes = transaction.notes
-        )
-      ) to transaction.creditAccountId
+    } catch (e: Exception) {
+      _error.value = "Failed to load transactions: ${e.message}"
+      emptyList()
     }
 
-    val groupNote = splitGroup?.let { group ->
-      transactionGroupRepository.getTransactionGroupById(group.id)?.description
+  suspend fun getTransactionsByDateRangeWithDetails(
+    startDate: Long,
+    endDate: Long,
+  ): List<TransactionWithDetails> =
+    try {
+      transactionRepository.getTransactionsByDateRange(startDate, endDate).mapNotNull { transaction ->
+        transactionRepository.getTransactionWithDetails(transaction.id)
+      }
+    } catch (e: Exception) {
+      _error.value = "Failed to load transactions: ${e.message}"
+      emptyList()
     }
 
-    SplitExpenseDraft(
-      groupId = splitGroup?.id,
-      transactionDate = transaction.transactionDate,
-      totalAmount = entries.sumOf { it.amount },
-      paymentAccountId = paymentAccountId,
-      payee = transaction.payee,
-      member = transaction.member,
-      entries = entries,
-      groupNote = groupNote
-    )
-  } catch (e: Exception) {
-    _error.value = "Failed to load split expense: ${e.message}"
-    null
-  }
+  suspend fun getSplitExpenseDraft(transactionId: Long): SplitExpenseDraft? =
+    try {
+      val transaction = transactionRepository.getTransactionById(transactionId) ?: return null
+      val groups = transactionRepository.getGroupsForTransaction(transactionId)
+      val splitGroup = groups.firstOrNull { it.groupType == TransactionGroupType.SPLIT }
+
+      val (entries, paymentAccountId) =
+        if (splitGroup != null) {
+          val groupedTransactions = transactionGroupRepository.getTransactionsInGroup(splitGroup.id)
+          val paymentId =
+            groupedTransactions.firstOrNull()?.creditAccountId ?: transaction.creditAccountId
+          val mappedEntries =
+            groupedTransactions.map { groupedTransaction ->
+              SplitExpenseEntry(
+                transactionId = groupedTransaction.id,
+                categoryId = groupedTransaction.debitAccountId,
+                amount = groupedTransaction.amount,
+                notes = groupedTransaction.notes,
+              )
+            }
+          mappedEntries to paymentId
+        } else {
+          listOf(
+            SplitExpenseEntry(
+              transactionId = transaction.id,
+              categoryId = transaction.debitAccountId,
+              amount = transaction.amount,
+              notes = transaction.notes,
+            ),
+          ) to transaction.creditAccountId
+        }
+
+      val groupNote =
+        splitGroup?.let { group ->
+          transactionGroupRepository.getTransactionGroupById(group.id)?.description
+        }
+
+      SplitExpenseDraft(
+        groupId = splitGroup?.id,
+        transactionDate = transaction.transactionDate,
+        totalAmount = entries.sumOf { it.amount },
+        paymentAccountId = paymentAccountId,
+        payee = transaction.payee,
+        member = transaction.member,
+        entries = entries,
+        groupNote = groupNote,
+      )
+    } catch (e: Exception) {
+      _error.value = "Failed to load split expense: ${e.message}"
+      null
+    }
 
   private fun refreshAccounts() {
     viewModelScope.launch {
@@ -291,9 +305,7 @@ class TransactionViewModel(
  */
 class AccountViewModel(
   private val accountRepository: AccountRepository,
-  private val accountLoaderService: AccountLoaderService
 ) : ViewModel() {
-
   private val _accounts = MutableStateFlow<List<AccountWithBalance>>(emptyList())
   val accounts: StateFlow<List<AccountWithBalance>> = _accounts.asStateFlow()
 
@@ -335,11 +347,12 @@ class AccountViewModel(
         _isLoading.value = true
 
         // If no parent is specified, use Asset root (id=1) as default for user accounts
-        val finalInput = if (input.parentId == null) {
-          input.copy(parentId = RootAccountIds.ASSET)
-        } else {
-          input
-        }
+        val finalInput =
+          if (input.parentId == null) {
+            input.copy(parentId = RootAccountIds.ASSET)
+          } else {
+            input
+          }
 
         accountRepository.createAccount(finalInput)
         loadAccounts()
@@ -381,24 +394,5 @@ class AccountViewModel(
 
   fun clearError() {
     _error.value = null
-  }
-
-  /**
-   * Load predefined account template
-   * Clears all transactions and non-root accounts, then loads the template
-   */
-  fun loadTemplate(csvContent: String) {
-    viewModelScope.launch {
-      try {
-        _isLoading.value = true
-        accountLoaderService.clearAllData()
-        accountLoaderService.loadPredefinedAccounts(csvContent)
-        loadAccounts()
-      } catch (e: Exception) {
-        _error.value = "Failed to load template: ${e.message}"
-      } finally {
-        _isLoading.value = false
-      }
-    }
   }
 }
