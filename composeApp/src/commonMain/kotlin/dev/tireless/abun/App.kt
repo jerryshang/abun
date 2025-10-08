@@ -1,25 +1,30 @@
 package dev.tireless.abun
 
-import abun.composeapp.generated.resources.Res
-import abun.composeapp.generated.resources.compose_multiplatform
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -51,7 +56,10 @@ import com.composables.icons.lucide.House
 import com.composables.icons.lucide.Library
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Package2
+import com.composables.icons.lucide.Pencil
+import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Settings
+import com.composables.icons.lucide.Trash
 import dev.tireless.abun.finance.AccountEditScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.AccountViewModel
@@ -65,14 +73,18 @@ import dev.tireless.abun.finance.SplitExpenseDraft
 import dev.tireless.abun.finance.TransactionViewModel
 import dev.tireless.abun.finance.TransferEditScreen
 import dev.tireless.abun.finance.toEditPayload
-import dev.tireless.abun.mental.QuickNoteScreen
-import dev.tireless.abun.mental.QuoteViewModel
+import dev.tireless.abun.notes.NotesHomeScreen
 import dev.tireless.abun.navigation.Route
+import dev.tireless.abun.tags.Tag
+import dev.tireless.abun.tags.TagDomain
+import dev.tireless.abun.tags.TagDraft
+import dev.tireless.abun.tags.TagManagementViewModel
+import dev.tireless.abun.tags.TagUpdate
+import dev.tireless.abun.tasks.TaskDashboardScreen
 import dev.tireless.abun.time.CategoryManagementScreen
 import dev.tireless.abun.time.TimeblockScreen
 import dev.tireless.abun.ui.AppTheme
 import dev.tireless.abun.ui.ThemePreference
-import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -96,17 +108,17 @@ fun App() {
       ) {
         NavHost(
           navController = navController,
-          startDestination = Route.Material,
+          startDestination = Route.Home,
         ) {
           // Main tabs
           composable<Route.Home> {
-            HomeScreen()
+            TaskDashboardScreen(navController)
           }
           composable<Route.Material> {
             FinanceScreen(navController)
           }
           composable<Route.Mental> {
-            QuickNoteScreen()
+            NotesHomeScreen(navController)
           }
           composable<Route.Time> {
             TimeblockScreen(navController)
@@ -352,110 +364,13 @@ private val TimeRoutes =
 private val SettingsRoutes = setOfNotNull(Route.Settings::class.qualifiedName)
 
 @Composable
-private fun HomeScreen() {
-  val greeting: Greeting = koinInject()
-  val quoteViewModel: QuoteViewModel = koinViewModel()
-
-  var showContent by remember { mutableStateOf(false) }
-
-  val currentQuote by quoteViewModel.currentQuote.collectAsState()
-  val isLoading by quoteViewModel.isLoading.collectAsState()
-
-  Surface(
-    modifier = Modifier.fillMaxSize(),
-    color = MaterialTheme.colorScheme.background,
-    contentColor = MaterialTheme.colorScheme.onBackground,
-  ) {
-    Column(
-      modifier =
-        Modifier
-          .fillMaxSize()
-          .padding(24.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-      Button(
-        onClick = {
-          showContent = !showContent
-          quoteViewModel.loadRandomQuote()
-        },
-      ) {
-        if (isLoading) {
-          CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
-        } else {
-          Text("Get New Quote!")
-        }
-      }
-
-      AnimatedVisibility(showContent) {
-        val greetingText = remember { greeting.greet() }
-        Card(
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .padding(top = 24.dp),
-        ) {
-          Column(
-            modifier =
-              Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-          ) {
-            Image(painterResource(Res.drawable.compose_multiplatform), null)
-            Text(
-              "Compose: $greetingText",
-              style = MaterialTheme.typography.titleMedium,
-              modifier = Modifier.padding(top = 12.dp),
-            )
-          }
-        }
-      }
-
-      currentQuote?.let { quote ->
-        Card(
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .padding(top = 24.dp),
-        ) {
-          Column(
-            modifier =
-              Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-          ) {
-            Text(
-              text = "${quote.content}",
-              style = MaterialTheme.typography.bodyLarge,
-              textAlign = TextAlign.Center,
-              modifier = Modifier.fillMaxWidth(),
-            )
-            quote.source?.let { source ->
-              Text(
-                text = "- $source",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier =
-                  Modifier
-                    .padding(top = 8.dp)
-                    .fillMaxWidth(),
-                textAlign = TextAlign.Center,
-              )
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-@Composable
 private fun SettingsScreen(
   navController: NavHostController,
   themePreference: ThemePreference,
   onThemePreferenceChange: (ThemePreference) -> Unit,
 ) {
+  val tagViewModel: TagManagementViewModel = koinViewModel()
+
   Column(
     modifier =
       Modifier
@@ -532,11 +447,314 @@ private fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
-            }
+        }
+      }
+    }
+
+    TagManagementSection(tagViewModel)
+  }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagManagementSection(viewModel: TagManagementViewModel) {
+  val tags by viewModel.tags.collectAsState()
+  var editingTag by remember { mutableStateOf<Tag?>(null) }
+  var showEditor by remember { mutableStateOf(false) }
+  var deleteCandidate by remember { mutableStateOf<Tag?>(null) }
+
+  Card(
+    modifier =
+      Modifier
+        .fillMaxWidth()
+        .padding(bottom = 16.dp),
+  ) {
+    Column(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      Text("Tags", style = MaterialTheme.typography.titleLarge)
+      Text(
+        "Organize tasks and notes with reusable tags.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+
+      FilledTonalButton(
+        onClick = {
+          editingTag = null
+          showEditor = true
+        },
+      ) {
+        Icon(Plus, contentDescription = null)
+        Spacer(Modifier.width(8.dp))
+        Text("New tag")
+      }
+
+      if (tags.isEmpty()) {
+        Text(
+          "No tags yet. Create your first tag to get started.",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      } else {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          tags.forEach { tag ->
+            TagRow(
+              tag = tag,
+              onEdit = {
+                editingTag = tag
+                showEditor = true
+              },
+              onDelete = { deleteCandidate = tag },
+            )
           }
         }
       }
     }
+  }
+
+  if (showEditor) {
+    TagEditorDialog(
+      existing = editingTag,
+      onDismiss = {
+        showEditor = false
+        editingTag = null
+      },
+      onConfirm = { name, path, color, domains, description ->
+        if (editingTag == null) {
+          viewModel.createTag(
+            TagDraft(
+              name = name,
+              path = path,
+              colorHex = color,
+              domains = domains,
+              description = description,
+            ),
+          )
+        } else {
+          viewModel.updateTag(
+            TagUpdate(
+              id = editingTag!!.id,
+              name = name,
+              path = path,
+              colorHex = color,
+              domains = domains,
+              description = description,
+            ),
+          )
+        }
+        showEditor = false
+        editingTag = null
+      },
+    )
+  }
+
+  deleteCandidate?.let { tag ->
+    TagDeleteDialog(
+      tag = tag,
+      onDismiss = { deleteCandidate = null },
+      onConfirm = {
+        viewModel.deleteTag(tag.id)
+        deleteCandidate = null
+      },
+    )
+  }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagEditorDialog(
+  existing: Tag?,
+  onDismiss: () -> Unit,
+  onConfirm: (String, String, String, Set<TagDomain>, String?) -> Unit,
+) {
+  var name by rememberSaveable { mutableStateOf(existing?.name ?: "") }
+  var path by rememberSaveable { mutableStateOf(existing?.path ?: "") }
+  var color by rememberSaveable { mutableStateOf(existing?.colorHex ?: "#1E88E5") }
+  var description by rememberSaveable { mutableStateOf(existing?.description ?: "") }
+  var domains by remember { mutableStateOf(existing?.domains ?: setOf(TagDomain.All)) }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text(if (existing == null) "New tag" else "Edit tag") },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+        OutlinedTextField(value = path, onValueChange = { path = it }, label = { Text("Path") })
+        OutlinedTextField(
+          value = color,
+          onValueChange = { input ->
+            color = buildColorInput(input)
+          },
+          label = { Text("Color (hex)") },
+          leadingIcon = {
+            Box(
+              modifier =
+                Modifier
+                  .height(20.dp)
+                  .width(20.dp)
+                  .background(colorFromHex(color), shape = MaterialTheme.shapes.small),
+            )
+          },
+        )
+        OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description (optional)") })
+
+        Text("Usage", style = MaterialTheme.typography.labelMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          TagDomain.entries.forEach { domain ->
+            AssistChip(
+              onClick = {
+                domains = toggleDomainSelection(domains, domain)
+              },
+              label = { Text(domain.displayName()) },
+              colors = AssistChipDefaults.assistChipColors(containerColor = if (domain in domains || TagDomain.All in domains && domain == TagDomain.All) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
+            )
+          }
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(
+        onClick = {
+          val normalizedDomains = normalizeDomains(domains)
+          val normalizedColor = normalizeHex(color)
+          onConfirm(name.trim(), path.trim(), normalizedColor, normalizedDomains, description.trim().takeIf { it.isNotEmpty() })
+        },
+        enabled = name.isNotBlank() && path.isNotBlank(),
+      ) {
+        Text("Save")
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) { Text("Cancel") }
+    },
+  )
+}
+
+@Composable
+private fun TagDeleteDialog(
+  tag: Tag,
+  onDismiss: () -> Unit,
+  onConfirm: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Delete tag") },
+    text = { Text("Are you sure you want to delete \"${tag.name}\"?") },
+    confirmButton = {
+      TextButton(onClick = onConfirm) { Text("Delete") }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) { Text("Cancel") }
+    },
+  )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagRow(
+  tag: Tag,
+  onEdit: (Tag) -> Unit,
+  onDelete: (Tag) -> Unit,
+) {
+  Column(
+    modifier =
+      Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), MaterialTheme.shapes.medium)
+        .padding(12.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Box(
+        modifier =
+          Modifier
+            .height(16.dp)
+            .width(16.dp)
+            .background(colorFromHex(tag.colorHex), MaterialTheme.shapes.small),
+      )
+      Column(Modifier.padding(start = 12.dp).weight(1f)) {
+        Text(tag.name, style = MaterialTheme.typography.titleMedium)
+        Text(tag.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      }
+      IconButton(onClick = { onEdit(tag) }) {
+        Icon(Pencil, contentDescription = "Edit tag")
+      }
+      IconButton(onClick = { onDelete(tag) }) {
+        Icon(Trash, contentDescription = "Delete tag")
+      }
+    }
+
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      normalizeDomains(tag.domains).forEach { domain ->
+        AssistChip(onClick = {}, label = { Text(domain.displayName()) })
+      }
+    }
+
+    tag.description?.let {
+      Text(it, style = MaterialTheme.typography.bodySmall)
+    }
+  }
+}
+
+private fun TagDomain.displayName(): String =
+  when (this) {
+    TagDomain.Tasks -> "Tasks"
+    TagDomain.Notes -> "Notes"
+    TagDomain.Finance -> "Finance"
+    TagDomain.All -> "All modules"
+  }
+
+private fun toggleDomainSelection(current: Set<TagDomain>, domain: TagDomain): Set<TagDomain> {
+  return when (domain) {
+    TagDomain.All -> setOf(TagDomain.All)
+    else -> {
+      val next = current.toMutableSet()
+      if (!next.add(domain)) {
+        next.remove(domain)
+      }
+      next.remove(TagDomain.All)
+      if (next.isEmpty()) setOf(TagDomain.All) else next
+    }
+  }
+}
+
+private fun normalizeDomains(domains: Set<TagDomain>): Set<TagDomain> {
+  return if (domains.isEmpty() || TagDomain.All in domains) {
+    setOf(TagDomain.All)
+  } else {
+    domains
+  }
+}
+
+private fun buildColorInput(input: String): String {
+  val cleaned = input.trim().removePrefix("#")
+  val filtered = cleaned.filter { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+  val truncated = filtered.take(6)
+  return "#${truncated.uppercase()}"
+}
+
+private fun normalizeHex(input: String): String {
+  val cleaned = input.removePrefix("#")
+  val filtered = cleaned.filter { it.isDigit() || it.lowercaseChar() in 'a'..'f' }
+  val padded = filtered.uppercase().padEnd(6, '0')
+  return "#${padded.take(6)}"
+}
+
+private fun colorFromHex(hex: String): Color {
+  val cleaned = hex.removePrefix("#")
+  val parsed = cleaned.toLongOrNull(16) ?: return Color(0xFF888888)
+  val argb = when (cleaned.length) {
+    6 -> 0xFF000000L or parsed
+    8 -> parsed
+    else -> 0xFF888888
+  }
+  return Color(argb.toInt())
+}
 
     // Category Management Section
     Card(

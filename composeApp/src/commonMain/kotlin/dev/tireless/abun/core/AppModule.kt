@@ -11,6 +11,12 @@ import dev.tireless.abun.mental.NoteRepository
 import dev.tireless.abun.mental.NoteViewModel
 import dev.tireless.abun.mental.QuoteViewModel
 import dev.tireless.abun.mental.QuotesRepository
+import dev.tireless.abun.notes.RichNoteRepository
+import dev.tireless.abun.notes.NotesViewModel
+import dev.tireless.abun.tags.TagManagementViewModel
+import dev.tireless.abun.tags.TagRepository
+import dev.tireless.abun.tasks.TaskBoardViewModel
+import dev.tireless.abun.tasks.TaskPlannerRepository
 import dev.tireless.abun.time.AlarmRepository
 import dev.tireless.abun.time.CategoryRepository
 import dev.tireless.abun.time.CategoryViewModel
@@ -30,6 +36,9 @@ val appModule =
     single { TaskRepository(get()) }
     single { TimeblockRepository(get()) }
     single { AlarmRepository(get()) }
+    single { TagRepository() }
+    single { TaskPlannerRepository(get()) }
+    single { RichNoteRepository(get()) }
     // Finance repositories
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository
@@ -42,6 +51,9 @@ val viewModelModule =
     factory { NoteViewModel(get()) }
     factory { TimeblockViewModel(get(), get(), get()) }
     factory { CategoryViewModel(get()) }
+    factory { TagManagementViewModel(get()) }
+    factory { TaskBoardViewModel(get()) }
+    factory { NotesViewModel(get()) }
     // Finance ViewModels
     factory { TransactionViewModel(get(), get(), get()) }
     factory { AccountViewModel(get()) } // accountRepository, accountLoaderService
