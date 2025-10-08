@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,14 +42,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import dev.tireless.abun.time.Timeblock
-import dev.tireless.abun.time.TimeblockViewModel
+import dev.tireless.abun.tasks.TaskDashboardScreen
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import dev.tireless.abun.navigation.Route
 
 data class TimeSlot(
   val hour: Int,
@@ -70,125 +71,192 @@ enum class ZoomLevel {
   FOUR_HOURS
 }
 
+private enum class TimeWorkspacePage {
+  Timeblocks,
+  Tasks
+}
+
 @Composable
-fun TimeblockScreen(navController: NavHostController) {
+fun TimeWorkspaceScreen(navController: NavHostController) {
+  var currentPage by rememberSaveable { mutableStateOf(TimeWorkspacePage.Timeblocks) }
+
+  Column(
+    modifier =
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background),
+  ) {
+    Column(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 24.dp, vertical = 20.dp),
+    ) {
+      Text(
+        text = "Time",
+        style = MaterialTheme.typography.headlineLarge,
+      )
+      Spacer(modifier = Modifier.height(8.dp))
+      Text(
+        text = "Start with your schedule, then focus on tasks.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Spacer(modifier = Modifier.height(20.dp))
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        if (currentPage == TimeWorkspacePage.Timeblocks) {
+          FilledTonalButton(
+            onClick = { currentPage = TimeWorkspacePage.Timeblocks },
+            modifier = Modifier.weight(1f),
+          ) {
+            Text("Timeblocks")
+          }
+          OutlinedButton(
+            onClick = { currentPage = TimeWorkspacePage.Tasks },
+            modifier = Modifier.weight(1f),
+          ) {
+            Text("Tasks")
+          }
+        } else {
+          OutlinedButton(
+            onClick = { currentPage = TimeWorkspacePage.Timeblocks },
+            modifier = Modifier.weight(1f),
+          ) {
+            Text("Timeblocks")
+          }
+          FilledTonalButton(
+            onClick = { currentPage = TimeWorkspacePage.Tasks },
+            modifier = Modifier.weight(1f),
+          ) {
+            Text("Tasks")
+          }
+        }
+
+        if (currentPage == TimeWorkspacePage.Timeblocks) {
+          OutlinedButton(onClick = { navController.navigate(Route.TimeCategoryManagement) }) {
+            Text("Categories")
+          }
+        }
+      }
+    }
+
+    Box(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .weight(1f),
+    ) {
+      when (currentPage) {
+        TimeWorkspacePage.Timeblocks ->
+          TimeblockPlanner(
+            modifier = Modifier.fillMaxSize(),
+          )
+        TimeWorkspacePage.Tasks ->
+          TaskDashboardScreen(
+            navController = null,
+            modifier = Modifier.fillMaxSize(),
+            embedded = true,
+          )
+      }
+    }
+  }
+}
+
+@Composable
+private fun TimeblockPlanner(modifier: Modifier = Modifier) {
   val viewModel: TimeblockViewModel = koinViewModel()
   val timeblocks by viewModel.timeblocks.collectAsState()
-  val isLoading by viewModel.isLoading.collectAsState()
 
   var selectedDate by remember { mutableStateOf("2024-01-01") }
   var zoomLevel by remember { mutableStateOf(ZoomLevel.FULL_DAY) }
   var showCreateDialog by remember { mutableStateOf(false) }
 
-  // Load timeblocks when date changes
   LaunchedEffect(selectedDate) {
     viewModel.loadTimeblocks(selectedDate)
   }
 
   Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.background)
-      .padding(16.dp)
+    modifier =
+      modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .padding(horizontal = 24.dp)
+        .padding(bottom = 24.dp),
   ) {
-    // Header
     Text(
-      "Timeblock Planning",
-      style = MaterialTheme.typography.headlineLarge,
-      modifier = Modifier.padding(bottom = 16.dp)
+      text = "Timeblock Planning",
+      style = MaterialTheme.typography.titleLarge,
     )
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+      text = selectedDate,
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(20.dp))
 
-    // Function bar
     Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 16.dp),
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(bottom = 16.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
     ) {
-      // Zoom switcher - Icon only buttons
-      Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-      ) {
-        // Full Day button
+      Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         if (zoomLevel == ZoomLevel.FULL_DAY) {
-          FilledTonalButton(
-            onClick = { zoomLevel = ZoomLevel.FULL_DAY }
-          ) {
-            Icon(
-              Icons.Default.ViewDay,
-              contentDescription = "Full Day View"
-            )
+          FilledTonalButton(onClick = { zoomLevel = ZoomLevel.FULL_DAY }) {
+            Icon(Icons.Default.ViewDay, contentDescription = "Full day view")
           }
         } else {
-          OutlinedButton(
-            onClick = { zoomLevel = ZoomLevel.FULL_DAY }
-          ) {
-            Icon(
-              Icons.Default.ViewDay,
-              contentDescription = "Full Day View"
-            )
+          OutlinedButton(onClick = { zoomLevel = ZoomLevel.FULL_DAY }) {
+            Icon(Icons.Default.ViewDay, contentDescription = "Full day view")
           }
         }
 
-        // 4 Hours button
         if (zoomLevel == ZoomLevel.FOUR_HOURS) {
-          FilledTonalButton(
-            onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }
-          ) {
-            Icon(
-              Icons.Default.ViewModule,
-              contentDescription = "4 Hours View"
-            )
+          FilledTonalButton(onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }) {
+            Icon(Icons.Default.ViewModule, contentDescription = "Four hour view")
           }
         } else {
-          OutlinedButton(
-            onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }
-          ) {
-            Icon(
-              Icons.Default.ViewModule,
-              contentDescription = "4 Hours View"
-            )
+          OutlinedButton(onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }) {
+            Icon(Icons.Default.ViewModule, contentDescription = "Four hour view")
           }
         }
       }
 
       Spacer(modifier = Modifier.weight(1f))
 
-      // Date picker
-      OutlinedButton(
-        onClick = { /* TODO: Show date picker */ }
-      ) {
+      OutlinedButton(onClick = { /* TODO: Show date picker */ }) {
         Icon(Icons.Default.DateRange, contentDescription = null)
         Spacer(modifier = Modifier.width(4.dp))
         Text(selectedDate)
       }
 
-      // Create timeblock
-      Button(
-        onClick = { showCreateDialog = true }
-      ) {
+      Button(onClick = { showCreateDialog = true }) {
         Icon(Icons.Default.Add, contentDescription = null)
         Spacer(modifier = Modifier.width(4.dp))
         Text("Create")
       }
     }
 
-    // Time slots list
     TimeSlotsList(
       selectedDate = selectedDate,
       zoomLevel = zoomLevel,
       timeblocks = timeblocks,
-      modifier = Modifier.weight(1f)
+      modifier = Modifier.weight(1f),
     )
   }
 
-  // Create timeblock dialog
   if (showCreateDialog) {
     CreateTimeblockDialog(
       viewModel = viewModel,
       onDismiss = { showCreateDialog = false },
-      selectedDate = selectedDate
+      selectedDate = selectedDate,
     )
   }
 }

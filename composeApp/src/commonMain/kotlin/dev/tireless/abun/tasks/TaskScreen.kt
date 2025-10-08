@@ -17,10 +17,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -35,19 +36,15 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,32 +54,37 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.composables.icons.lucide.CalendarDays
+import dev.tireless.abun.tags.Tag
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Clock
 import com.composables.icons.lucide.ListChecks
 import com.composables.icons.lucide.Pencil
-import com.composables.icons.lucide.PlayCircle
-import com.composables.icons.lucide.StopCircle
+import com.composables.icons.lucide.Play
+import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Timer
-import dev.tireless.abun.tags.Tag
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DatePeriod
+import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.X
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
 import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TaskDashboardScreen(
-  navController: NavHostController,
+  navController: NavHostController? = null,
+  modifier: Modifier = Modifier,
+  embedded: Boolean = false,
+  onClose: (() -> Unit)? = null,
   viewModel: TaskBoardViewModel = koinViewModel(),
 ) {
   val selectedDate by viewModel.selectedDate.collectAsState()
@@ -98,19 +100,58 @@ fun TaskDashboardScreen(
   var showStateDialog by remember { mutableStateOf(false) }
   var pendingAction by remember { mutableStateOf<TaskActionRequest?>(null) }
 
-  Surface(Modifier.fillMaxSize()) {
-    Column {
-      CenterAlignedTopAppBar(
-        title = { Text("Tasks") },
-        actions = {
-          IconButton(onClick = { viewModel.selectDate(selectedDate.minus(DatePeriod(days = 1))) }) {
-            Icon(ChevronLeft, contentDescription = "Previous day")
+  Surface(modifier = modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize()) {
+      Column(
+        modifier =
+          Modifier
+            .fillMaxSize()
+            .padding(bottom = 88.dp),
+      ) {
+      if (embedded) {
+        Row(
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 20.dp, vertical = 12.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text("Tasks", style = MaterialTheme.typography.titleLarge)
+          Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            IconButton(onClick = { viewModel.selectDate(selectedDate.minus(1, DateTimeUnit.DAY)) }) {
+              Icon(Lucide.ChevronLeft, contentDescription = "Previous day")
+            }
+            IconButton(onClick = { viewModel.selectDate(selectedDate.plus(1, DateTimeUnit.DAY)) }) {
+              Icon(Lucide.ChevronRight, contentDescription = "Next day")
+            }
           }
-          IconButton(onClick = { viewModel.selectDate(selectedDate.plus(DatePeriod(days = 1))) }) {
-            Icon(ChevronRight, contentDescription = "Next day")
-          }
-        },
-      )
+        }
+      } else {
+        CenterAlignedTopAppBar(
+          title = { Text("Tasks") },
+          navigationIcon = {
+            when {
+              navController != null ->
+                IconButton(onClick = { navController.navigateUp() }) {
+                  Icon(Lucide.Calendar, contentDescription = "Back to schedule")
+                }
+              onClose != null ->
+                IconButton(onClick = onClose) {
+                  Icon(Lucide.Calendar, contentDescription = "Close tasks")
+                }
+            }
+          },
+          actions = {
+            IconButton(onClick = { viewModel.selectDate(selectedDate.minus(1, DateTimeUnit.DAY)) }) {
+              Icon(Lucide.ChevronLeft, contentDescription = "Previous day")
+            }
+            IconButton(onClick = { viewModel.selectDate(selectedDate.plus(1, DateTimeUnit.DAY)) }) {
+              Icon(Lucide.ChevronRight, contentDescription = "Next day")
+            }
+          },
+        )
+      }
 
       Text(
         text = formatDate(selectedDate),
@@ -120,57 +161,62 @@ fun TaskDashboardScreen(
             .padding(horizontal = 20.dp, vertical = 12.dp),
       )
 
-      SegmentedButtonRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
+      Row(
+        modifier =
+          Modifier
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
-        SegmentedButton(
-          selected = currentTab == TaskPage.Today,
+        AssistChip(
           onClick = { currentTab = TaskPage.Today },
           label = { Text("Today") },
-          icon = { Icon(ListChecks, contentDescription = null) },
+          leadingIcon = { Icon(Lucide.ListChecks, contentDescription = null) },
+          colors = AssistChipDefaults.assistChipColors(containerColor = if (currentTab == TaskPage.Today) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
         )
-        SegmentedButton(
-          selected = currentTab == TaskPage.Upcoming,
+        AssistChip(
           onClick = { currentTab = TaskPage.Upcoming },
           label = { Text("Upcoming") },
-          icon = { Icon(CalendarDays, contentDescription = null) },
+          leadingIcon = { Icon(Lucide.Calendar, contentDescription = null) },
+          colors = AssistChipDefaults.assistChipColors(containerColor = if (currentTab == TaskPage.Upcoming) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
         )
       }
 
-      val list = if (currentTab == TaskPage.Today) todayNodes else upcomingNodes
-      TaskHierarchyList(
-        nodes = list,
-        tagLookup = tags.associateBy { it.id },
-        onEdit = { taskId ->
-          editingTaskId = taskId
+        val list = if (currentTab == TaskPage.Today) todayNodes else upcomingNodes
+        TaskHierarchyList(
+          nodes = list,
+          tagLookup = tags.associateBy { it.id },
+          onEdit = { taskId ->
+            editingTaskId = taskId
+            parentForNew = null
+            showEditor = true
+          },
+          onAddChild = { parentId ->
+            editingTaskId = null
+            parentForNew = parentId
+            showEditor = true
+          },
+          onStateChange = { request ->
+            pendingAction = request
+            showStateDialog = true
+          },
+          onDelete = { viewModel.deleteTask(it) },
+        )
+      }
+
+      FloatingActionButton(
+        onClick = {
+          editingTaskId = null
           parentForNew = null
           showEditor = true
         },
-        onAddChild = { parentId ->
-          editingTaskId = null
-          parentForNew = parentId
-          showEditor = true
-        },
-        onStateChange = { request ->
-          pendingAction = request
-          showStateDialog = true
-        },
-        onDelete = { viewModel.deleteTask(it) },
-      )
-    }
-
-    FloatingActionButton(
-      onClick = {
-        editingTaskId = null
-        parentForNew = null
-        showEditor = true
-      },
-      modifier =
-        Modifier
-          .align(Alignment.BottomEnd)
-          .padding(24.dp),
-    ) {
-      Icon(Icons.Outlined.Add, contentDescription = "Add task")
+        modifier =
+          Modifier
+            .align(Alignment.BottomEnd)
+            .padding(24.dp),
+      ) {
+        Icon(Lucide.Plus, contentDescription = "Add task")
+      }
     }
 
     if (showEditor) {
@@ -306,30 +352,30 @@ private fun TaskNodeCard(
         }
         TaskStateChip(task.state)
         IconButton(onClick = { menuExpanded = true }) {
-          Icon(Icons.Outlined.MoreVert, contentDescription = "Task actions")
+        Icon(Icons.Outlined.MoreVert, contentDescription = "Task actions")
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-          DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Pencil, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Lucide.Pencil, contentDescription = null) }, onClick = {
             menuExpanded = false
             onEdit(task.id)
           })
-          DropdownMenuItem(text = { Text("Add subtask") }, leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Add subtask") }, leadingIcon = { Icon(Lucide.Plus, contentDescription = null) }, onClick = {
             menuExpanded = false
             onAddChild(task.id)
           })
-          DropdownMenuItem(text = { Text("Mark in progress") }, leadingIcon = { Icon(PlayCircle, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Mark in progress") }, leadingIcon = { Icon(Lucide.Play, contentDescription = null) }, onClick = {
             menuExpanded = false
             onStateChange(TaskActionRequest(task, TaskState.InProgress))
           })
-          DropdownMenuItem(text = { Text("Mark done") }, leadingIcon = { Icon(StopCircle, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Mark done") }, leadingIcon = { Icon(Lucide.Check, contentDescription = null) }, onClick = {
             menuExpanded = false
             onStateChange(TaskActionRequest(task, TaskState.Done))
           })
-          DropdownMenuItem(text = { Text("Cancel") }, leadingIcon = { Icon(StopCircle, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Cancel") }, leadingIcon = { Icon(Lucide.X, contentDescription = null) }, onClick = {
             menuExpanded = false
             onStateChange(TaskActionRequest(task, TaskState.Cancelled))
           })
-          DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(StopCircle, contentDescription = null) }, onClick = {
+          DropdownMenuItem(text = { Text("Delete") }, leadingIcon = { Icon(Lucide.Trash2, contentDescription = null) }, onClick = {
             menuExpanded = false
             onDelete(task.id)
           })
@@ -386,10 +432,12 @@ private fun TaskStateDialog(
   onDismiss: () -> Unit,
   onConfirm: (TaskLogInput) -> Unit,
 ) {
-  val defaultStart = LocalDateTime(task.plannedDate, task.plannedStart)
-  val defaultEnd = defaultStart.plus(task.estimateMinutes.toLong(), DateTimeUnit.MINUTE)
-  var startText by remember { mutableStateOf(formatTime(defaultStart.time)) }
-  var endText by remember { mutableStateOf(formatTime(defaultEnd.time)) }
+  val defaultStartTime = task.plannedStart
+  val defaultEndTime = addMinutes(defaultStartTime, task.estimateMinutes)
+  val defaultStart = LocalDateTime(task.plannedDate, defaultStartTime)
+  val defaultEnd = LocalDateTime(task.plannedDate, defaultEndTime)
+  var startText by remember { mutableStateOf(formatTime(defaultStartTime)) }
+  var endText by remember { mutableStateOf(formatTime(defaultEndTime)) }
   var minutesText by remember { mutableStateOf(task.estimateMinutes.toString()) }
   var noteText by remember { mutableStateOf("") }
 
@@ -399,17 +447,19 @@ private fun TaskStateDialog(
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Provide timing for \"${task.title}\"")
-        OutlinedTextField(value = startText, onValueChange = { startText = it }, label = { Text("Start (HH:mm)") }, leadingIcon = { Icon(Clock, contentDescription = null) })
-        OutlinedTextField(value = endText, onValueChange = { endText = it }, label = { Text("End (HH:mm)") }, leadingIcon = { Icon(Clock, contentDescription = null) })
-        OutlinedTextField(value = minutesText, onValueChange = { minutesText = it.filter { c -> c.isDigit() } }, label = { Text("Actual minutes") }, leadingIcon = { Icon(Timer, contentDescription = null) })
+        OutlinedTextField(value = startText, onValueChange = { startText = it }, label = { Text("Start (HH:mm)") }, leadingIcon = { Icon(Lucide.Clock, contentDescription = null) })
+        OutlinedTextField(value = endText, onValueChange = { endText = it }, label = { Text("End (HH:mm)") }, leadingIcon = { Icon(Lucide.Clock, contentDescription = null) })
+        OutlinedTextField(value = minutesText, onValueChange = { minutesText = it.filter { c -> c.isDigit() } }, label = { Text("Actual minutes") }, leadingIcon = { Icon(Lucide.Timer, contentDescription = null) })
         OutlinedTextField(value = noteText, onValueChange = { noteText = it }, label = { Text("Notes (optional)") })
       }
     },
     confirmButton = {
       TextButton(
         onClick = {
-          val start = parseTime(startText)?.let { LocalDateTime(task.plannedDate, it) } ?: defaultStart
-          val end = parseTime(endText)?.let { LocalDateTime(task.plannedDate, it) } ?: defaultEnd
+          val startTime = parseTime(startText) ?: defaultStartTime
+          val endTime = parseTime(endText) ?: defaultEndTime
+          val start = LocalDateTime(task.plannedDate, startTime)
+          val end = LocalDateTime(task.plannedDate, endTime)
           val minutes = minutesText.toIntOrNull() ?: task.estimateMinutes
           onConfirm(
             TaskLogInput(
@@ -466,14 +516,14 @@ private fun TaskEditorSheet(
       value = estimate,
       onValueChange = { text -> estimate = text.filter { it.isDigit() } },
       label = { Text("Estimate (minutes)") },
-      keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+      keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
     )
 
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
       Column(Modifier.weight(1f)) {
         Text("Plan date", style = MaterialTheme.typography.labelMedium)
-        OutlinedButton(onClick = { plannedDate = plannedDate.plus(DatePeriod(days = 1)) }) {
-          Icon(CalendarDays, contentDescription = null)
+        OutlinedButton(onClick = { plannedDate = plannedDate.plus(1, DateTimeUnit.DAY) }) {
+          Icon(Lucide.Calendar, contentDescription = null)
           Spacer(Modifier.width(8.dp))
           Text(formatDate(plannedDate))
         }
@@ -481,7 +531,7 @@ private fun TaskEditorSheet(
       Column(Modifier.weight(1f)) {
         Text("Start time", style = MaterialTheme.typography.labelMedium)
         OutlinedButton(onClick = { plannedTime = nextSlot(plannedTime) }) {
-          Icon(Clock, contentDescription = null)
+          Icon(Lucide.Clock, contentDescription = null)
           Spacer(Modifier.width(8.dp))
           Text(formatTime(plannedTime))
         }
@@ -499,9 +549,9 @@ private fun TaskEditorSheet(
       Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("Parent", style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-          AssistChip(onClick = { parentId = null }, label = { Text("None") }, leadingIcon = { Icon(ListChecks, contentDescription = null) })
+          AssistChip(onClick = { parentId = null }, label = { Text("None") })
           parentOptions.forEach { option ->
-            AssistChip(onClick = { parentId = option.id }, label = { Text(option.title) }, leadingIcon = { Icon(ListChecks, contentDescription = null) })
+            AssistChip(onClick = { parentId = option.id }, label = { Text(option.title) })
           }
         }
       }
@@ -595,6 +645,14 @@ private fun parseTime(value: String): LocalTime? {
   val hour = parts[0].toIntOrNull() ?: return null
   val minute = parts[1].toIntOrNull() ?: return null
   if (hour !in 0..23 || minute !in 0..59) return null
+  return LocalTime(hour = hour, minute = minute)
+}
+
+private fun addMinutes(time: LocalTime, minutes: Int): LocalTime {
+  val total = (time.hour * 60 + time.minute + minutes) % (24 * 60)
+  val normalized = if (total < 0) total + 24 * 60 else total
+  val hour = (normalized / 60) % 24
+  val minute = normalized % 60
   return LocalTime(hour = hour, minute = minute)
 }
 

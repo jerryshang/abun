@@ -69,4 +69,7 @@ sealed interface Route {
    */
   @Serializable
   data object TimeCategoryManagement : Route
+
+  @Serializable
+  data object TaskPlanner : Route
 }

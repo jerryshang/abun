@@ -60,6 +60,7 @@ import com.composables.icons.lucide.Code
 import com.composables.icons.lucide.Heading
 import com.composables.icons.lucide.Italic
 import com.composables.icons.lucide.ListChecks
+import com.composables.icons.lucide.Lucide
 import dev.tireless.abun.tags.Tag
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -80,71 +81,81 @@ fun NotesHomeScreen(
   var showEditor by remember { mutableStateOf(false) }
 
   Surface(Modifier.fillMaxSize()) {
-    Column {
-      CenterAlignedTopAppBar(title = { Text("Notes") })
-
-      OutlinedTextField(
-        value = searchQuery,
-        onValueChange = { viewModel.setSearchQuery(it) },
+    Box(Modifier.fillMaxSize()) {
+      Column(
         modifier =
           Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        placeholder = { Text("Search notes") },
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-        singleLine = true,
-      )
+            .fillMaxSize()
+            .padding(bottom = 88.dp),
+      ) {
+        CenterAlignedTopAppBar(title = { Text("Notes") })
 
-      if (tags.isNotEmpty()) {
-        FlowRow(
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-          AssistChip(
-            onClick = { viewModel.clearFilters() },
-            label = { Text("All notes") },
-            leadingIcon = { Icon(Icons.Outlined.UnfoldMore, contentDescription = null) },
-          )
-          tags.forEach { tag ->
-            val selected = selectedTags.contains(tag.id)
+        OutlinedTextField(
+          value = searchQuery,
+          onValueChange = { viewModel.setSearchQuery(it) },
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 8.dp),
+          placeholder = { Text("Search notes") },
+          leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+          singleLine = true,
+        )
+
+        if (tags.isNotEmpty()) {
+          FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
             AssistChip(
-              onClick = { viewModel.toggleTagFilter(tag.id) },
-              label = { Text(tag.name) },
-              leadingIcon = {
-                Box(
-                  modifier =
-                    Modifier
-                      .width(12.dp)
-                      .height(12.dp)
-                      .background(colorFromHex(tag.colorHex), shape = MaterialTheme.shapes.small),
-                )
-              },
-              colors = AssistChipDefaults.assistChipColors(containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
+              onClick = { viewModel.clearFilters() },
+              label = { Text("All notes") },
+              leadingIcon = { Icon(Icons.Outlined.UnfoldMore, contentDescription = null) },
             )
+            tags.forEach { tag ->
+              val selected = selectedTags.contains(tag.id)
+              AssistChip(
+                onClick = { viewModel.toggleTagFilter(tag.id) },
+                label = { Text(tag.name) },
+                leadingIcon = {
+                  Box(
+                    modifier =
+                      Modifier
+                        .width(12.dp)
+                        .height(12.dp)
+                        .background(colorFromHex(tag.colorHex), shape = MaterialTheme.shapes.small),
+                  )
+                },
+                colors = AssistChipDefaults.assistChipColors(containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
+              )
+            }
           }
         }
+
+        NotesList(
+          summaries = summaries,
+          tagLookup = tags.associateBy { it.id },
+          onOpen = { noteId ->
+            viewModel.startEditing(noteId)
+            showEditor = true
+          },
+          onTogglePin = { viewModel.togglePin(it) },
+        )
       }
 
-      NotesList(
-        summaries = summaries,
-        tagLookup = tags.associateBy { it.id },
-        onOpen = { noteId ->
-          viewModel.startEditing(noteId)
+      FloatingActionButton(
+        onClick = {
+          viewModel.startEditing(null)
           showEditor = true
         },
-        onTogglePin = { viewModel.togglePin(it) },
-      )
-    }
-
-    FloatingActionButton(
-      onClick = {
-        viewModel.startEditing(null)
-        showEditor = true
-      },
-      modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-    ) {
-      Icon(Icons.Outlined.Add, contentDescription = "Add note")
+        modifier =
+          Modifier
+            .align(Alignment.BottomEnd)
+            .padding(24.dp),
+      ) {
+        Icon(Icons.Outlined.Add, contentDescription = "Add note")
+      }
     }
 
     if (showEditor) {
@@ -329,11 +340,11 @@ private fun MarkdownToolbar(
   onTogglePreview: () -> Unit,
 ) {
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    IconButton(onClick = onBold) { Icon(Bold, contentDescription = "Bold") }
-    IconButton(onClick = onItalic) { Icon(Italic, contentDescription = "Italic") }
-    IconButton(onClick = onHeading) { Icon(Heading, contentDescription = "Heading") }
-    IconButton(onClick = onChecklist) { Icon(ListChecks, contentDescription = "Checklist") }
-    IconButton(onClick = onCode) { Icon(Code, contentDescription = "Code") }
+    IconButton(onClick = onBold) { Icon(Lucide.Bold, contentDescription = "Bold") }
+    IconButton(onClick = onItalic) { Icon(Lucide.Italic, contentDescription = "Italic") }
+    IconButton(onClick = onHeading) { Icon(Lucide.Heading, contentDescription = "Heading") }
+    IconButton(onClick = onChecklist) { Icon(Lucide.ListChecks, contentDescription = "Checklist") }
+    IconButton(onClick = onCode) { Icon(Lucide.Code, contentDescription = "Code") }
     Spacer(Modifier.weight(1f))
     TextButton(onClick = onTogglePreview) {
       Text(if (showPreview) "Hide preview" else "Show preview")
