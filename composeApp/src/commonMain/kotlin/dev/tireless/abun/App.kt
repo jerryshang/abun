@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -29,6 +31,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
@@ -59,7 +63,7 @@ import com.composables.icons.lucide.Package2
 import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Settings
-import com.composables.icons.lucide.Trash
+import com.composables.icons.lucide.Trash2
 import dev.tireless.abun.finance.AccountEditScreen
 import dev.tireless.abun.finance.AccountManagementScreen
 import dev.tireless.abun.finance.AccountViewModel
@@ -73,7 +77,6 @@ import dev.tireless.abun.finance.SplitExpenseDraft
 import dev.tireless.abun.finance.TransactionViewModel
 import dev.tireless.abun.finance.TransferEditScreen
 import dev.tireless.abun.finance.toEditPayload
-import dev.tireless.abun.notes.NotesHomeScreen
 import dev.tireless.abun.navigation.Route
 import dev.tireless.abun.tags.Tag
 import dev.tireless.abun.tags.TagDomain
@@ -81,8 +84,9 @@ import dev.tireless.abun.tags.TagDraft
 import dev.tireless.abun.tags.TagManagementViewModel
 import dev.tireless.abun.tags.TagUpdate
 import dev.tireless.abun.tasks.TaskDashboardScreen
+import dev.tireless.abun.notes.NotesHomeScreen
 import dev.tireless.abun.time.CategoryManagementScreen
-import dev.tireless.abun.time.TimeblockScreen
+import dev.tireless.abun.time.TimeWorkspaceScreen
 import dev.tireless.abun.ui.AppTheme
 import dev.tireless.abun.ui.ThemePreference
 import org.koin.compose.koinInject
@@ -112,7 +116,7 @@ fun App() {
         ) {
           // Main tabs
           composable<Route.Home> {
-            TaskDashboardScreen(navController)
+            HomeScreen(navController)
           }
           composable<Route.Material> {
             FinanceScreen(navController)
@@ -121,7 +125,7 @@ fun App() {
             NotesHomeScreen(navController)
           }
           composable<Route.Time> {
-            TimeblockScreen(navController)
+            TimeWorkspaceScreen(navController)
           }
           composable<Route.Settings> {
             SettingsScreen(
@@ -129,6 +133,10 @@ fun App() {
               themePreference = themePreference,
               onThemePreferenceChange = { themePreference = it },
             )
+          }
+
+          composable<Route.TaskPlanner> {
+            TaskDashboardScreen(navController = navController)
           }
 
           // Finance sub-screens
@@ -250,88 +258,42 @@ private fun BottomNavigationBar(navController: NavHostController) {
     tonalElevation = 4.dp,
     shadowElevation = 16.dp,
   ) {
+    val items = BottomNavItems
+    val selectedIndex =
+      items.indexOfFirst { item -> currentDestination.matchesAny(item.matchingRoutes) }
+        .takeIf { it >= 0 } ?: 0
+
     NavigationBar(
       containerColor = Color.Transparent,
-      contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-      NavigationBarItem(
-        icon = { Icon(imageVector = Lucide.House, contentDescription = "Home") },
-        selected = currentDestination.matchesAny(HomeRoutes),
-        onClick = {
-          if (!currentDestination.matchesAny(HomeRoutes)) {
-            navController.navigate(Route.Home) {
-              popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+      items.forEachIndexed { index, item ->
+        NavigationBarItem(
+          selected = index == selectedIndex,
+          onClick = {
+            if (!currentDestination.matchesAny(item.matchingRoutes)) {
+              navController.navigate(item.target) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                  saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
               }
-              launchSingleTop = true
-              restoreState = true
             }
-          }
-        },
-      )
-      NavigationBarItem(
-        icon = { Icon(imageVector = Lucide.Package2, contentDescription = "Material") },
-        selected = currentDestination.matchesAny(MaterialRoutes),
-        onClick = {
-          if (!currentDestination.matchesAny(MaterialRoutes)) {
-            navController.navigate(Route.Material) {
-              popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-              }
-              launchSingleTop = true
-              restoreState = true
-            }
-          }
-        },
-      )
-      NavigationBarItem(
-        icon = { Icon(imageVector = Lucide.Library, contentDescription = "Mental") },
-        selected = currentDestination.matchesAny(MentalRoutes),
-        onClick = {
-          if (!currentDestination.matchesAny(MentalRoutes)) {
-            navController.navigate(Route.Mental) {
-              popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-              }
-              launchSingleTop = true
-              restoreState = true
-            }
-          }
-        },
-      )
-      NavigationBarItem(
-        icon = { Icon(imageVector = Lucide.Calendar, contentDescription = "Time") },
-        selected = currentDestination.matchesAny(TimeRoutes),
-        onClick = {
-          if (!currentDestination.matchesAny(TimeRoutes)) {
-            navController.navigate(Route.Time) {
-              popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-              }
-              launchSingleTop = true
-              restoreState = true
-            }
-          }
-        },
-      )
-      NavigationBarItem(
-        icon = { Icon(imageVector = Lucide.Settings, contentDescription = "Settings") },
-        selected = currentDestination.matchesAny(SettingsRoutes),
-        onClick = {
-          if (!currentDestination.matchesAny(SettingsRoutes)) {
-            navController.navigate(Route.Settings) {
-              popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-              }
-              launchSingleTop = true
-              restoreState = true
-            }
-          }
-        },
-      )
+          },
+          icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
+          alwaysShowLabel = false,
+        )
+      }
     }
   }
 }
+
+private data class BottomNavItem(
+  val label: String,
+  val icon: ImageVector,
+  val target: Route,
+  val matchingRoutes: Set<String>,
+)
 
 private fun NavDestination?.matchesAny(routes: Set<String>) = routes.any { matchesRoute(it) }
 
@@ -360,8 +322,124 @@ private val TimeRoutes =
   setOfNotNull(
     Route.Time::class.qualifiedName,
     Route.TimeCategoryManagement::class.qualifiedName,
+    Route.TaskPlanner::class.qualifiedName,
   )
 private val SettingsRoutes = setOfNotNull(Route.Settings::class.qualifiedName)
+
+private val BottomNavItems = listOf(
+  BottomNavItem(
+    label = "Home",
+    icon = Lucide.House,
+    target = Route.Home,
+    matchingRoutes = HomeRoutes,
+  ),
+  BottomNavItem(
+    label = "Material",
+    icon = Lucide.Package2,
+    target = Route.Material,
+    matchingRoutes = MaterialRoutes,
+  ),
+  BottomNavItem(
+    label = "Mental",
+    icon = Lucide.Library,
+    target = Route.Mental,
+    matchingRoutes = MentalRoutes,
+  ),
+  BottomNavItem(
+    label = "Time",
+    icon = Lucide.Calendar,
+    target = Route.Time,
+    matchingRoutes = TimeRoutes,
+  ),
+  BottomNavItem(
+    label = "Settings",
+    icon = Lucide.Settings,
+    target = Route.Settings,
+    matchingRoutes = SettingsRoutes,
+  ),
+)
+
+@Composable
+private fun HomeScreen(navController: NavHostController) {
+  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Column(
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(24.dp),
+      verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+      Text("Welcome back", style = MaterialTheme.typography.headlineLarge)
+      Text(
+        "Choose where you'd like to focus today.",
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+
+      HomeActionCard(
+        title = "Review your schedule",
+        description = "Check today's timeblocks and adjust upcoming plans.",
+        icon = Lucide.Calendar,
+        actionLabel = "Open time",
+        onClick = { navController.navigate(Route.Time) },
+      )
+
+      HomeActionCard(
+        title = "Capture quick notes",
+        description = "Write ideas, meeting minutes, and references in one place.",
+        icon = Lucide.Library,
+        actionLabel = "Go to notes",
+        onClick = { navController.navigate(Route.Mental) },
+      )
+
+      HomeActionCard(
+        title = "Stay on top of finances",
+        description = "Log transactions, track budgets, and review accounts.",
+        icon = Lucide.Package2,
+        actionLabel = "Open finance",
+        onClick = { navController.navigate(Route.Material) },
+      )
+
+      Spacer(Modifier.weight(1f))
+
+      Text(
+        "Tip: you can switch between sections anytime using the bottom navigation.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+  }
+}
+
+@Composable
+private fun HomeActionCard(
+  title: String,
+  description: String,
+  icon: ImageVector,
+  actionLabel: String,
+  onClick: () -> Unit,
+) {
+  Card(
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Column(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(20.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Text(title, style = MaterialTheme.typography.titleMedium)
+      }
+      Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      FilledTonalButton(onClick = onClick) {
+        Text(actionLabel)
+      }
+    }
+  }
+}
 
 @Composable
 private fun SettingsScreen(
@@ -447,9 +525,40 @@ private fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
+            }
+          }
         }
       }
     }
+
+    Card(
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(bottom = 16.dp),
+    ) {
+      Column(
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        Text("Category Management", style = MaterialTheme.typography.titleLarge)
+        Text(
+          "Manage your timeblock categories and colors",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(onClick = { navController.navigate(Route.TimeCategoryManagement) }, modifier = Modifier.fillMaxWidth()) {
+          Text("Manage Categories")
+        }
+      }
+    }
+
+    Text(
+      "Other settings will be available here.",
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.padding(bottom = 24.dp),
+    )
 
     TagManagementSection(tagViewModel)
   }
@@ -489,7 +598,7 @@ private fun TagManagementSection(viewModel: TagManagementViewModel) {
           showEditor = true
         },
       ) {
-        Icon(Plus, contentDescription = null)
+        Icon(Lucide.Plus, contentDescription = null)
         Spacer(Modifier.width(8.dp))
         Text("New tag")
       }
@@ -611,7 +720,7 @@ private fun TagEditorDialog(
                 domains = toggleDomainSelection(domains, domain)
               },
               label = { Text(domain.displayName()) },
-              colors = AssistChipDefaults.assistChipColors(containerColor = if (domain in domains || TagDomain.All in domains && domain == TagDomain.All) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
+              colors = AssistChipDefaults.assistChipColors(containerColor = if (domain in domains || (TagDomain.All in domains && domain == TagDomain.All)) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
             )
           }
         }
@@ -682,10 +791,10 @@ private fun TagRow(
         Text(tag.path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
       IconButton(onClick = { onEdit(tag) }) {
-        Icon(Pencil, contentDescription = "Edit tag")
+        Icon(Lucide.Pencil, contentDescription = "Edit tag")
       }
       IconButton(onClick = { onDelete(tag) }) {
-        Icon(Trash, contentDescription = "Delete tag")
+        Icon(Lucide.Trash2, contentDescription = "Delete tag")
       }
     }
 
@@ -754,43 +863,4 @@ private fun colorFromHex(hex: String): Color {
     else -> 0xFF888888
   }
   return Color(argb.toInt())
-}
-
-    // Category Management Section
-    Card(
-      modifier =
-        Modifier
-          .fillMaxWidth()
-          .padding(bottom = 16.dp),
-    ) {
-      Column(
-        modifier = Modifier.padding(16.dp),
-      ) {
-        Text(
-          "Category Management",
-          style = MaterialTheme.typography.titleLarge,
-          modifier = Modifier.padding(bottom = 8.dp),
-        )
-        Text(
-          "Manage your timeblock categories and colors",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(bottom = 16.dp),
-        )
-        Button(
-          onClick = { navController.navigate(Route.TimeCategoryManagement) },
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          Text("Manage Categories")
-        }
-      }
-    }
-
-    Text(
-      "Other settings will be available here.",
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.padding(16.dp),
-    )
-  }
 }
