@@ -16,12 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,6 +43,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Pencil
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Trash2
 import dev.tireless.abun.time.Category
 import dev.tireless.abun.time.CategoryViewModel
 import dev.tireless.abun.time.Task
@@ -90,7 +91,7 @@ fun CategoryManagementScreen(
         FloatingActionButton(
           onClick = { showCreateDialog = true }
         ) {
-          Icon(Icons.Default.Add, contentDescription = "Add Category")
+          Icon(Lucide.Plus, contentDescription = "Add Category")
         }
       }
     ) { paddingValues ->
@@ -217,10 +218,10 @@ private fun CategoryCard(
 
       // Action buttons
       IconButton(onClick = onEdit) {
-        Icon(Icons.Default.Edit, contentDescription = "Edit")
+        Icon(Lucide.Pencil, contentDescription = "Edit")
       }
       IconButton(onClick = onDelete) {
-        Icon(Icons.Default.Delete, contentDescription = "Delete")
+        Icon(Lucide.Trash2, contentDescription = "Delete")
       }
     }
   }
@@ -370,7 +371,7 @@ private fun TaskManagementScreen(
       FloatingActionButton(
         onClick = { showCreateTaskDialog = true }
       ) {
-        Icon(Icons.Default.Add, contentDescription = "Add Task")
+        Icon(Lucide.Plus, contentDescription = "Add Task")
       }
     }
   ) { paddingValues ->
@@ -385,7 +386,7 @@ private fun TaskManagementScreen(
         verticalAlignment = Alignment.CenterVertically
       ) {
         IconButton(onClick = onClose) {
-          Icon(Icons.Default.ExpandLess, contentDescription = "Back")
+          Icon(Lucide.ChevronLeft, contentDescription = "Back")
         }
         Text(
           text = "${category.name} Tasks",
@@ -517,10 +518,10 @@ private fun TaskCard(
 
       // Action buttons
       IconButton(onClick = onEdit) {
-        Icon(Icons.Default.Edit, contentDescription = "Edit")
+        Icon(Lucide.Pencil, contentDescription = "Edit")
       }
       IconButton(onClick = onDelete) {
-        Icon(Icons.Default.Delete, contentDescription = "Delete")
+        Icon(Lucide.Trash2, contentDescription = "Delete")
       }
     }
   }
@@ -593,7 +594,7 @@ private fun TaskDialog(
                 Text(selectedStrategy.uppercase())
               }
               Icon(
-                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
                 contentDescription = null
               )
             }

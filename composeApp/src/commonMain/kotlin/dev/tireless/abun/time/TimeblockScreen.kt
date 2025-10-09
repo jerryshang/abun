@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,18 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ViewDay
-import androidx.compose.material.icons.filled.ViewModule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,11 +47,18 @@ import androidx.navigation.NavHostController
 import dev.tireless.abun.tasks.TaskDashboardScreen
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toInstant
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import dev.tireless.abun.navigation.Route
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Calendar
+import com.composables.icons.lucide.Clock
+import com.composables.icons.lucide.ListChecks
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Timer
 
 data class TimeSlot(
   val hour: Int,
@@ -71,113 +80,116 @@ enum class ZoomLevel {
   FOUR_HOURS
 }
 
-private enum class TimeWorkspacePage {
-  Timeblocks,
-  Tasks
+private enum class TimeWorkspaceTab(val label: String) {
+  Schedule("Schedule"),
+  Tasks("Tasks"),
+  Review("Review")
 }
 
 @Composable
 fun TimeWorkspaceScreen(navController: NavHostController) {
-  var currentPage by rememberSaveable { mutableStateOf(TimeWorkspacePage.Timeblocks) }
+  val timeblockViewModel: TimeblockViewModel = koinViewModel()
+  var currentTab by rememberSaveable { mutableStateOf(TimeWorkspaceTab.Schedule) }
+  var selectedDate by rememberSaveable { mutableStateOf("2024-01-01") }
+  var showFocusPrompt by remember { mutableStateOf(false) }
 
-  Column(
+  val timeblocks by timeblockViewModel.timeblocks.collectAsState()
+
+  LaunchedEffect(selectedDate) {
+    timeblockViewModel.loadTimeblocks(selectedDate)
+  }
+
+  Scaffold(
     modifier =
       Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background),
-  ) {
-    Column(
-      modifier =
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 24.dp, vertical = 20.dp),
-    ) {
-      Text(
-        text = "Time",
-        style = MaterialTheme.typography.headlineLarge,
-      )
-      Spacer(modifier = Modifier.height(8.dp))
-      Text(
-        text = "Start with your schedule, then focus on tasks.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-      Spacer(modifier = Modifier.height(20.dp))
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    topBar = {
+      Column(
+        modifier =
+          Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
       ) {
-        if (currentPage == TimeWorkspacePage.Timeblocks) {
-          FilledTonalButton(
-            onClick = { currentPage = TimeWorkspacePage.Timeblocks },
-            modifier = Modifier.weight(1f),
-          ) {
-            Text("Timeblocks")
-          }
-          OutlinedButton(
-            onClick = { currentPage = TimeWorkspacePage.Tasks },
-            modifier = Modifier.weight(1f),
-          ) {
-            Text("Tasks")
-          }
-        } else {
-          OutlinedButton(
-            onClick = { currentPage = TimeWorkspacePage.Timeblocks },
-            modifier = Modifier.weight(1f),
-          ) {
-            Text("Timeblocks")
-          }
-          FilledTonalButton(
-            onClick = { currentPage = TimeWorkspacePage.Tasks },
-            modifier = Modifier.weight(1f),
-          ) {
-            Text("Tasks")
-          }
-        }
-
-        if (currentPage == TimeWorkspacePage.Timeblocks) {
-          OutlinedButton(onClick = { navController.navigate(Route.TimeCategoryManagement) }) {
-            Text("Categories")
+        Text(
+          text = "Time",
+          style = MaterialTheme.typography.headlineLarge,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+          text = "Start with your schedule, then focus on tasks.",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        TabRow(selectedTabIndex = currentTab.ordinal) {
+          TimeWorkspaceTab.values().forEach { tab ->
+            Tab(
+              selected = tab == currentTab,
+              onClick = { currentTab = tab },
+              text = { Text(tab.label) },
+            )
           }
         }
       }
-    }
-
+    },
+    floatingActionButton = {
+      FocusActionButton(onStartFocus = { showFocusPrompt = true })
+    },
+  ) { innerPadding ->
     Box(
       modifier =
         Modifier
-          .fillMaxWidth()
-          .weight(1f),
+          .fillMaxSize()
+          .padding(innerPadding),
     ) {
-      when (currentPage) {
-        TimeWorkspacePage.Timeblocks ->
+      when (currentTab) {
+        TimeWorkspaceTab.Schedule ->
           TimeblockPlanner(
             modifier = Modifier.fillMaxSize(),
+            selectedDate = selectedDate,
+            timeblocks = timeblocks,
+            viewModel = timeblockViewModel,
+            onManageCategories = { navController.navigate(Route.TimeCategoryManagement) },
           )
-        TimeWorkspacePage.Tasks ->
+        TimeWorkspaceTab.Tasks ->
           TaskDashboardScreen(
             navController = null,
             modifier = Modifier.fillMaxSize(),
             embedded = true,
           )
+        TimeWorkspaceTab.Review ->
+          TimeReviewPanel(
+            modifier = Modifier.fillMaxSize(),
+            selectedDate = selectedDate,
+            timeblocks = timeblocks,
+          )
       }
     }
+  }
+
+  if (showFocusPrompt) {
+    FocusEntryDialog(
+      onDismiss = { showFocusPrompt = false },
+      onNavigateToTasks = {
+        showFocusPrompt = false
+        currentTab = TimeWorkspaceTab.Tasks
+      },
+    )
   }
 }
 
 @Composable
-private fun TimeblockPlanner(modifier: Modifier = Modifier) {
-  val viewModel: TimeblockViewModel = koinViewModel()
-  val timeblocks by viewModel.timeblocks.collectAsState()
-
-  var selectedDate by remember { mutableStateOf("2024-01-01") }
+private fun TimeblockPlanner(
+  modifier: Modifier = Modifier,
+  selectedDate: String,
+  timeblocks: List<Timeblock>,
+  viewModel: TimeblockViewModel,
+  onManageCategories: () -> Unit,
+) {
   var zoomLevel by remember { mutableStateOf(ZoomLevel.FULL_DAY) }
   var showCreateDialog by remember { mutableStateOf(false) }
-
-  LaunchedEffect(selectedDate) {
-    viewModel.loadTimeblocks(selectedDate)
-  }
 
   Column(
     modifier =
@@ -210,21 +222,21 @@ private fun TimeblockPlanner(modifier: Modifier = Modifier) {
       Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         if (zoomLevel == ZoomLevel.FULL_DAY) {
           FilledTonalButton(onClick = { zoomLevel = ZoomLevel.FULL_DAY }) {
-            Icon(Icons.Default.ViewDay, contentDescription = "Full day view")
+            Icon(Lucide.ListChecks, contentDescription = "Full day view")
           }
         } else {
           OutlinedButton(onClick = { zoomLevel = ZoomLevel.FULL_DAY }) {
-            Icon(Icons.Default.ViewDay, contentDescription = "Full day view")
+            Icon(Lucide.ListChecks, contentDescription = "Full day view")
           }
         }
 
         if (zoomLevel == ZoomLevel.FOUR_HOURS) {
           FilledTonalButton(onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }) {
-            Icon(Icons.Default.ViewModule, contentDescription = "Four hour view")
+            Icon(Lucide.Clock, contentDescription = "Four hour view")
           }
         } else {
           OutlinedButton(onClick = { zoomLevel = ZoomLevel.FOUR_HOURS }) {
-            Icon(Icons.Default.ViewModule, contentDescription = "Four hour view")
+            Icon(Lucide.Clock, contentDescription = "Four hour view")
           }
         }
       }
@@ -232,15 +244,19 @@ private fun TimeblockPlanner(modifier: Modifier = Modifier) {
       Spacer(modifier = Modifier.weight(1f))
 
       OutlinedButton(onClick = { /* TODO: Show date picker */ }) {
-        Icon(Icons.Default.DateRange, contentDescription = null)
+        Icon(Lucide.Calendar, contentDescription = null)
         Spacer(modifier = Modifier.width(4.dp))
         Text(selectedDate)
       }
 
       Button(onClick = { showCreateDialog = true }) {
-        Icon(Icons.Default.Add, contentDescription = null)
+        Icon(Lucide.Plus, contentDescription = null)
         Spacer(modifier = Modifier.width(4.dp))
         Text("Create")
+      }
+
+      OutlinedButton(onClick = onManageCategories) {
+        Text("Categories")
       }
     }
 
@@ -259,6 +275,194 @@ private fun TimeblockPlanner(modifier: Modifier = Modifier) {
       selectedDate = selectedDate,
     )
   }
+}
+
+@Composable
+private fun FocusActionButton(onStartFocus: () -> Unit) {
+  ExtendedFloatingActionButton(
+    onClick = onStartFocus,
+    icon = { Icon(Lucide.Timer, contentDescription = "Start focus session") },
+    text = { Text("Focus") },
+  )
+}
+
+@Composable
+private fun FocusEntryDialog(
+  onDismiss: () -> Unit,
+  onNavigateToTasks: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Start focus session") },
+    text = {
+      Text(
+        "Pick a task to stay with. We'll open your task list so you can choose what deserves your attention.",
+        style = MaterialTheme.typography.bodyMedium,
+      )
+    },
+    confirmButton = {
+      TextButton(onClick = onNavigateToTasks) {
+        Text("Go to tasks")
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Cancel")
+      }
+    },
+  )
+}
+
+@Composable
+private fun TimeReviewPanel(
+  modifier: Modifier = Modifier,
+  selectedDate: String,
+  timeblocks: List<Timeblock>,
+) {
+  val totalMinutes = remember(timeblocks) { timeblocks.sumOf { it.durationMinutes() } }
+
+  LazyColumn(
+    modifier = modifier.fillMaxSize(),
+    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+  ) {
+    item {
+      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Daily review", style = MaterialTheme.typography.titleLarge)
+        Text(
+          text = selectedDate,
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
+
+    item {
+      ReviewSummaryCard(totalMinutes = totalMinutes, blockCount = timeblocks.size)
+    }
+
+    if (timeblocks.isEmpty()) {
+      item {
+        Text(
+          text = "No timeblocks scheduled yet. Capture tasks, then block time to see your day come together.",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    } else {
+      item {
+        Text("Recent timeblocks", style = MaterialTheme.typography.titleMedium)
+      }
+      items(timeblocks, key = { it.id }) { block ->
+        ReviewTimeblockCard(timeblock = block)
+      }
+    }
+  }
+}
+
+@Composable
+private fun ReviewSummaryCard(
+  totalMinutes: Long,
+  blockCount: Int,
+) {
+  Card {
+    Column(
+      modifier = Modifier.padding(20.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Text(
+        text = "Scheduled time",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Text(
+        text = formatDuration(totalMinutes),
+        style = MaterialTheme.typography.headlineSmall,
+      )
+      Text(
+        text = "$blockCount timeblocks planned",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+  }
+}
+
+@Composable
+private fun ReviewTimeblockCard(timeblock: Timeblock) {
+  Card {
+    Column(
+      modifier = Modifier.padding(16.dp),
+      verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+      Text(
+        text = timeblock.taskName ?: "Unassigned task",
+        style = MaterialTheme.typography.titleMedium,
+      )
+      Text(
+        text =
+          buildString {
+            append(formatTimeRange(timeblock.startTime, timeblock.endTime))
+            timeblock.taskStrategy?.let {
+              append(" • ")
+              append(it.uppercase())
+            }
+          },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      timeblock.categoryName?.let { category ->
+        Text(
+          text = category,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalTime::class)
+private fun Timeblock.durationMinutes(): Long {
+  return runCatching {
+    val start =
+      LocalDateTime
+        .parse(startTime)
+        .toInstant(TimeZone.currentSystemDefault())
+    val end =
+      LocalDateTime
+        .parse(endTime)
+        .toInstant(TimeZone.currentSystemDefault())
+    (end - start).inWholeMinutes
+  }.getOrDefault(0L)
+}
+
+private fun formatDuration(totalMinutes: Long): String {
+  if (totalMinutes <= 0) return "0m"
+  val hours = totalMinutes / 60
+  val minutes = totalMinutes % 60
+  return when {
+    hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+    hours > 0 -> "${hours}h"
+    else -> "${minutes}m"
+  }
+}
+
+private fun formatTimeRange(
+  startIso: String,
+  endIso: String,
+): String {
+  return runCatching {
+    val start = LocalDateTime.parse(startIso).time
+    val end = LocalDateTime.parse(endIso).time
+    "${start.toDisplayString()} - ${end.toDisplayString()}"
+  }.getOrDefault("—")
+}
+
+private fun LocalTime.toDisplayString(): String {
+  val hourText = hour.toString().padStart(2, '0')
+  val minuteText = minute.toString().padStart(2, '0')
+  return "$hourText:$minuteText"
 }
 
 @Composable
