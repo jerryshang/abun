@@ -1,41 +1,37 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `composeApp/src/commonMain/kotlin` holds shared Compose UI and domain code.
-- `composeApp/src/androidMain/kotlin` and `composeApp/src/iosMain/kotlin` contain platform extensions; keep platform APIs here.
-- `composeApp/src/commonTest/kotlin` stores multiplatform unit tests, with platform-specific test roots mirroring their source sets.
-- `iosApp` packages the Xcode project for the iOS wrapper.
-- Root Gradle scripts (`build.gradle.kts`, `settings.gradle.kts`, `gradle/`) configure multiplatform targets and dependencies.
+- `composeApp/` hosts Kotlin Multiplatform sources. Write shared code in `src/commonMain/kotlin/dev/tireless/abun`, and keep platform API bridges in the matching `androidMain` and `iosMain` source sets.
+- `composeApp/src/commonMain/sqldelight` stores SQLDelight schemas by domain; colocate migrations with their feature folder (`time/`, `mental/`, `material/`).
+- `iosApp/` wraps the shared module in Xcode; Gradle scripts at the root (`build.gradle.kts`, `settings.gradle.kts`, `gradle/`) configure targets, plugins, and version catalogs.
+- Keep reference material in `docs/` and contributor policies in the repository root for easy discovery.
 
 ## Build, Test, and Development Commands
-- `./gradlew :composeApp:assembleDebug` builds the Android debug APK.
-- `./gradlew :composeApp:assembleRelease` produces the signed release bundle.
-- `./gradlew test` runs the multiplatform unit test suite.
-- `./gradlew :composeApp:compileKotlinIosSimulatorArm64` verifies iOS simulator compatibility for shared code.
-- `./gradlew ktlintCheck` / `ktlintFormat` validate and auto-format Kotlin style.
-- `./gradlew clean` resets build artifacts before reproducing issues.
+- `./gradlew :composeApp:assembleDebug` builds the Android debug APK for manual validation.
+- `./gradlew :composeApp:compileKotlinIosSimulatorArm64` ensures the shared module compiles against the iOS simulator toolchain.
+- `./gradlew test` executes all unit tests across common and platform source sets.
+- `./gradlew ktlintCheck` / `./gradlew ktlintFormat` enforce Kotlin style; run before committing.
+- `./gradlew clean` purges build outputs when troubleshooting.
 
 ## Coding Style & Naming Conventions
-- Follow Kotlin style with 4-space indentation and trailing commas where idiomatic.
-- Name packages under `dev.tireless.abun`, keeping feature modules in dedicated subpackages.
-- Compose screens and components use PascalCase (e.g., `AccountHierarchySelector`); view models end with `ViewModel`.
-- Prefer constructor injection via Koin modules; register shared bindings in `AppModule.kt` and platform-specific bindings in their respective modules.
-- Document public APIs with concise KDoc and keep files focused on a single feature.
+- Kotlin files use 4-space indentation, trailing commas in multiline collections, and package roots under `dev.tireless.abun`.
+- Compose UI, feature screens, and view models use PascalCase (`TaskScheduleScreen`, `TaskScheduleViewModel`); data sources end with `Repository`.
+- Keep feature folders flat—place models, repositories, screens, and view models together within each domain directory.
+- Register dependency bindings through Koin modules (`core/AppModule.kt`); avoid global singletons outside DI wiring.
 
 ## Testing Guidelines
-- Add new coverage in `commonTest` when changing shared logic; mirror platform-specific behaviors in `androidTest` or `iosTest` when needed.
-- Name tests using `Function_underTest_expectedResult` for readability.
-- Run `./gradlew test` and the iOS compile check before requesting review; tests must pass without flaky behavior.
-- Include fixtures or fake Koin modules when isolating dependencies.
+- Write shared tests in `composeApp/src/commonTest/kotlin`; mirror platform-only behavior in `androidTest` or `iosTest` as appropriate.
+- Name test classes after the subject and functions using `functionUnderTest_expectedOutcome`.
+- Run `./gradlew test` and the iOS compile task before review requests; ensure tests pass without flakes.
+- Prefer fake Koin modules or in-memory drivers for isolation; do not rely on network access during unit tests.
 
 ## Commit & Pull Request Guidelines
-- Use conventional prefixes observed in history (`feat:`, `fix:`, `refactor:`, `chore:`) followed by a clear imperative summary.
-- Group coherent changes per commit; avoid bundling unrelated refactors.
-- Pull requests should outline intent, list major changes, mention impacted modules, and link issues or tasks.
-- Attach screenshots or screen recordings for UI updates and describe validation steps (commands run, devices tested).
-- Confirm no secrets are committed; rely on `local.properties` and environment variables for sensitive values.
+- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `chore:`) with imperative summaries under 72 characters.
+- Group cohesive changes per commit; rebase or squash cosmetic fixes before opening a pull request.
+- Detail PR intent, impacted packages, and validation commands; link issues or specs when available.
+- Include screenshots or screen recordings for UI adjustments and note tested devices or simulators.
 
-## Security & Configuration Tips
-- Store secrets outside the repo; prefer Gradle properties or CI secrets.
-- Keep dependencies updated via Gradle version catalogs and review license compatibility.
-- Validate user-provided data on both platforms and avoid logging sensitive information.
+## Environment & Security
+- Store secrets in `local.properties` or CI-managed variables—never commit credentials or signing keys.
+- Track dependency updates via the Gradle version catalog; run `./gradlew build` after upgrades to surface regressions.
+- Review new dependencies for license compatibility and limit logging of user data.
