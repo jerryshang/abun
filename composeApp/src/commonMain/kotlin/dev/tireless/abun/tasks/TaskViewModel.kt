@@ -3,6 +3,7 @@ package dev.tireless.abun.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.tireless.abun.tags.Tag
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,15 +15,22 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TaskBoardViewModel(
   private val repository: TaskPlannerRepository,
 ) : ViewModel() {
   private val _selectedDate =
-    MutableStateFlow(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
+    MutableStateFlow(
+      Clock.System
+        .now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .date,
+    )
   val selectedDate: StateFlow<LocalDate> = _selectedDate
 
   val allTasks: StateFlow<List<Task>> =
-    repository.observeAllTasks()
+    repository
+      .observeAllTasks()
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   val todayTasks: StateFlow<List<TaskNode>> =
@@ -44,15 +52,17 @@ class TaskBoardViewModel(
     _selectedDate.value = date
   }
 
-  fun createTask(draft: TaskDraft): Task {
-    return repository.createTask(draft)
-  }
+  fun createTask(draft: TaskDraft): Task = repository.createTask(draft)
 
   fun updateTask(update: TaskUpdate) {
     repository.updateTask(update)
   }
 
-  fun changeTaskState(taskId: Long, newState: TaskState, logInput: TaskLogInput) {
+  fun changeTaskState(
+    taskId: Long,
+    newState: TaskState,
+    logInput: TaskLogInput,
+  ) {
     repository.updateTaskState(TaskStateChange(taskId, newState, logInput))
   }
 
@@ -61,7 +71,11 @@ class TaskBoardViewModel(
   }
 
   fun defaultStartSlot(): LocalTime {
-    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+    val now =
+      Clock.System
+        .now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .time
     val minutes = (now.minute / 15) * 15
     return LocalTime(hour = now.hour, minute = minutes)
   }

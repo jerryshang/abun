@@ -17,8 +17,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
@@ -100,7 +100,7 @@ fun FutureViewScreen(
         title = { Text("Future View") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
           }
         },
       )

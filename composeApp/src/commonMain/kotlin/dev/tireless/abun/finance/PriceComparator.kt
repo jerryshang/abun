@@ -17,8 +17,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
@@ -87,9 +87,9 @@ fun PriceComparator(navController: NavHostController) {
         title = { Text("Price Comparison") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
           }
-        }
+        },
       )
     },
     floatingActionButton = {
@@ -98,22 +98,24 @@ fun PriceComparator(navController: NavHostController) {
           onClick = {
             focusManager.clearFocus()
             priceItems = priceItems + PriceItem()
-          }
+          },
         ) {
           Icon(Icons.Default.Add, "Add")
         }
       }
-    }
+    },
   ) { paddingValues ->
     Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
+      modifier =
+        Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
     ) {
       Column(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(MaterialTheme.colorScheme.background)
+        modifier =
+          Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
       ) {
         LazyColumn(
           modifier = Modifier.weight(1f),
@@ -123,14 +125,16 @@ fun PriceComparator(navController: NavHostController) {
           item {
             Card(
               modifier = Modifier.fillMaxWidth(),
-              colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-              )
+              colors =
+                CardDefaults.cardColors(
+                  containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             ) {
               Row(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(16.dp),
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
                 Text(
@@ -166,40 +170,42 @@ fun PriceComparator(navController: NavHostController) {
                   }
               },
               onDelete =
-              if (priceItems.size > 2) {
-                {
-                  priceItems =
-                    priceItems.toMutableList().apply {
-                      removeAt(index)
-                    }
-                }
-              } else {
-                null
-              },
+                if (priceItems.size > 2) {
+                  {
+                    priceItems =
+                      priceItems.toMutableList().apply {
+                        removeAt(index)
+                      }
+                  }
+                } else {
+                  null
+                },
               backgroundColor =
-              when {
-                validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
-                  Color(0xFFE8F5E9)
+                when {
+                  validItems.size > 1 && item.unitPrice == minUnitPrice && item.unitPrice > 0 ->
+                    Color(0xFFE8F5E9)
 
-                validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
-                  Color(0xFFFFF3E0)
+                  validItems.size > 1 && item.unitPrice == maxUnitPrice && item.unitPrice > 0 ->
+                    Color(0xFFFFF3E0)
 
-                else -> MaterialTheme.colorScheme.surface
-              },
+                  else -> MaterialTheme.colorScheme.surface
+                },
             )
           }
         }
 
         Card(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-          Row(
-            modifier = Modifier
+          modifier =
+            Modifier
               .fillMaxWidth()
               .padding(16.dp),
+          elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+          Row(
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
           ) {
             Button(
@@ -232,14 +238,16 @@ private fun PriceItemCard(
   Card(
     modifier = Modifier.fillMaxWidth(),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    colors = CardDefaults.cardColors(
-      containerColor = backgroundColor
-    )
+    colors =
+      CardDefaults.cardColors(
+        containerColor = backgroundColor,
+      ),
   ) {
     Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(16.dp),
+      modifier =
+        Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -253,15 +261,15 @@ private fun PriceItemCard(
         },
         placeholder = { Text("0.00") },
         keyboardOptions =
-        KeyboardOptions(
-          keyboardType = KeyboardType.Decimal,
-          imeAction = ImeAction.Next,
-        ),
+          KeyboardOptions(
+            keyboardType = KeyboardType.Decimal,
+            imeAction = ImeAction.Next,
+          ),
         keyboardActions =
-        KeyboardActions(
-          onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) },
-          onDone = { focusManager.clearFocus() },
-        ),
+          KeyboardActions(
+            onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Right) },
+            onDone = { focusManager.clearFocus() },
+          ),
         singleLine = true,
         modifier = Modifier.weight(1f),
       )
@@ -276,26 +284,26 @@ private fun PriceItemCard(
         },
         placeholder = { Text("1") },
         keyboardOptions =
-        KeyboardOptions(
-          keyboardType = KeyboardType.Decimal,
-          imeAction = ImeAction.Done,
-        ),
+          KeyboardOptions(
+            keyboardType = KeyboardType.Decimal,
+            imeAction = ImeAction.Done,
+          ),
         keyboardActions =
-        KeyboardActions(
-          onDone = { focusManager.clearFocus() },
-        ),
+          KeyboardActions(
+            onDone = { focusManager.clearFocus() },
+          ),
         singleLine = true,
         modifier = Modifier.weight(1f),
       )
 
       Text(
         text =
-        if (item.unitPrice > 0) {
-          val rounded = kotlin.math.round(item.unitPrice * 100) / 100.0
-          "¥$rounded"
-        } else {
-          "-"
-        },
+          if (item.unitPrice > 0) {
+            val rounded = kotlin.math.round(item.unitPrice * 100) / 100.0
+            "¥$rounded"
+          } else {
+            "-"
+          },
         modifier = Modifier.weight(1f),
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.titleMedium,

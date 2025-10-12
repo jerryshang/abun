@@ -28,6 +28,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -93,18 +94,9 @@ fun ExpenseEditScreen(
   var initialized by remember { mutableStateOf(false) }
   var successMessage by remember { mutableStateOf<String?>(null) }
 
-  val paymentAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.ASSET || account.parentId == RootAccountIds.LIABILITY
-      }
-    }
-  val expenseAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.EXPENSE
-      }
-    }
+  val paymentAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.ASSET, AccountType.LIABILITY) }
+  val expenseAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.EXPENSE) }
+  val accountLookup = remember(accounts) { accounts.accountLookup() }
 
   LaunchedEffect(accounts, existingDraft, isEditing) {
     val canInitialize = accounts.isNotEmpty() && (!isEditing || existingDraft != null)
@@ -298,6 +290,7 @@ fun ExpenseEditScreen(
 
       PaymentAccountSelector(
         paymentAccounts = paymentAccounts,
+        accountLookup = accountLookup,
         selectedPaymentAccountId = selectedPaymentAccountId,
         onAccountSelected = { selectedPaymentAccountId = it },
         modifier = Modifier.fillMaxWidth(),
@@ -347,6 +340,7 @@ fun ExpenseEditScreen(
           index = index,
           entryState = entryState,
           expenseAccounts = expenseAccounts,
+          accountLookup = accountLookup,
           onCategorySelected = { categoryId ->
             expenseEntries =
               expenseEntries.toMutableList().also {
@@ -422,6 +416,7 @@ fun ExpenseEditScreen(
 @Composable
 private fun PaymentAccountSelector(
   paymentAccounts: List<AccountWithBalance>,
+  accountLookup: Map<Long, AccountWithBalance>,
   selectedPaymentAccountId: Long?,
   onAccountSelected: (Long) -> Unit,
   modifier: Modifier = Modifier,
@@ -434,7 +429,9 @@ private fun PaymentAccountSelector(
     modifier = modifier,
   ) {
     OutlinedTextField(
-      value = paymentAccounts.find { it.id == selectedPaymentAccountId }?.name ?: "",
+      value =
+        paymentAccounts.find { it.id == selectedPaymentAccountId }?.hierarchyPath(accountLookup)
+          ?: "",
       onValueChange = {},
       readOnly = true,
       label = { Text("Payment Account") },
@@ -442,7 +439,7 @@ private fun PaymentAccountSelector(
       modifier =
         Modifier
           .fillMaxWidth()
-          .menuAnchor(),
+          .menuAnchor(MenuAnchorType.PrimaryEditable, true),
     )
     ExposedDropdownMenu(
       expanded = expanded,
@@ -455,7 +452,7 @@ private fun PaymentAccountSelector(
               modifier = Modifier.fillMaxWidth(),
               horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-              Text(account.name)
+              Text(account.hierarchyPath(accountLookup))
               Text(
                 text = "¥${formatAmount(account.currentBalance)}",
                 style = MaterialTheme.typography.bodySmall,
@@ -479,6 +476,7 @@ private fun ExpenseEntryRow(
   index: Int,
   entryState: ExpenseEntryState,
   expenseAccounts: List<AccountWithBalance>,
+  accountLookup: Map<Long, AccountWithBalance>,
   onCategorySelected: (Long) -> Unit,
   onAmountChanged: (String) -> Unit,
   onNotesChanged: (String) -> Unit,
@@ -513,7 +511,9 @@ private fun ExpenseEntryRow(
         modifier = Modifier.weight(1f),
       ) {
         OutlinedTextField(
-          value = expenseAccounts.find { it.id == entryState.categoryId }?.name ?: "",
+          value =
+            expenseAccounts.find { it.id == entryState.categoryId }?.hierarchyPath(accountLookup)
+              ?: "",
           onValueChange = {},
           readOnly = true,
           label = { Text("Category") },
@@ -521,7 +521,7 @@ private fun ExpenseEntryRow(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
         )
         ExposedDropdownMenu(
           expanded = expanded,
@@ -529,7 +529,7 @@ private fun ExpenseEntryRow(
         ) {
           expenseAccounts.forEach { account ->
             DropdownMenuItem(
-              text = { Text(account.name) },
+              text = { Text(account.hierarchyPath(accountLookup)) },
               onClick = {
                 onCategorySelected(account.id)
                 expanded = false

@@ -637,7 +637,8 @@ private fun buildTaskSubtitle(task: Task): String {
 
 private fun formatDate(date: LocalDate): String = "${date.month.name.lowercase().replaceFirstChar { it.titlecase() }} ${date.dayOfMonth}"
 
-private fun formatTime(time: LocalTime): String = "%02d:%02d".format(time.hour, time.minute)
+private fun formatTime(time: LocalTime): String =
+  "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}"
 
 private fun parseTime(value: String): LocalTime? {
   val parts = value.split(":")

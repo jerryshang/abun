@@ -22,6 +22,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -74,12 +75,8 @@ fun LoanEditScreen(
     focusRequester.requestFocus()
   }
 
-  val assetAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.ASSET
-      }
-    }
+  val assetAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.ASSET) }
+  val accountLookup = remember(accounts) { accounts.accountLookup() }
 
   LaunchedEffect(assetAccounts) {
     if (selectedAccountId == null && assetAccounts.isNotEmpty()) {
@@ -181,7 +178,9 @@ fun LoanEditScreen(
         onExpandedChange = { isAccountMenuExpanded = it },
       ) {
         OutlinedTextField(
-          value = assetAccounts.find { it.id == selectedAccountId }?.name ?: "",
+          value =
+            assetAccounts.find { it.id == selectedAccountId }?.hierarchyPath(accountLookup)
+              ?: "",
           onValueChange = {},
           readOnly = true,
           label = { Text("Deposit Account") },
@@ -189,7 +188,7 @@ fun LoanEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
         )
         DropdownMenu(
           expanded = isAccountMenuExpanded,
@@ -197,7 +196,7 @@ fun LoanEditScreen(
         ) {
           assetAccounts.forEach { account ->
             DropdownMenuItem(
-              text = { Text(account.name) },
+              text = { Text(account.hierarchyPath(accountLookup)) },
               onClick = {
                 selectedAccountId = account.id
                 isAccountMenuExpanded = false

@@ -22,6 +22,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -51,7 +52,6 @@ import androidx.navigation.NavHostController
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.datetime.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,23 +103,15 @@ fun RevenueEditScreen(
   }
 
   val destinationAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.ASSET || account.parentId == RootAccountIds.LIABILITY
-      }
-    }
+    remember(accounts) { accounts.leafAccountsForTypes(AccountType.ASSET, AccountType.LIABILITY) }
 
-  val revenueAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.REVENUE
-      }
-    }
+  val revenueAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.REVENUE) }
+  val accountLookup = remember(accounts) { accounts.accountLookup() }
 
   LaunchedEffect(destinationAccounts, revenueAccounts) {
     if (selectedDestinationAccountId == null && destinationAccounts.isNotEmpty()) {
       selectedDestinationAccountId =
-        destinationAccounts.firstOrNull { it.parentId == RootAccountIds.ASSET }?.id
+        destinationAccounts.firstOrNull { it.resolveAccountType(accountLookup) == AccountType.ASSET }?.id
           ?: destinationAccounts.first().id
     }
     if (selectedRevenueAccountId == null && revenueAccounts.isNotEmpty()) {
@@ -148,7 +140,7 @@ fun RevenueEditScreen(
             enabled = canSave,
             onClick = {
               if (!canSave) return@TextButton
-              if (isEditing && existingTransaction != null) {
+              if (isEditing) {
                 onUpdate(
                   UpdateTransactionInput(
                     id = existingTransaction.id,
@@ -200,124 +192,128 @@ fun RevenueEditScreen(
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
-      val dateInteractionSource = remember { MutableInteractionSource() }
+        val dateInteractionSource = remember { MutableInteractionSource() }
 
-      LaunchedEffect(dateInteractionSource) {
-        dateInteractionSource.interactions.collect { interaction ->
-          if (interaction is PressInteraction.Release) {
-            showDatePicker = true
+        LaunchedEffect(dateInteractionSource) {
+          dateInteractionSource.interactions.collect { interaction ->
+            if (interaction is PressInteraction.Release) {
+              showDatePicker = true
+            }
           }
         }
-      }
 
-      OutlinedTextField(
-        value = formatDate(selectedDateMillis),
-        onValueChange = {},
-        readOnly = true,
-        label = { Text("Date") },
-        trailingIcon = { Icon(Lucide.Calendar, contentDescription = "Select date") },
-        interactionSource = dateInteractionSource,
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-      )
-
-      ExposedDropdownMenuBox(
-        expanded = isDestinationMenuExpanded,
-        onExpandedChange = { isDestinationMenuExpanded = it },
-        modifier = Modifier.fillMaxWidth(),
-      ) {
         OutlinedTextField(
-          value = accounts.find { it.id == selectedDestinationAccountId }?.name ?: "",
+          value = formatDate(selectedDateMillis),
           onValueChange = {},
           readOnly = true,
-          label = { Text("Destination Account") },
-          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDestinationMenuExpanded) },
-          modifier =
-            Modifier
-              .fillMaxWidth()
-              .menuAnchor()
-              .onGloballyPositioned { destinationAnchorWidth = it.size.width },
+          label = { Text("Date") },
+          trailingIcon = { Icon(Lucide.Calendar, contentDescription = "Select date") },
+          interactionSource = dateInteractionSource,
+          modifier = Modifier.fillMaxWidth(),
+          singleLine = true,
         )
-        AccountHierarchySelector(
-          accounts = accounts,
-          filter = AccountFilter.NORMAL_ACCOUNTS,
-          selectedAccountId = selectedDestinationAccountId,
-          onAccountSelect = { selectedDestinationAccountId = it },
+
+        ExposedDropdownMenuBox(
           expanded = isDestinationMenuExpanded,
           onExpandedChange = { isDestinationMenuExpanded = it },
-          showAllOption = false,
-          menuWidthPx = destinationAnchorWidth,
-        )
-      }
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          OutlinedTextField(
+            value =
+              accounts.find { it.id == selectedDestinationAccountId }?.hierarchyPath(accountLookup)
+                ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Destination Account") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDestinationMenuExpanded) },
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+                .onGloballyPositioned { destinationAnchorWidth = it.size.width },
+          )
+          AccountHierarchySelector(
+            accounts = accounts,
+            filter = AccountFilter.NORMAL_ACCOUNTS,
+            selectedAccountId = selectedDestinationAccountId,
+            onAccountSelect = { selectedDestinationAccountId = it },
+            expanded = isDestinationMenuExpanded,
+            onExpandedChange = { isDestinationMenuExpanded = it },
+            showAllOption = false,
+            menuWidthPx = destinationAnchorWidth,
+          )
+        }
 
-      OutlinedTextField(
-        value = amount,
-        onValueChange = { amount = it },
-        label = { Text("Amount") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier =
-          Modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .onFocusChanged { focusState ->
-              if (focusState.isFocused) {
-                if (amount.selection.length != amount.text.length) {
-                  amount = amount.copy(selection = TextRange(0, amount.text.length))
-                }
-                keyboardController?.show()
-              }
-            },
-        prefix = { Text("¥") },
-        singleLine = true,
-      )
-
-      OutlinedTextField(
-        value = payee,
-        onValueChange = { payee = it },
-        label = { Text("Source (optional)") },
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-      )
-
-      ExposedDropdownMenuBox(
-        expanded = isRevenueMenuExpanded,
-        onExpandedChange = { isRevenueMenuExpanded = it },
-        modifier = Modifier.fillMaxWidth(),
-      ) {
         OutlinedTextField(
-          value = accounts.find { it.id == selectedRevenueAccountId }?.name ?: "",
-          onValueChange = {},
-          readOnly = true,
-          label = { Text("Category") },
-          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRevenueMenuExpanded) },
+          value = amount,
+          onValueChange = { amount = it },
+          label = { Text("Amount") },
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor()
-              .onGloballyPositioned { revenueAnchorWidth = it.size.width },
+              .focusRequester(focusRequester)
+              .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                  if (amount.selection.length != amount.text.length) {
+                    amount = amount.copy(selection = TextRange(0, amount.text.length))
+                  }
+                  keyboardController?.show()
+                }
+              },
+          prefix = { Text("¥") },
+          singleLine = true,
         )
-        AccountHierarchySelector(
-          accounts = accounts,
-          filter = AccountFilter.REVENUE,
-          selectedAccountId = selectedRevenueAccountId,
-          onAccountSelect = {
-            selectedRevenueAccountId = it
-          },
+
+        OutlinedTextField(
+          value = payee,
+          onValueChange = { payee = it },
+          label = { Text("Source (optional)") },
+          modifier = Modifier.fillMaxWidth(),
+          singleLine = true,
+        )
+
+        ExposedDropdownMenuBox(
           expanded = isRevenueMenuExpanded,
           onExpandedChange = { isRevenueMenuExpanded = it },
-          showAllOption = false,
-          menuWidthPx = revenueAnchorWidth,
-        )
-      }
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          OutlinedTextField(
+            value =
+              accounts.find { it.id == selectedRevenueAccountId }?.hierarchyPath(accountLookup)
+                ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Category") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRevenueMenuExpanded) },
+            modifier =
+              Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+                .onGloballyPositioned { revenueAnchorWidth = it.size.width },
+          )
+          AccountHierarchySelector(
+            accounts = accounts,
+            filter = AccountFilter.REVENUE,
+            selectedAccountId = selectedRevenueAccountId,
+            onAccountSelect = {
+              selectedRevenueAccountId = it
+            },
+            expanded = isRevenueMenuExpanded,
+            onExpandedChange = { isRevenueMenuExpanded = it },
+            showAllOption = false,
+            menuWidthPx = revenueAnchorWidth,
+          )
+        }
 
-      OutlinedTextField(
-        value = notes,
-        onValueChange = { notes = it },
-        label = { Text("Notes (optional)") },
-        modifier = Modifier.fillMaxWidth(),
-        minLines = 2,
-        maxLines = 4,
-      )
+        OutlinedTextField(
+          value = notes,
+          onValueChange = { notes = it },
+          label = { Text("Notes (optional)") },
+          modifier = Modifier.fillMaxWidth(),
+          minLines = 2,
+          maxLines = 4,
+        )
       }
     }
   }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -85,7 +86,7 @@ fun AccountManagementScreen(
         title = { Text("Account Management") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
           }
         },
         actions = {
@@ -145,7 +146,7 @@ fun AccountCard(
   onToggleExpand: () -> Unit,
   onClick: () -> Unit,
 ) {
-  val accentColor = hexToColorOrNull(account.colorHex) ?: MaterialTheme.colorScheme.secondary
+  val accentColor = MaterialTheme.colorScheme.secondary
   val containerColor = accentColor.copy(alpha = 0.08f)
   val indent = 20.dp * depth
 

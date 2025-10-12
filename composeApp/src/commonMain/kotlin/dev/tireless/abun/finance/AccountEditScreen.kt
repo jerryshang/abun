@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -18,6 +19,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -59,7 +61,7 @@ fun AccountEditScreen(
           title = { Text("Edit Account") },
           navigationIcon = {
             IconButton(onClick = { navController.navigateUp() }) {
-              Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
           },
         )
@@ -90,10 +92,7 @@ fun AccountEditScreen(
       existingAccount?.currency ?: "CNY",
     )
   }
-  var colorHex by remember(
-    accountId,
-    existingAccount,
-  ) { mutableStateOf(existingAccount?.colorHex.orEmpty()) }
+
   var isActive by remember(accountId, existingAccount) {
     mutableStateOf(
       existingAccount?.isActive ?: true,
@@ -115,7 +114,6 @@ fun AccountEditScreen(
       account = existingAccount,
       name = name,
       currency = currency,
-      colorHex = colorHex,
       parentId = parentId,
       isActive = isActive,
       isVisible = isVisible,
@@ -131,7 +129,7 @@ fun AccountEditScreen(
         title = { Text(if (isNewAccount) "Create Account" else "Edit Account") },
         navigationIcon = {
           IconButton(onClick = { navController.navigateUp() }) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
           }
         },
         actions = {
@@ -165,17 +163,6 @@ fun AccountEditScreen(
         onValueChange = { currency = it.uppercase() },
         modifier = Modifier.fillMaxWidth(),
         label = { Text("Currency") },
-        singleLine = true,
-      )
-
-      OutlinedTextField(
-        value = colorHex,
-        onValueChange = { value ->
-          colorHex = value.take(7)
-        },
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text("Color HEX (Optional)") },
-        placeholder = { Text("#4CAF50") },
         singleLine = true,
       )
 
@@ -242,7 +229,6 @@ private fun saveAccount(
   account: AccountWithBalance?,
   name: String,
   currency: String,
-  colorHex: String,
   parentId: Long?,
   isActive: Boolean,
   isVisible: Boolean,
@@ -257,7 +243,6 @@ private fun saveAccount(
         isActive = isActive,
         isCountable = isCountable,
         isVisibleInUi = isVisible,
-        colorHex = colorHex.takeIf { it.isNotBlank() },
       ),
     )
   } else {
@@ -270,8 +255,6 @@ private fun saveAccount(
         isActive = isActive,
         isCountable = isCountable,
         isVisibleInUi = isVisible,
-        iconName = account.iconName,
-        colorHex = colorHex.takeIf { it.isNotBlank() },
         billDate = account.billDate,
         paymentDate = account.paymentDate,
         creditLimit = account.creditLimit,
@@ -308,7 +291,7 @@ private fun ParentAccountSelector(
       modifier =
         Modifier
           .fillMaxWidth()
-          .menuAnchor()
+          .menuAnchor(MenuAnchorType.PrimaryEditable, true)
           .onGloballyPositioned { anchorWidth = it.size.width },
       label = { Text("Parent Account (Optional)") },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },

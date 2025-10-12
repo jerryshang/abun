@@ -57,6 +57,16 @@ kotlin {
       implementation(libs.kotlin.test)
     }
   }
+
+  targets.configureEach {
+    compilations.configureEach {
+      compileTaskProvider.configure {
+        compilerOptions {
+          freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+      }
+    }
+  }
 }
 
 android {

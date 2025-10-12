@@ -40,7 +40,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +62,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -100,6 +98,7 @@ fun FinanceScreen(
   val isLoading by viewModel.isLoading.collectAsState()
   val error by viewModel.error.collectAsState()
   val selectedAccountId by viewModel.selectedAccountId.collectAsState()
+  val accountLookup = remember(accounts) { accounts.accountLookup() }
 
   var isFabExpanded by remember { mutableStateOf(false) }
   var showAccountSelector by remember { mutableStateOf(false) }
@@ -308,6 +307,7 @@ fun FinanceScreen(
             if (selectedAccount != null) {
               AccountDetailSummaryCard(
                 account = selectedAccount,
+                accountType = selectedAccount.resolveAccountType(accountLookup),
                 onViewDetails = { navController.navigate(Route.AccountDetails(selectedAccount.id)) },
                 modifier = Modifier.fillMaxWidth(),
               )
@@ -329,6 +329,7 @@ fun FinanceScreen(
                 onDelete = {
                   transactionPendingDeletion = transactionWithDetails
                 },
+                modifier = Modifier.fillMaxWidth(),
               )
             }
           } else {
@@ -624,6 +625,7 @@ fun TransactionCard(
   transactionWithDetails: TransactionWithDetails,
   onClick: () -> Unit,
   onDelete: () -> Unit,
+  modifier: Modifier = Modifier,
 ) {
   val transaction = transactionWithDetails.transaction
   val transactionType = transactionWithDetails.inferType()
@@ -639,15 +641,11 @@ fun TransactionCard(
       TransactionType.LOAN_PAYMENT -> Lucide.PiggyBank
     }
 
-  val accountColor = resolveTransactionColor(transactionWithDetails)
-  val accentColor = accountColor ?: MaterialTheme.colorScheme.secondary
+  val accentColor = MaterialTheme.colorScheme.secondary
   val backgroundColor = accentColor.copy(alpha = 0.12f)
 
   Surface(
-    modifier =
-      Modifier
-        .fillMaxWidth()
-        .clickable(onClick = onClick),
+    modifier = modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(24.dp),
     tonalElevation = 1.dp,
     shadowElevation = 0.dp,
@@ -778,21 +776,6 @@ fun TransactionCard(
   }
 }
 
-private fun resolveTransactionColor(transactionWithDetails: TransactionWithDetails): Color? {
-  val transactionType = transactionWithDetails.inferType()
-  val primaryAccount = transactionWithDetails.getPrimaryAccount()
-  val secondaryAccount = transactionWithDetails.getSecondaryAccount()
-
-  val colorHex =
-    when (transactionType) {
-      TransactionType.EXPENSE, TransactionType.LOAN, TransactionType.LOAN_PAYMENT -> transactionWithDetails.debitAccount.colorHex
-      TransactionType.INCOME -> transactionWithDetails.creditAccount.colorHex
-      TransactionType.TRANSFER -> primaryAccount.colorHex ?: secondaryAccount?.colorHex
-    }
-
-  return hexToColorOrNull(colorHex)
-}
-
 /**
  * Account detail summary card showing account-specific information
  * - For debit cards (assets): Shows current balance
@@ -801,19 +784,13 @@ private fun resolveTransactionColor(transactionWithDetails: TransactionWithDetai
 @Composable
 fun AccountDetailSummaryCard(
   account: AccountWithBalance,
+  accountType: AccountType?,
   onViewDetails: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val isLiability = account.parentId == RootAccountIds.LIABILITY
-  val isAsset = account.parentId == RootAccountIds.ASSET
-  val typeLabel =
-    when (account.parentId) {
-      RootAccountIds.ASSET -> "Asset account"
-      RootAccountIds.LIABILITY -> "Liability account"
-      RootAccountIds.REVENUE -> "Revenue account"
-      RootAccountIds.EXPENSE -> "Expense account"
-      else -> "Account"
-    }
+  val resolvedType = accountType ?: AccountType.ASSET
+  val isLiability = resolvedType == AccountType.LIABILITY
+  val isAsset = resolvedType == AccountType.ASSET
 
   Surface(
     modifier = modifier,

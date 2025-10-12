@@ -69,6 +69,16 @@ enum class AccountType {
         REVENUE -> RootAccountIds.REVENUE
         EXPENSE -> RootAccountIds.EXPENSE
       }
+
+    fun fromRootId(rootId: Long): AccountType? =
+      when (rootId) {
+        RootAccountIds.ASSET -> ASSET
+        RootAccountIds.LIABILITY -> LIABILITY
+        RootAccountIds.EQUITY -> EQUITY
+        RootAccountIds.REVENUE -> REVENUE
+        RootAccountIds.EXPENSE -> EXPENSE
+        else -> null
+      }
   }
 }
 
@@ -160,8 +170,6 @@ data class Account(
   val parentId: Long? = null, // NULL for root accounts (Asset, Liability, Equity, Revenue, Expense)
   val currency: String = "CNY",
   val config: Long = 7L, // Bitwise: bit0=active, bit1=countable, bit2=visible (default: all on)
-  val iconName: String? = null,
-  val colorHex: String? = null,
   // Day of month for credit card billing (1-28, compatible with Feb)
   val billDate: Int? = null,
   // Day of month for payment due (1-28, compatible with Feb)
@@ -227,8 +235,6 @@ data class AccountWithBalance(
   val isActive get() = account.isActive
   val isCountable get() = account.isCountable
   val isVisibleInUi get() = account.isVisibleInUi
-  val iconName get() = account.iconName
-  val colorHex get() = account.colorHex
   val billDate get() = account.billDate
   val paymentDate get() = account.paymentDate
   val creditLimit get() = account.creditLimit
@@ -395,13 +401,15 @@ data class TransactionWithDetails(
  * Sum balances for user-visible net worth calculation.
  * Includes only active, countable asset and liability accounts.
  */
-fun List<AccountWithBalance>.totalCountableBalance(): Double =
-  this
+fun List<AccountWithBalance>.totalCountableBalance(): Double {
+  val lookup = accountLookup()
+  return this
     .filter { accountWithBalance ->
-      accountWithBalance.isActive &&
-        accountWithBalance.isCountable &&
-        (accountWithBalance.parentId == RootAccountIds.ASSET || accountWithBalance.parentId == RootAccountIds.LIABILITY)
+      if (!accountWithBalance.isActive || !accountWithBalance.isCountable) return@filter false
+      val type = accountWithBalance.resolveAccountType(lookup)
+      type == AccountType.ASSET || type == AccountType.LIABILITY
     }.sumOf { it.currentBalance }
+}
 
 fun TransactionWithDetails.toEditPayload(): TransactionEditPayload? {
   val transactionType = inferType()

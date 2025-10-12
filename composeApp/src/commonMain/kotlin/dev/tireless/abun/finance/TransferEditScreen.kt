@@ -20,6 +20,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -87,12 +88,8 @@ fun TransferEditScreen(
     }
   }
 
-  val assetAccounts =
-    remember(accounts) {
-      accounts.filter { account ->
-        account.parentId == RootAccountIds.ASSET
-      }
-    }
+  val assetAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.ASSET) }
+  val accountLookup = remember(accounts) { accounts.accountLookup() }
 
   val destinationAccounts =
     remember(assetAccounts, selectedSourceAccountId) {
@@ -136,7 +133,7 @@ fun TransferEditScreen(
             onClick = {
               if (!canSave) return@TextButton
 
-              if (isEditing && existingTransaction != null) {
+              if (isEditing) {
                 onUpdate(
                   UpdateTransactionInput(
                     id = existingTransaction.id,
@@ -209,7 +206,9 @@ fun TransferEditScreen(
         onExpandedChange = { isSourceMenuExpanded = it },
       ) {
         OutlinedTextField(
-          value = assetAccounts.find { it.id == selectedSourceAccountId }?.name ?: "",
+          value =
+            assetAccounts.find { it.id == selectedSourceAccountId }?.hierarchyPath(accountLookup)
+              ?: "",
           onValueChange = {},
           readOnly = true,
           label = { Text("Source Account") },
@@ -217,7 +216,7 @@ fun TransferEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
         )
         DropdownMenu(
           expanded = isSourceMenuExpanded,
@@ -230,7 +229,7 @@ fun TransferEditScreen(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                  Text(account.name)
+                  Text(account.hierarchyPath(accountLookup))
                   Text(
                     "¥${formatAmount(account.currentBalance)}",
                     style = MaterialTheme.typography.bodySmall,
@@ -252,7 +251,9 @@ fun TransferEditScreen(
         onExpandedChange = { isDestinationMenuExpanded = it },
       ) {
         OutlinedTextField(
-          value = destinationAccounts.find { it.id == selectedDestinationAccountId }?.name ?: "",
+          value =
+            destinationAccounts.find { it.id == selectedDestinationAccountId }?.hierarchyPath(accountLookup)
+              ?: "",
           onValueChange = {},
           readOnly = true,
           label = { Text("Destination Account") },
@@ -260,7 +261,7 @@ fun TransferEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
         )
         DropdownMenu(
           expanded = isDestinationMenuExpanded,
@@ -273,7 +274,7 @@ fun TransferEditScreen(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                  Text(account.name)
+                  Text(account.hierarchyPath(accountLookup))
                   Text(
                     "¥${formatAmount(account.currentBalance)}",
                     style = MaterialTheme.typography.bodySmall,

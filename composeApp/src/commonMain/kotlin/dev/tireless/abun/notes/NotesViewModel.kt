@@ -3,6 +3,7 @@ package dev.tireless.abun.notes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.tireless.abun.tags.Tag
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotesViewModel(
   private val repository: RichNoteRepository,
 ) : ViewModel() {

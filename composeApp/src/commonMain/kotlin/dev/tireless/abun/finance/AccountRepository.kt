@@ -4,6 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import dev.tireless.abun.database.AppDatabase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -17,6 +18,7 @@ import dev.tireless.abun.database.Account as DbAccount
  * Handles account CRUD operations and balance management
  * Accounts are organized in a hierarchy with 5 root accounts (Asset, Liability, Equity, Revenue, Expense)
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AccountRepository(
   private val database: AppDatabase,
 ) {
@@ -85,15 +87,6 @@ class AccountRepository(
     }
 
   /**
-   * Get all accounts with calculated balances
-   */
-  suspend fun getAllAccountsWithBalance(): List<AccountWithBalance> =
-    withContext(Dispatchers.IO) {
-      val accounts = getAllAccounts()
-      accountsWithBalance(accounts)
-    }
-
-  /**
    * Get active accounts only
    */
   suspend fun getActiveAccounts(): List<Account> =
@@ -101,14 +94,6 @@ class AccountRepository(
       queries.getActiveAccounts().executeAsList().map { it.toDomain() }
     }
 
-  /**
-   * Get active accounts with calculated balances
-   */
-  suspend fun getActiveAccountsWithBalance(): List<AccountWithBalance> =
-    withContext(Dispatchers.IO) {
-      val accounts = getActiveAccounts()
-      accountsWithBalance(accounts)
-    }
 
   fun getAllAccountsWithBalanceFlow(): Flow<List<AccountWithBalance>> {
     val accountsFlow = queries.getAllAccounts().asFlow().mapToList(Dispatchers.IO)
@@ -116,8 +101,7 @@ class AccountRepository(
     return accountsFlow
       .combine(transactionsFlow) { accountEntities, _ ->
         accountEntities.map { it.toDomain() }
-      }
-      .mapLatest { accounts ->
+      }.mapLatest { accounts ->
         updateCache(accounts)
         accountsWithBalance(accounts)
       }
@@ -129,8 +113,7 @@ class AccountRepository(
     return activeAccountsFlow
       .combine(transactionsFlow) { accountEntities, _ ->
         accountEntities.map { it.toDomain() }
-      }
-      .mapLatest { accounts ->
+      }.mapLatest { accounts ->
         refreshCache()
         accountsWithBalance(accounts)
       }
@@ -162,8 +145,6 @@ class AccountRepository(
         parent_id = input.parentId,
         currency = input.currency,
         config = config,
-        icon_name = input.iconName,
-        color_hex = input.colorHex,
         bill_date = input.billDate?.toLong(),
         payment_date = input.paymentDate?.toLong(),
         credit_limit = input.getCreditLimitStorage(),
@@ -196,8 +177,6 @@ class AccountRepository(
         parent_id = input.parentId,
         currency = input.currency,
         config = config,
-        icon_name = input.iconName,
-        color_hex = input.colorHex,
         bill_date = input.billDate?.toLong(),
         payment_date = input.paymentDate?.toLong(),
         credit_limit = input.getCreditLimitStorage(),
@@ -282,8 +261,6 @@ class AccountRepository(
       parentId = parent_id,
       currency = currency,
       config = config,
-      iconName = icon_name,
-      colorHex = color_hex,
       billDate = bill_date?.toInt(),
       paymentDate = payment_date?.toInt(),
       creditLimitStorage = credit_limit,
