@@ -10,8 +10,7 @@ CREATE TABLE Account (
     parent_id INTEGER, -- NULL for root accounts, or FK to parent account
     currency TEXT NOT NULL DEFAULT 'CNY',
     config INTEGER NOT NULL DEFAULT 7, -- Bitwise: bit0=active, bit1=countable, bit2=visible
-    icon_name TEXT,
-    color_hex TEXT,
+    note TEXT,
     bill_date INTEGER CHECK (bill_date IS NULL OR (bill_date >= 1 AND bill_date <= 28)), -- Day of month 1-28 (compatible with Feb)
     payment_date INTEGER CHECK (payment_date IS NULL OR (payment_date >= 1 AND payment_date <= 28)), -- Day of month 1-28
     credit_limit INTEGER NOT NULL DEFAULT -1, -- Credit limit * 10000, -1 for non-liability accounts
@@ -28,116 +27,174 @@ CREATE TABLE Account (
 -- ----------------------------
 -- 5 Fundamental Root Accounts
 -- ----------------------------
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(1, 'Asset', NULL, '#2196F3'),      -- 🔵 Blue for Assets
-(2, 'Liability', NULL, '#FF9800'),  -- 🟠 Orange for Liabilities
-(3, 'Equity', NULL, '#9C27B0'),     -- 🟣 Purple for Equity
-(4, 'Revenue', NULL, '#4CAF50'),    -- 🟢 Green for Revenue
-(5, 'Expense', NULL, '#F44336');    -- 🔴 Red for Expenses
+INSERT INTO Account (id, name, note) VALUES
+  (1, 'Asset', '资产')
+, (2, 'Liability', '负债')
+, (3, 'Equity', '权益')
+, (4, 'Revenue', '收入')
+, (5, 'Expense', '开支')
+;
 
 -- ----------------------------
 -- ASSET ACCOUNTS (parent_id: 1)
 -- ----------------------------
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(101, 'Cash', 1, '#64B5F6'),
-(102, 'Checking Accounts', 1, '#42A5F5'),
-(103, 'E-Wallets', 1, '#90CAF9'),
-(104, 'Growth', 1, '#1E88E5'),
-(105, 'Lending', 1, '#1976D2'),
-(106, 'Fixed Assets', 1, '#0D47A1');
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(107, 'Deposits', 1, '#1565C0'),
-(108, 'Reimbursables', 1, '#0288D1');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (101, 'Cash', 1, '现金')
+, (102, 'Checking Accounts', 1, '借记卡或活期账户')
+, (103, 'E-Wallets', 1,  '电子钱包')
+, (104, 'Growth', 1, '增值资产，储蓄与投资')
+, (105, 'Lending', 1,  '借出款项，包括临时垫付')
+, (106, 'Fixed Assets', 1,  '固定资产')
+, (107, 'Deposits', 1,  '押金')
+, (108, 'Reimbursables', 1,  '公司报销')
+;
+
+-- debit cards & checking accounts
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (10201, 'CMB', 102, '招商银行')
+, (10202, 'BOC', 102, '中国银行')
+, (10203, 'ICBC', 102, '工商银行')
+, (10204, 'Wise', 102, 'Wise个人户')
+, (10205, 'iFast', 102, 'iFast GB')
+;
+-- e-wallets
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (10301, 'Alipay', 103, '支付宝，包括余额宝')
+, (10302, 'WeChat Wallet', 103, '微信钱包')
+;
+-- growth
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (10401, 'MIPA', 104, '医保个人账户')
+, (10402, 'HPF', 104, '住房公积金')
+, (10403, 'Crypto Wallets', 104, '加密货币')
+, (10404, 'Binance', 104, '币安')
+;
+
 -- -------------------------------
 -- LIABILITY ACCOUNTS (parent_id: 2)
 -- -------------------------------
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(201, 'Credit Cards', 2, '#FB8C00'),
-(202, 'Loans', 2, '#F57C00'),
-(203, 'Borrowing', 2, '#EF6C00');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (201, 'Credit Cards', 2, '信用卡')
+, (202, 'Loans', 2, '银行或机构贷款')
+, (203, 'Borrowing', 2, '个人借款')
+;
+-- credit cards
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (20101, 'CMB', 201, '招商银行')
+, (20102, 'Huabei', 201, '花呗')
+, (20103, 'JDCredit ', 201, '京东白条')
+, (20104, 'Minshen', 201, '民生银行')
+, (20105, 'Citic', 201, '中信银行')
+, (20106, 'Gzcb', 201, '广州银行')
+;
+
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (20201, 'CMB', 202, '招商银行')
+, (20202, 'Jiebei', 202, '借呗')
+, (20203, 'Duxiaoman', 202, '度小满')
+, (20204, 'Wechat', 202, '微粒贷')
+, (20205, 'JD', 202, '京东')
+;
 
 -- ----------------------------
 -- EQUITY ACCOUNTS (parent_id: 3)
 -- ----------------------------
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(301, 'Open Balance', 3, '#BA68C8'),
-(302, 'Capital Contributions', 3, '#AB47BC'),
-(303, 'Capital Losses', 3, '#9C27B0'),
-(304, 'Adjustments', 3, '#8E24AA'),
-(305, 'Retained Earnings', 3, '#7B1FA2');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (301, 'Open Balance', 3, '初始权益，仅用于App初始化时，建立各账户的期初余额')
+, (302, 'Capital Contributions', 3, '资本注入，用于记录无需偿还的外部资金支持，如家庭赠与')
+, (303, 'Capital Losses', 3, '资本损失，用于核销确认无法收回的资产，如坏账')
+, (304, 'Adjustments', 3, '对账专用')
+, (305, 'Retained Earnings', 3, '留存收益，系统在期末自动计算和结转')
+;
 
 -- -----------------------------
 -- REVENUE ACCOUNTS (parent_id: 4)
 -- -----------------------------
 -- Level 2 Categories
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(401, 'Active', 4, '#66BB6A'),
-(402, 'Passive', 4, '#388E3C'),
-(403, 'Others', 4, '#A5D6A7');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (401, 'Active', 4, '主动收入')
+, (402, 'Passive', 4, '被动收入')
+, (403, 'Others', 4, '其它')
+;
+
 -- Level 3 under Active (401)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(40101, 'Salary', 401, '#81C784'),
-(40102, 'Bonus', 401, '#81C784'),
-(40103, 'Side Hustle', 401, '#81C784');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (40101, 'Pay', 401, '薪酬，所有作为雇员的收入')
+, (40102, 'Bonus', 401, '所有基于业绩的浮动收入')
+, (40103, 'Freelance', 401, '所有作为独立工作者的一次性收入')
+;
 -- Level 3 under Passive (402)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(40201, 'Interest', 402, '#43A047'),
-(40202, 'Dividends', 402, '#43A047'),
-(40203, 'Capital Gains', 402, '#43A047'),
-(40204, 'Royalties & Rent', 402, '#43A047');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (40201, 'Interest', 402, '利息')
+, (40202, 'Dividends', 402, '分红，股票、基金、公司股权')
+, (40203, 'Capital Gains', 402, '出售资产（房产、股票）的增值部分')
+, (40204, 'Royalties', 402, '版税、授权费或广告分成')
+, (40205, 'Rent', 402, '租赁收入')
+;
+
 -- Level 3 under Others (403)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(40301, 'Red Packets', 403, '#C8E6C9'),
-(40302, 'Second-hand Sales', 403, '#C8E6C9'),
-(40303, 'Windfall', 403, '#C8E6C9');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (40301, 'Red Packets', 403, '家人转账、节日红包，小额')
+, (40302, 'Second-hand Sales', 403, '二手出售')
+, (40303, 'Windfall', 403, '中奖、继承、保险赔付')
+;
 
 -- -----------------------------
 -- EXPENSE ACCOUNTS (parent_id: 5)
 -- -----------------------------
 -- Level 2 Categories
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(501, 'Essential', 5, '#EF5350'),
-(502, 'Lifestyle', 5, '#E53935'),
-(503, 'Growth & Creation', 5, '#C62828'),
-(504, 'Financial Costs', 5, '#B71C1C'),
-(505, 'Uncategorized', 5, '#D32F2F');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (501, 'Essential', 5, '维持个人和家庭（包括宠物）基本生存和责任的、不可或缺的刚性开支')
+, (502, 'Lifestyle', 5, '体验当下')
+, (503, 'Growth & Creation', 5, '投资未来')
+, (504, 'Financial Costs', 5, '财务成本')
+, (505, 'Uncategorized', 5, '未分类支出，暂时想不起来用途、懒得分类、或非常零碎的小额支出')
+;
 
 -- Level 3 under Essential (501)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(50101, 'Housing', 501, '#FFCDD2'),
-(50102, 'Utilities', 501, '#FFCDD2'),
-(50103, 'Groceries', 501, '#FFCDD2'),
-(50104, 'Household', 501, '#FFCDD2'),
-(50105, 'Transportation', 501, '#FFCDD2'),
-(50106, 'Communication', 501, '#FFCDD2'),
-(50107, 'Basic Apparel', 501, '#FFCDD2'),
-(50108, 'Personal Care', 501, '#FFCDD2'),
-(50109, 'Healthcare', 501, '#FFCDD2'),
-(50110, 'Insurance', 501, '#FFCDD2'),
-(50111, 'Family Support', 501, '#FFCDD2'),
-(50112, 'Pet Care', 501, '#FFCDD2'),
-(50113, 'Administrative & Legal', 501, '#FFCDD2');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (50101, 'Groceries', 501, '食品与日用杂货，超市购买的食材')
+, (50102, 'Household', 501, '居家物品，生活用品、清洁用品等消耗品，基础家具、床上用品、厨具等耐用品')
+, (50103, 'Convenience Dining', 501, '便利餐饮，工作餐、外卖、快餐等以节省时间为目的的餐食')
+, (50104, 'Transportation', 501, '通勤交通，只包含最基础的、没有车也能活下去的交通方式（公交、地铁）')
+, (50105, 'Housing', 501, '房租、房贷、物业费、中介费')
+, (50106, 'Utilities', 501, '公共事业费，电费、水费、燃气费、暖气费')
+, (50107, 'Communication', 501, '通讯联络，手机话费、网费、云存储服务费、VPN服务费')
+, (50108, 'Basic Apparel', 501, '基础衣物，满足基本需求的内衣、袜子、工作制服、过冬的保暖衣物')
+, (50109, 'Necessary Electronics', 501, '维持现代生活、学习和工作所必需的核心电子设备')
+, (50110, 'Personal Care', 501, '个人护理，牙膏、洗发水、基础护肤品、理发等')
+, (50111, 'Healthcare', 501, '医疗健康，挂号、药品、体检、牙医、理疗、眼镜')
+, (50112, 'Insurance', 501, '保险保障，社保、医疗保险、汽车保险、人寿保险')
+, (50113, 'Family Support', 501, '家庭支持，给父母的生活费、子女抚养与教育费')
+, (50114, 'Pet Care', 501, '宠物开销，宠物食品、猫砂、医疗')
+, (50115, 'Administrative & Legal', 501, '行政与法律，签证等')
+;
 
 -- Level 3 under Lifestyle (502)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(50201, 'Dining & Social', 502, '#EF9A9A'),
-(50202, 'Fashion & Accessories', 502, '#EF9A9A'),
-(50203, 'Electronics & Gadgets', 502, '#EF9A9A'),
-(50204, 'Home & Decor', 502, '#EF9A9A'),
-(50205, 'Entertainment & Hobbies', 502, '#EF9A9A'),
-(50206, 'Travel & Vacation', 502, '#EF9A9A'),
-(50207, 'Gifting & Donations', 502, '#EF9A9A');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (50201, 'Treats & Beverages', 502, '零食与饮品，奶茶、咖啡、蛋糕、点心、酒水、饮料')
+, (50202, 'Dining & Social', 502, '餐饮与社交，餐厅、咖啡馆、酒吧、请客吃饭、朋友聚会')
+, (50203, 'Fashion & Accessories', 502, '时尚服饰与配饰，用于提升形象、满足审美需求的品牌衣物、鞋包、首饰')
+, (50204, 'Electronics & Gadgets', 502, '电子产品与数码，手机、电脑、相机、游戏机、电视、智能家居设备')
+, (50205, 'Home & Decor', 502, '家居与装饰，提升居住品质的家具、装饰品、艺术品、高端厨具')
+, (50206, 'Entertainment & Hobbies', 502, '休闲娱乐与爱好，流媒体、电影、游戏、健身、运动、乐器、非学习类书籍')
+, (50207, 'Vehicle', 502, '按需用车（租车、打车）或私家车全部相关开支')
+, (50208, 'Travel & Vacation', 502, '旅行度假，机票、酒店、景点门票、旅行纪念品')
+, (50209, 'Gifting & Donations', 502, '礼物与慈善，生日礼物、节日红包、慈善捐款')
+;
 
 -- Level 3 under Growth & Creation (503)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(50301, 'Self-Development', 503, '#E57373'),
-(50302, 'Side Hustle Costs', 503, '#E57373');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (50301, 'Self-Development', 503, '自我提升，学费、课程订阅、书籍、知识付费、参加工作坊、个人域名')
+, (50302, 'Side Hustle Costs', 503, '副业项目，平台费、软件订阅费、快递费、办公用品、进货成本、广告投放、社交媒体推广费用')
+;
 
 -- Level 3 under Financial Costs (504)
-INSERT INTO Account (id, name, parent_id, color_hex) VALUES
-(50401, 'Interest Paid', 504, '#D32F2F'),
-(50402, 'Fees & Charges', 504, '#D32F2F'),
-(50403, 'Taxes', 504, '#D32F2F');
+INSERT INTO Account (id, name, parent_id, note) VALUES
+  (50401, 'Interest Paid', 504, '利息支出，信用卡利息、各类贷款利息')
+, (50402, 'Fees & Charges', 504, '手续与服务费，银行账户年费、转账手续费、会员费、滞纳金')
+, (50403, 'Taxes', 504,  '税金，个人所得税、资产相关税费')
+;
 
 -- Transaction Groups Table (Pure virtual grouping for related transactions)
 -- This is a logical grouping mechanism without financial meaning
@@ -184,12 +241,12 @@ CREATE TABLE TransactionGroupMember (
 
 -- Queries for Accounts
 insertAccount:
-INSERT INTO Account (name, parent_id, currency, config, icon_name, color_hex, bill_date, payment_date, credit_limit, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Account (name, parent_id, currency, config,  bill_date, payment_date, credit_limit, created_at, updated_at)
+VALUES (?, ?, ?,  ?, ?, ?, ?, ?, ?);
 
 updateAccount:
 UPDATE Account
-SET name = ?, parent_id = ?, currency = ?, config = ?, icon_name = ?, color_hex = ?, bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
+SET name = ?, parent_id = ?, currency = ?, config = ?,  bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
 WHERE id = ?;
 
 deleteAccount:

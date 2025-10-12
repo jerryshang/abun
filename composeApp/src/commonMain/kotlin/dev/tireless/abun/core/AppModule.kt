@@ -1,6 +1,5 @@
 package dev.tireless.abun.core
 
-import dev.tireless.abun.Greeting
 import dev.tireless.abun.database.AppDatabase
 import dev.tireless.abun.finance.AccountRepository
 import dev.tireless.abun.finance.AccountViewModel
@@ -27,7 +26,6 @@ import org.koin.dsl.module
 
 val appModule =
   module {
-    single { Greeting() }
     single { get<DatabaseDriverFactory>().createDriver() }
     single { AppDatabase(get()) }
     single { QuotesRepository(get()) }
