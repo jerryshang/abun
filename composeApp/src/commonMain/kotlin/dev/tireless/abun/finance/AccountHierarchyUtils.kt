@@ -28,7 +28,7 @@ fun List<AccountWithBalance>.leafAccountsForTypes(vararg types: AccountType): Li
       val hasChildren = !children[account.id].isNullOrEmpty()
       type != null && type in typeSet && !hasChildren
     }
-    .sortedBy { it.name }
+    .sortedBy { it.id }
     .toList()
 }
 

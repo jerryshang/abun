@@ -22,6 +22,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -107,6 +108,8 @@ fun RevenueEditScreen(
 
   val revenueAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.REVENUE) }
   val accountLookup = remember(accounts) { accounts.accountLookup() }
+  val destinationSelectableIds = remember(destinationAccounts) { destinationAccounts.map { it.id }.toSet() }
+  val revenueSelectableIds = remember(revenueAccounts) { revenueAccounts.map { it.id }.toSet() }
 
   LaunchedEffect(destinationAccounts, revenueAccounts) {
     if (selectedDestinationAccountId == null && destinationAccounts.isNotEmpty()) {
@@ -236,11 +239,16 @@ fun RevenueEditScreen(
             accounts = accounts,
             filter = AccountFilter.NORMAL_ACCOUNTS,
             selectedAccountId = selectedDestinationAccountId,
-            onAccountSelect = { selectedDestinationAccountId = it },
+            onAccountSelect = { id ->
+              if (id != null && id in destinationSelectableIds) {
+                selectedDestinationAccountId = id
+              }
+            },
             expanded = isDestinationMenuExpanded,
             onExpandedChange = { isDestinationMenuExpanded = it },
             showAllOption = false,
             menuWidthPx = destinationAnchorWidth,
+            isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in destinationSelectableIds },
           )
         }
 
@@ -296,13 +304,17 @@ fun RevenueEditScreen(
             accounts = accounts,
             filter = AccountFilter.REVENUE,
             selectedAccountId = selectedRevenueAccountId,
-            onAccountSelect = {
-              selectedRevenueAccountId = it
+            onAccountSelect = { id ->
+              if (id != null && id in revenueSelectableIds) {
+                selectedRevenueAccountId = id
+              }
             },
             expanded = isRevenueMenuExpanded,
             onExpandedChange = { isRevenueMenuExpanded = it },
             showAllOption = false,
             menuWidthPx = revenueAnchorWidth,
+            isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in revenueSelectableIds },
+            showRootLabels = false,
           )
         }
 

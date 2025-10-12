@@ -13,8 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -40,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -66,6 +65,7 @@ fun LoanEditScreen(
   var notes by remember { mutableStateOf("") }
 
   var isAccountMenuExpanded by remember { mutableStateOf(false) }
+  var accountAnchorWidth by remember { mutableStateOf(0) }
 
   val focusRequester = remember { FocusRequester() }
   val keyboardController = LocalSoftwareKeyboardController.current
@@ -77,6 +77,7 @@ fun LoanEditScreen(
 
   val assetAccounts = remember(accounts) { accounts.leafAccountsForTypes(AccountType.ASSET) }
   val accountLookup = remember(accounts) { accounts.accountLookup() }
+  val selectableAccountIds = remember(assetAccounts) { assetAccounts.map { it.id }.toSet() }
 
   LaunchedEffect(assetAccounts) {
     if (selectedAccountId == null && assetAccounts.isNotEmpty()) {
@@ -188,22 +189,24 @@ fun LoanEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+              .onGloballyPositioned { accountAnchorWidth = it.size.width },
         )
-        DropdownMenu(
+        AccountHierarchySelector(
+          accounts = accounts,
+          filter = AccountFilter.NORMAL_ACCOUNTS,
+          selectedAccountId = selectedAccountId,
+          onAccountSelect = { id ->
+            if (id != null && id in selectableAccountIds) {
+              selectedAccountId = id
+            }
+          },
           expanded = isAccountMenuExpanded,
-          onDismissRequest = { isAccountMenuExpanded = false },
-        ) {
-          assetAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = { Text(account.hierarchyPath(accountLookup)) },
-              onClick = {
-                selectedAccountId = account.id
-                isAccountMenuExpanded = false
-              },
-            )
-          }
-        }
+          onExpandedChange = { isAccountMenuExpanded = it },
+          showAllOption = false,
+          menuWidthPx = accountAnchorWidth,
+          isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in selectableAccountIds },
+        )
       }
 
       Text("Repayment Type", style = MaterialTheme.typography.labelLarge)

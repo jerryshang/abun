@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -46,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -289,6 +289,7 @@ fun ExpenseEditScreen(
       )
 
       PaymentAccountSelector(
+        allAccounts = accounts,
         paymentAccounts = paymentAccounts,
         accountLookup = accountLookup,
         selectedPaymentAccountId = selectedPaymentAccountId,
@@ -339,6 +340,7 @@ fun ExpenseEditScreen(
         ExpenseEntryRow(
           index = index,
           entryState = entryState,
+          allAccounts = accounts,
           expenseAccounts = expenseAccounts,
           accountLookup = accountLookup,
           onCategorySelected = { categoryId ->
@@ -415,6 +417,7 @@ fun ExpenseEditScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PaymentAccountSelector(
+  allAccounts: List<AccountWithBalance>,
   paymentAccounts: List<AccountWithBalance>,
   accountLookup: Map<Long, AccountWithBalance>,
   selectedPaymentAccountId: Long?,
@@ -422,6 +425,8 @@ private fun PaymentAccountSelector(
   modifier: Modifier = Modifier,
 ) {
   var expanded by remember { mutableStateOf(false) }
+  var anchorWidth by remember { mutableStateOf(0) }
+  val selectableIds = remember(paymentAccounts) { paymentAccounts.map { it.id }.toSet() }
 
   ExposedDropdownMenuBox(
     expanded = expanded,
@@ -439,34 +444,24 @@ private fun PaymentAccountSelector(
       modifier =
         Modifier
           .fillMaxWidth()
-          .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+          .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+          .onGloballyPositioned { anchorWidth = it.size.width },
     )
-    ExposedDropdownMenu(
+    AccountHierarchySelector(
+      accounts = allAccounts,
+      filter = AccountFilter.NORMAL_ACCOUNTS,
+      selectedAccountId = selectedPaymentAccountId,
+      onAccountSelect = { id ->
+        if (id != null) {
+          onAccountSelected(id)
+        }
+      },
       expanded = expanded,
-      onDismissRequest = { expanded = false },
-    ) {
-      paymentAccounts.forEach { account ->
-        DropdownMenuItem(
-          text = {
-            Row(
-              modifier = Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-              Text(account.hierarchyPath(accountLookup))
-              Text(
-                text = "¥${formatAmount(account.currentBalance)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-              )
-            }
-          },
-          onClick = {
-            onAccountSelected(account.id)
-            expanded = false
-          },
-        )
-      }
-    }
+      onExpandedChange = { expanded = it },
+      showAllOption = false,
+      menuWidthPx = anchorWidth,
+      isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in selectableIds },
+    )
   }
 }
 
@@ -475,6 +470,7 @@ private fun PaymentAccountSelector(
 private fun ExpenseEntryRow(
   index: Int,
   entryState: ExpenseEntryState,
+  allAccounts: List<AccountWithBalance>,
   expenseAccounts: List<AccountWithBalance>,
   accountLookup: Map<Long, AccountWithBalance>,
   onCategorySelected: (Long) -> Unit,
@@ -485,6 +481,8 @@ private fun ExpenseEntryRow(
   isSingleEntry: Boolean,
 ) {
   var expanded by remember(entryState.transactionId, index) { mutableStateOf(false) }
+  var anchorWidth by remember(entryState.transactionId, index) { mutableStateOf(0) }
+  val selectableIds = remember(expenseAccounts) { expenseAccounts.map { it.id }.toSet() }
 
   Column(
     modifier = Modifier.fillMaxWidth(),
@@ -502,17 +500,17 @@ private fun ExpenseEntryRow(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         singleLine = true,
         readOnly = isSingleEntry,
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.weight(0.3f),
       )
 
       ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.weight(0.7f),
       ) {
         OutlinedTextField(
           value =
-            expenseAccounts.find { it.id == entryState.categoryId }?.hierarchyPath(accountLookup)
+            expenseAccounts.find { it.id == entryState.categoryId }?.name
               ?: "",
           onValueChange = {},
           readOnly = true,
@@ -521,22 +519,25 @@ private fun ExpenseEntryRow(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+              .onGloballyPositioned { anchorWidth = it.size.width },
         )
-        ExposedDropdownMenu(
+        AccountHierarchySelector(
+          accounts = allAccounts,
+          filter = AccountFilter.EXPENSES,
+          selectedAccountId = entryState.categoryId,
+          onAccountSelect = { id ->
+            if (id != null) {
+              onCategorySelected(id)
+            }
+          },
           expanded = expanded,
-          onDismissRequest = { expanded = false },
-        ) {
-          expenseAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = { Text(account.hierarchyPath(accountLookup)) },
-              onClick = {
-                onCategorySelected(account.id)
-                expanded = false
-              },
-            )
-          }
-        }
+          onExpandedChange = { expanded = it },
+          showAllOption = false,
+          menuWidthPx = anchorWidth,
+          isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in selectableIds },
+          showRootLabels = false,
+        )
       }
     }
 

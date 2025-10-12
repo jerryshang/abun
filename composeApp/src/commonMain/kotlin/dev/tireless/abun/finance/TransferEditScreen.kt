@@ -12,8 +12,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -38,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
@@ -77,6 +76,8 @@ fun TransferEditScreen(
 
   var isSourceMenuExpanded by remember { mutableStateOf(false) }
   var isDestinationMenuExpanded by remember { mutableStateOf(false) }
+  var sourceAnchorWidth by remember { mutableStateOf(0) }
+  var destinationAnchorWidth by remember { mutableStateOf(0) }
 
   val focusRequester = remember { FocusRequester() }
   val keyboardController = LocalSoftwareKeyboardController.current
@@ -95,6 +96,10 @@ fun TransferEditScreen(
     remember(assetAccounts, selectedSourceAccountId) {
       assetAccounts.filter { account -> account.id != selectedSourceAccountId }
     }
+
+  val sourceSelectableIds = remember(assetAccounts) { assetAccounts.map { it.id }.toSet() }
+  val destinationSelectableIds =
+    remember(destinationAccounts) { destinationAccounts.map { it.id }.toSet() }
 
   LaunchedEffect(assetAccounts) {
     if (selectedSourceAccountId == null && assetAccounts.isNotEmpty()) {
@@ -216,34 +221,27 @@ fun TransferEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+              .onGloballyPositioned { sourceAnchorWidth = it.size.width },
         )
-        DropdownMenu(
+        AccountHierarchySelector(
+          accounts = accounts,
+          filter = AccountFilter.NORMAL_ACCOUNTS,
+          selectedAccountId = selectedSourceAccountId,
+          onAccountSelect = { id ->
+            if (id != null && id in sourceSelectableIds) {
+              selectedSourceAccountId = id
+              if (selectedDestinationAccountId == id) {
+                selectedDestinationAccountId = null
+              }
+            }
+          },
           expanded = isSourceMenuExpanded,
-          onDismissRequest = { isSourceMenuExpanded = false },
-        ) {
-          assetAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                  Text(account.hierarchyPath(accountLookup))
-                  Text(
-                    "¥${formatAmount(account.currentBalance)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
-                }
-              },
-              onClick = {
-                selectedSourceAccountId = account.id
-                isSourceMenuExpanded = false
-              },
-            )
-          }
-        }
+          onExpandedChange = { isSourceMenuExpanded = it },
+          showAllOption = false,
+          menuWidthPx = sourceAnchorWidth,
+          isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in sourceSelectableIds },
+        )
       }
 
       ExposedDropdownMenuBox(
@@ -261,34 +259,24 @@ fun TransferEditScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+              .menuAnchor(MenuAnchorType.PrimaryEditable, true)
+              .onGloballyPositioned { destinationAnchorWidth = it.size.width },
         )
-        DropdownMenu(
+        AccountHierarchySelector(
+          accounts = accounts,
+          filter = AccountFilter.NORMAL_ACCOUNTS,
+          selectedAccountId = selectedDestinationAccountId,
+          onAccountSelect = { id ->
+            if (id != null && id in destinationSelectableIds) {
+              selectedDestinationAccountId = id
+            }
+          },
           expanded = isDestinationMenuExpanded,
-          onDismissRequest = { isDestinationMenuExpanded = false },
-        ) {
-          destinationAccounts.forEach { account ->
-            DropdownMenuItem(
-              text = {
-                Row(
-                  modifier = Modifier.fillMaxWidth(),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                  Text(account.hierarchyPath(accountLookup))
-                  Text(
-                    "¥${formatAmount(account.currentBalance)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  )
-                }
-              },
-              onClick = {
-                selectedDestinationAccountId = account.id
-                isDestinationMenuExpanded = false
-              },
-            )
-          }
-        }
+          onExpandedChange = { isDestinationMenuExpanded = it },
+          showAllOption = false,
+          menuWidthPx = destinationAnchorWidth,
+          isAccountEnabled = { account, hasChildren -> !hasChildren && account.id in destinationSelectableIds },
+        )
       }
 
       OutlinedTextField(
