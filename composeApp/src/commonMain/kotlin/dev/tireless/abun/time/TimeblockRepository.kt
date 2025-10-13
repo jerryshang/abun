@@ -10,11 +10,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
+import dev.tireless.abun.core.time.currentEpochMillis
+import kotlinx.datetime.Instant
 
-@OptIn(ExperimentalTime::class)
 class TimeblockRepository(
   private val database: AppDatabase,
 ) {
@@ -74,7 +72,7 @@ class TimeblockRepository(
     taskId: Long,
   ): Long? =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       database.timeblockQueries.insertTimeblock(startTime, endTime, taskId, now, now)
       // Get the last inserted row ID - this is a simplified approach
       database.timeblockQueries
@@ -93,7 +91,7 @@ class TimeblockRepository(
     taskId: Long,
   ) {
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       database.timeblockQueries.updateTimeblock(startTime, endTime, taskId, now, id)
     }
   }

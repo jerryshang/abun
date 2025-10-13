@@ -10,8 +10,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import dev.tireless.abun.core.time.currentEpochMillis
 
 class TransactionGroupRepository(
   private val database: AppDatabase,
@@ -19,7 +18,6 @@ class TransactionGroupRepository(
 ) {
   private val queries = database.financeQueries
 
-  @OptIn(ExperimentalTime::class)
   suspend fun createTransactionGroup(
     name: String,
     groupType: TransactionGroupType,
@@ -27,7 +25,7 @@ class TransactionGroupRepository(
     id: Long? = null,
   ): Long =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       queries.insertTransactionGroup(
         id = id,
         name = name,
@@ -39,7 +37,6 @@ class TransactionGroupRepository(
       id ?: queries.getLastInsertedRowId().executeAsOne()
     }
 
-  @OptIn(ExperimentalTime::class)
   suspend fun updateTransactionGroup(
     id: Long,
     name: String,
@@ -49,7 +46,7 @@ class TransactionGroupRepository(
       queries.updateTransactionGroup(
         name = name,
         description = description,
-        updated_at = Clock.System.now().toEpochMilliseconds(),
+        updated_at = currentEpochMillis(),
         id = id,
       )
     }

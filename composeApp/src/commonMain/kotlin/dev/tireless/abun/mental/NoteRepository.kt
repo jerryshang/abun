@@ -10,10 +10,8 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import dev.tireless.abun.core.time.currentEpochMillis
 
-@OptIn(ExperimentalTime::class)
 class NoteRepository(
   private val database: AppDatabase,
 ) {
@@ -37,7 +35,7 @@ class NoteRepository(
     content: String,
   ): Long =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       database.noteQueries.insertNote(title, content, now, now)
       database.noteQueries
         .selectAllNotes()
@@ -51,7 +49,7 @@ class NoteRepository(
     title: String,
     content: String,
   ) {
-    val now = Clock.System.now().toEpochMilliseconds()
+    val now = currentEpochMillis()
     withContext(Dispatchers.IO) {
       database.noteQueries.updateNote(title, content, now, id)
     }

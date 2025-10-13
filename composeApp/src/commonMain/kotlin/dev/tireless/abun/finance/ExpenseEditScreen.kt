@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 import kotlin.math.abs
 
 private data class ExpenseEntryState(
@@ -88,7 +88,7 @@ fun ExpenseEditScreen(
   }
   var selectedPaymentAccountId by remember { mutableStateOf<Long?>(null) }
   var payee by remember { mutableStateOf("") }
-  var selectedDateMillis by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+  var selectedDateMillis by remember { mutableStateOf(currentEpochMillis()) }
   var showDatePicker by remember { mutableStateOf(false) }
   var expenseEntries by remember { mutableStateOf(listOf(ExpenseEntryState())) }
   var initialized by remember { mutableStateOf(false) }

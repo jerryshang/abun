@@ -58,8 +58,8 @@ SELECT
 FROM task t
 LEFT JOIN task parent ON t.parent_task_id = parent.id
 WHERE
-  (t.parent_task_id IS NULL AND ? IS NULL)
-  OR t.parent_task_id = ?
+  (:parentTaskId IS NULL AND t.parent_task_id IS NULL)
+  OR t.parent_task_id = :parentTaskId
 ORDER BY t.name;
 
 selectTasksByStrategy:

@@ -53,7 +53,7 @@ import androidx.navigation.NavHostController
 import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +67,7 @@ fun RevenueEditScreen(
   val isEditing = existingTransaction?.type == TransactionType.INCOME
   val initialAmountText = existingTransaction?.let { formatAmount(it.amount) } ?: "0.00"
   var selectedDateMillis by remember(existingTransaction) {
-    mutableStateOf(existingTransaction?.transactionDate ?: Clock.System.now().toEpochMilliseconds())
+    mutableStateOf(existingTransaction?.transactionDate ?: currentEpochMillis())
   }
   var showDatePicker by remember { mutableStateOf(false) }
   var amount by remember(existingTransaction) {

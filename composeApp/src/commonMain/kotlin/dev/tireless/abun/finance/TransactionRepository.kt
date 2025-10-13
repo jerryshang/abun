@@ -11,8 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import dev.tireless.abun.core.time.currentEpochMillis
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import dev.tireless.abun.database.Transaction as DbTransaction
@@ -89,10 +88,10 @@ class TransactionRepository(
    * For INCOME: accountId = revenue account (Salary, Investment, etc.), toAccountId = receiving account (Bank, Cash, etc.)
    * For TRANSFER: accountId = source account, toAccountId = destination account
    */
-  @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
+  @OptIn(ExperimentalUuidApi::class)
   suspend fun createTransaction(input: CreateTransactionInput): Long =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       when (input.type) {
         TransactionType.EXPENSE -> {
@@ -186,7 +185,6 @@ class TransactionRepository(
   /**
    * Create a split expense transaction group with one payment account and multiple expense entries.
    */
-  @OptIn(ExperimentalTime::class)
   suspend fun createSplitExpense(draft: SplitExpenseDraft): List<Long> =
     withContext(Dispatchers.IO) {
       require(draft.entries.isNotEmpty()) { "At least one expense entry is required" }
@@ -196,7 +194,7 @@ class TransactionRepository(
         "Split entries must sum to the total amount"
       }
 
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       if (draft.entries.size == 1) {
         val entry = draft.entries.first()
@@ -254,7 +252,6 @@ class TransactionRepository(
   /**
    * Update a split expense group. Supports adding, updating, and removing entries.
    */
-  @OptIn(ExperimentalTime::class)
   suspend fun updateSplitExpense(draft: SplitExpenseDraft): Unit =
     withContext(Dispatchers.IO) {
       require(draft.entries.isNotEmpty()) { "At least one expense entry is required" }
@@ -264,7 +261,7 @@ class TransactionRepository(
         "Split entries must sum to the total amount"
       }
 
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       if (draft.entries.size == 1) {
         val entry = draft.entries.first()
@@ -445,13 +442,13 @@ class TransactionRepository(
    * 2. Transaction group for the loan
    * 3. Scheduled payment transactions (PLANNED)
    */
-  @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
+  @OptIn(ExperimentalUuidApi::class)
   suspend fun createLoan(
     input: CreateLoanInput,
     transactionGroupRepository: TransactionGroupRepository,
   ): Long =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       // 1. Create or get liability account for the loan
       val loanAccountName =
@@ -598,10 +595,9 @@ class TransactionRepository(
   /**
    * Update an existing transaction
    */
-  @OptIn(ExperimentalTime::class)
   suspend fun updateTransaction(input: UpdateTransactionInput): Unit =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       val oldTransaction = getTransactionById(input.id) ?: return@withContext
 
       // Revert old transaction's effect on account balance

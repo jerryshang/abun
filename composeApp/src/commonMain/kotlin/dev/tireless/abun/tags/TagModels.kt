@@ -1,6 +1,6 @@
 package dev.tireless.abun.tags
 
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.Instant
 
 /**
@@ -23,8 +23,8 @@ data class Tag(
   val colorHex: String,
   val domains: Set<TagDomain> = setOf(TagDomain.All),
   val description: String? = null,
-  val createdAt: Instant = Clock.System.now(),
-  val updatedAt: Instant = Clock.System.now(),
+  val createdAt: Instant = currentInstant(),
+  val updatedAt: Instant = currentInstant(),
 )
 
 data class TagDraft(

@@ -48,7 +48,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toInstant
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 import kotlin.time.ExperimentalTime
 import dev.tireless.abun.navigation.Route
 import com.composables.icons.lucide.Lucide
@@ -634,7 +634,7 @@ private fun isTimeInFuture(timeString: String): Boolean {
         .parse(timeString)
         .toInstant(TimeZone.currentSystemDefault())
         .toEpochMilliseconds()
-    val currentMillis = Clock.System.now().toEpochMilliseconds()
+    val currentMillis = currentEpochMillis()
     targetMillis > currentMillis
   } catch (_: IllegalArgumentException) {
     false

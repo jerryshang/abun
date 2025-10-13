@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
@@ -127,7 +127,7 @@ class FocusTimerViewModel(
     commitCurrentSegment()
 
     val segmentsSnapshot = segments.toList()
-    val stopInstant = Clock.System.now()
+    val stopInstant = currentInstant()
     updateTotalFocusFromSegments()
 
     _uiState.update { it.copy(isCompletingSession = true) }

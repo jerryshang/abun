@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -21,8 +21,7 @@ class TaskBoardViewModel(
 ) : ViewModel() {
   private val _selectedDate =
     MutableStateFlow(
-      Clock.System
-        .now()
+      currentInstant()
         .toLocalDateTime(TimeZone.currentSystemDefault())
         .date,
     )
@@ -72,8 +71,7 @@ class TaskBoardViewModel(
 
   fun defaultStartSlot(): LocalTime {
     val now =
-      Clock.System
-        .now()
+      currentInstant()
         .toLocalDateTime(TimeZone.currentSystemDefault())
         .time
     val minutes = (now.minute / 15) * 15

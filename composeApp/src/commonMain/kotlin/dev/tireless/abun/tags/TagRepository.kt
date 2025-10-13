@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 
 class TagRepository {
   private val tags = MutableStateFlow(sampleTags())
@@ -19,7 +19,7 @@ class TagRepository {
   }
 
   fun upsert(draft: TagDraft): Tag {
-    val now = Clock.System.now()
+    val now = currentInstant()
     val newTag =
       Tag(
         id = nextId(),
@@ -36,7 +36,7 @@ class TagRepository {
   }
 
   fun update(update: TagUpdate) {
-    val now = Clock.System.now()
+    val now = currentInstant()
     tags.value =
       tags.value.map { existing ->
         if (existing.id == update.id) {
@@ -61,7 +61,7 @@ class TagRepository {
   private fun nextId(): Long = idCounter++
 
   private fun sampleTags(): List<Tag> {
-    val now = Clock.System.now()
+    val now = currentInstant()
     return listOf(
       Tag(
         id = 1,

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -47,7 +47,7 @@ class TaskPlannerRepository(
   fun observeLogs(taskId: Long): Flow<List<TaskLog>> = logs.map { list -> list.filter { it.taskId == taskId } }
 
   fun createTask(draft: TaskDraft): Task {
-    val now = Clock.System.now()
+    val now = currentInstant()
     val task =
       Task(
         id = nextTaskId(),
@@ -69,7 +69,7 @@ class TaskPlannerRepository(
   }
 
   fun updateTask(update: TaskUpdate) {
-    val now = Clock.System.now()
+    val now = currentInstant()
     tasks.value =
       tasks.value.map { existing ->
         if (existing.id == update.id) {
@@ -99,7 +99,7 @@ class TaskPlannerRepository(
           existing.copy(
             state = input.newState,
             actualMinutes = log.actualMinutes,
-            updatedAt = Clock.System.now(),
+            updatedAt = currentInstant(),
           )
         } else {
           existing
@@ -179,7 +179,7 @@ class TaskPlannerRepository(
     compareBy<Task>({ it.plannedDate }, { it.plannedStart.hour }, { it.plannedStart.minute }, { it.id })
 
   private fun sampleTasks(): List<Task> {
-    val nowInstant = Clock.System.now()
+    val nowInstant = currentInstant()
     val today = nowInstant.toLocalDateTime(TimeZone.currentSystemDefault()).date
     val tomorrow = today.plus(1, DateTimeUnit.DAY)
     val dayAfter = today.plus(2, DateTimeUnit.DAY)
@@ -264,7 +264,7 @@ class TaskPlannerRepository(
   }
 
   private fun sampleLogs(): List<TaskLog> {
-    val nowInstant = Clock.System.now()
+    val nowInstant = currentInstant()
     val today = nowInstant.toLocalDateTime(TimeZone.currentSystemDefault())
     return listOf(
       TaskLog(

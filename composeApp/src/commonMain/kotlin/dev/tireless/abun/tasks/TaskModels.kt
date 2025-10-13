@@ -1,6 +1,6 @@
 package dev.tireless.abun.tasks
 
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -64,7 +64,7 @@ data class TaskLog(
   val endedAt: LocalDateTime,
   val actualMinutes: Int,
   val note: String?,
-  val createdAt: Instant = Clock.System.now(),
+  val createdAt: Instant = currentInstant(),
 )
 
 data class TaskNode(

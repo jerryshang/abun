@@ -44,7 +44,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,7 +157,7 @@ fun TransferEditScreen(
                   CreateTransactionInput(
                     amount = amountValue!!,
                     type = TransactionType.TRANSFER,
-                    transactionDate = Clock.System.now().toEpochMilliseconds(),
+                    transactionDate = currentEpochMillis(),
                     accountId = selectedSourceAccountId!!,
                     toAccountId = selectedDestinationAccountId!!,
                     payee = payee.takeIf { it.isNotBlank() },

@@ -567,6 +567,7 @@ private fun formatMillis(millis: Long): String {
   return "$minuteText:$secondText"
 }
 
+@Composable
 private fun strategyColor(strategy: String): Color =
   when (strategy.lowercase()) {
     "plan" -> Color(0xFF2196F3)

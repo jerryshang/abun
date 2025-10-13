@@ -1,6 +1,5 @@
 package dev.tireless.abun.notes
 
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 data class Note(

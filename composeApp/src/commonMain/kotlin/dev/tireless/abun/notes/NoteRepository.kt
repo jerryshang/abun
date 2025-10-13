@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentInstant
 
 class RichNoteRepository(
   private val tagRepository: TagRepository,
@@ -47,7 +47,7 @@ class RichNoteRepository(
     tagRepository.observeByDomain(TagDomain.Notes)
 
   fun createNote(draft: NoteDraft): Note {
-    val now = Clock.System.now()
+    val now = currentInstant()
     val note =
       Note(
         id = nextId(),
@@ -63,7 +63,7 @@ class RichNoteRepository(
   }
 
   fun updateNote(update: NoteUpdate) {
-    val now = Clock.System.now()
+    val now = currentInstant()
     notes.value =
       notes.value.map { existing ->
         if (existing.id == update.id) {
@@ -87,7 +87,7 @@ class RichNoteRepository(
   private fun nextId(): Long = noteIdCounter++
 
   private fun sampleNotes(): List<Note> {
-    val nowInstant = Clock.System.now()
+    val nowInstant = currentInstant()
     return listOf(
       Note(
         id = 1,

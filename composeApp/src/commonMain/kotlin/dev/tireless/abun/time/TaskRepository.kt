@@ -4,17 +4,19 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import dev.tireless.abun.database.AppDatabase
+import dev.tireless.abun.database.SelectAllTasks
+import dev.tireless.abun.database.SelectTaskById
+import dev.tireless.abun.database.SelectTasksByParent
+import dev.tireless.abun.database.SelectTasksByStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
+import dev.tireless.abun.core.time.currentEpochMillis
+import kotlinx.datetime.Instant
 
-@OptIn(ExperimentalTime::class)
 class TaskRepository(
   private val database: AppDatabase,
 ) {
@@ -37,7 +39,7 @@ class TaskRepository(
 
   fun getTasksByParent(parentTaskId: Long?): Flow<List<Task>> =
     database.timeblockQueries
-      .selectTasksByParent(parentTaskId, parentTaskId)
+      .selectTasksByParent(parentTaskId)
       .asFlow()
       .mapToList(Dispatchers.IO)
       .map { tasksData -> tasksData.map(::taskFromRow) }
@@ -56,7 +58,7 @@ class TaskRepository(
     strategy: String = "plan",
   ): Long? =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       database.timeblockQueries.insertTask(name, description, parentTaskId, strategy, now, now)
       // Get the last inserted row ID
       database.timeblockQueries
@@ -74,7 +76,7 @@ class TaskRepository(
     strategy: String,
   ) {
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
       database.timeblockQueries.updateTask(name, description, parentTaskId, strategy, now, id)
     }
   }
@@ -85,7 +87,7 @@ class TaskRepository(
     }
   }
 
-  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectAllTasks): Task =
+  private fun taskFromRow(taskData: SelectAllTasks): Task =
     Task(
       id = taskData.id,
       name = taskData.name,
@@ -98,7 +100,7 @@ class TaskRepository(
       parentTaskStrategy = taskData.parent_strategy,
     )
 
-  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTaskById): Task =
+  private fun taskFromRow(taskData: SelectTaskById): Task =
     Task(
       id = taskData.id,
       name = taskData.name,
@@ -111,7 +113,7 @@ class TaskRepository(
       parentTaskStrategy = taskData.parent_strategy,
     )
 
-  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTasksByParent): Task =
+  private fun taskFromRow(taskData: SelectTasksByParent): Task =
     Task(
       id = taskData.id,
       name = taskData.name,
@@ -124,7 +126,7 @@ class TaskRepository(
       parentTaskStrategy = taskData.parent_strategy,
     )
 
-  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTasksByStrategy): Task =
+  private fun taskFromRow(taskData: SelectTasksByStrategy): Task =
     Task(
       id = taskData.id,
       name = taskData.name,

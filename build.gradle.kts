@@ -24,8 +24,8 @@ subprojects {
             "ktlint_standard_trailing-comma-on-call-site" to "disabled",
             "ktlint_standard_trailing-comma-on-declaration-site" to "disabled",
             "ktlint_standard_function-naming" to "disabled",
-            "ktlint_standard_filename" to "disabled"
-          )
+            "ktlint_standard_filename" to "disabled",
+          ),
         )
     }
 

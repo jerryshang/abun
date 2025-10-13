@@ -30,10 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import dev.tireless.abun.core.time.currentInstant
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTimeblockDialog(
   viewModel: TimeblockViewModel,
@@ -255,8 +254,8 @@ fun CreateTimeblockDialog(
                       description = taskDescription.ifBlank { null },
                       parentTaskId = selectedParent?.id,
                       strategy = "plan", // Default strategy for newly created tasks
-                      createdAt = Clock.System.now(),
-                      updatedAt = Clock.System.now(),
+                      createdAt = currentInstant(),
+                      updatedAt = currentInstant(),
                       parentTaskName = selectedParent?.name,
                       parentTaskStrategy = selectedParent?.strategy,
                     )

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 import dev.tireless.abun.database.Account as DbAccount
 
 /**
@@ -132,7 +132,7 @@ class AccountRepository(
    */
   suspend fun createAccount(input: CreateAccountInput): Long =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       // Build config from boolean flags
       var config = 0L
@@ -164,7 +164,7 @@ class AccountRepository(
    */
   suspend fun updateAccount(input: UpdateAccountInput): Unit =
     withContext(Dispatchers.IO) {
-      val now = Clock.System.now().toEpochMilliseconds()
+      val now = currentEpochMillis()
 
       // Build config from boolean flags
       var config = 0L
@@ -193,7 +193,7 @@ class AccountRepository(
    */
   suspend fun calculateAccountBalance(
     accountId: Long,
-    asOfMillis: Long = Clock.System.now().toEpochMilliseconds(),
+    asOfMillis: Long = currentEpochMillis(),
   ): Double =
     withContext(Dispatchers.IO) {
       val balanceStorage =
@@ -206,7 +206,7 @@ class AccountRepository(
     }
 
   private suspend fun accountsWithBalance(accounts: List<Account>): List<AccountWithBalance> {
-    val asOfMillis = Clock.System.now().toEpochMilliseconds()
+    val asOfMillis = currentEpochMillis()
     return accounts.map { account ->
       AccountWithBalance(
         account = account,

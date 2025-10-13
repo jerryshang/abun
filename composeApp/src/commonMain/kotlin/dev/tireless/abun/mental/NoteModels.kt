@@ -1,9 +1,7 @@
 package dev.tireless.abun.mental
 
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
+import kotlinx.datetime.Instant
 
-@OptIn(ExperimentalTime::class)
 data class Note(
   val id: Long,
   val title: String,

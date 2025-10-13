@@ -46,7 +46,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
+import dev.tireless.abun.core.time.currentEpochMillis
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -129,7 +129,7 @@ fun LoanEditScreen(
                   interestRate = rateValue,
                   loanMonths = monthsValue,
                   paymentDay = paymentDayValue,
-                  startDate = Clock.System.now().toEpochMilliseconds(),
+                  startDate = currentEpochMillis(),
                   payee = payee.ifBlank { null },
                   notes = notes.ifBlank { null },
                 ),
