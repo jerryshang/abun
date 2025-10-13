@@ -2,8 +2,6 @@ package dev.tireless.abun.time
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.tireless.abun.time.Category
-import dev.tireless.abun.time.CategoryRepository
 import dev.tireless.abun.time.Task
 import dev.tireless.abun.time.TaskRepository
 import dev.tireless.abun.time.Timeblock
@@ -16,7 +14,6 @@ import kotlinx.coroutines.launch
 class TimeblockViewModel(
   private val timeblockRepository: TimeblockRepository,
   private val taskRepository: TaskRepository,
-  private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
   private val _timeblocks = MutableStateFlow<List<Timeblock>>(emptyList())
@@ -25,9 +22,6 @@ class TimeblockViewModel(
   private val _tasks = MutableStateFlow<List<Task>>(emptyList())
   val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
 
-  private val _categories = MutableStateFlow<List<Category>>(emptyList())
-  val categories: StateFlow<List<Category>> = _categories.asStateFlow()
-
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -35,7 +29,6 @@ class TimeblockViewModel(
   val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
   init {
-    loadCategories()
     loadTasks()
   }
 
@@ -62,18 +55,6 @@ class TimeblockViewModel(
         }
       } catch (e: Exception) {
         _errorMessage.value = "Failed to load tasks: ${e.message}"
-      }
-    }
-  }
-
-  private fun loadCategories() {
-    viewModelScope.launch {
-      try {
-        categoryRepository.getAllCategories().collect { categoryList ->
-          _categories.value = categoryList
-        }
-      } catch (e: Exception) {
-        _errorMessage.value = "Failed to load categories: ${e.message}"
       }
     }
   }
@@ -107,13 +88,13 @@ class TimeblockViewModel(
   fun createTask(
     name: String,
     description: String?,
-    categoryId: Long,
+    parentTaskId: Long?,
     onSuccess: (Long) -> Unit = {},
     onError: (String) -> Unit = {}
   ) {
     viewModelScope.launch {
       try {
-        val taskId = taskRepository.insertTask(name, description, categoryId)
+        val taskId = taskRepository.insertTask(name, description, parentTaskId)
         if (taskId != null) {
           onSuccess(taskId)
         } else {

@@ -1,22 +1,13 @@
--- Category table
-CREATE TABLE category (
-  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL, -- Hex color code
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-
 -- Task table
 CREATE TABLE task (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
-  category_id INTEGER NOT NULL,
+  parent_task_id INTEGER,
   strategy TEXT NOT NULL DEFAULT 'plan', -- plan, todo, do, check
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (category_id) REFERENCES category (id)
+  FOREIGN KEY (parent_task_id) REFERENCES task (id) ON DELETE SET NULL
 );
 
 -- Timeblock table
@@ -40,59 +31,54 @@ CREATE TABLE alarm (
   FOREIGN KEY (timeblock_id) REFERENCES timeblock (id) ON DELETE CASCADE
 );
 
--- Category queries
-selectAllCategories:
-SELECT * FROM category ORDER BY name;
-
-selectCategoryById:
-SELECT * FROM category WHERE id = ?;
-
-insertCategory:
-INSERT INTO category (name, color, created_at, updated_at)
-VALUES (?, ?, ?, ?);
-
-updateCategory:
-UPDATE category
-SET name = ?, color = ?, updated_at = ?
-WHERE id = ?;
-
-deleteCategory:
-DELETE FROM category WHERE id = ?;
-
 -- Task queries
 selectAllTasks:
-SELECT t.*, c.name AS category_name, c.color AS category_color
+SELECT
+  t.*,
+  parent.name AS parent_name,
+  parent.strategy AS parent_strategy
 FROM task t
-JOIN category c ON t.category_id = c.id
+LEFT JOIN task parent ON t.parent_task_id = parent.id
 ORDER BY t.name;
 
 selectTaskById:
-SELECT t.*, c.name AS category_name, c.color AS category_color
+SELECT
+  t.*,
+  parent.name AS parent_name,
+  parent.strategy AS parent_strategy
 FROM task t
-JOIN category c ON t.category_id = c.id
+LEFT JOIN task parent ON t.parent_task_id = parent.id
 WHERE t.id = ?;
 
-selectTasksByCategory:
-SELECT t.*, c.name AS category_name, c.color AS category_color
+selectTasksByParent:
+SELECT
+  t.*,
+  parent.name AS parent_name,
+  parent.strategy AS parent_strategy
 FROM task t
-JOIN category c ON t.category_id = c.id
-WHERE t.category_id = ?
+LEFT JOIN task parent ON t.parent_task_id = parent.id
+WHERE
+  (t.parent_task_id IS NULL AND ? IS NULL)
+  OR t.parent_task_id = ?
 ORDER BY t.name;
 
 selectTasksByStrategy:
-SELECT t.*, c.name AS category_name, c.color AS category_color
+SELECT
+  t.*,
+  parent.name AS parent_name,
+  parent.strategy AS parent_strategy
 FROM task t
-JOIN category c ON t.category_id = c.id
+LEFT JOIN task parent ON t.parent_task_id = parent.id
 WHERE t.strategy = ?
 ORDER BY t.name;
 
 insertTask:
-INSERT INTO task (name, description, category_id, strategy, created_at, updated_at)
+INSERT INTO task (name, description, parent_task_id, strategy, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?);
 
 updateTask:
 UPDATE task
-SET name = ?, description = ?, category_id = ?, strategy = ?, updated_at = ?
+SET name = ?, description = ?, parent_task_id = ?, strategy = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTask:
@@ -100,21 +86,31 @@ DELETE FROM task WHERE id = ?;
 
 -- Timeblock queries
 selectTimeblocksByDateRange:
-SELECT tb.*, t.name AS task_name, t.description AS task_description,
-       t.strategy AS task_strategy, c.name AS category_name, c.color AS category_color
+SELECT
+  tb.*,
+  t.name AS task_name,
+  t.description AS task_description,
+  t.strategy AS task_strategy,
+  parent.name AS parent_task_name,
+  parent.strategy AS parent_task_strategy
 FROM timeblock tb
 JOIN task t ON tb.task_id = t.id
-JOIN category c ON t.category_id = c.id
+LEFT JOIN task parent ON t.parent_task_id = parent.id
 WHERE datetime(tb.start_time) >= datetime(?)
   AND datetime(tb.start_time) <= datetime(?)
 ORDER BY tb.start_time;
 
 selectTimeblockById:
-SELECT tb.*, t.name AS task_name, t.description AS task_description,
-       t.strategy AS task_strategy, c.name AS category_name, c.color AS category_color
+SELECT
+  tb.*,
+  t.name AS task_name,
+  t.description AS task_description,
+  t.strategy AS task_strategy,
+  parent.name AS parent_task_name,
+  parent.strategy AS parent_task_strategy
 FROM timeblock tb
 JOIN task t ON tb.task_id = t.id
-JOIN category c ON t.category_id = c.id
+LEFT JOIN task parent ON t.parent_task_id = parent.id
 WHERE tb.id = ?;
 
 insertTimeblock:

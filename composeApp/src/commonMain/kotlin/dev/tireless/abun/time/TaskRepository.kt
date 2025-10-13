@@ -23,21 +23,7 @@ class TaskRepository(
       .selectAllTasks()
       .asFlow()
       .mapToList(Dispatchers.IO)
-      .map { tasksData ->
-        tasksData.map { taskData ->
-          Task(
-            id = taskData.id,
-            name = taskData.name,
-            description = taskData.description,
-            categoryId = taskData.category_id,
-            strategy = taskData.strategy,
-            createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
-            updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
-            categoryName = taskData.category_name,
-            categoryColor = taskData.category_color,
-          )
-        }
-      }
+      .map { tasksData -> tasksData.map(::taskFromRow) }
 
   suspend fun getTaskById(id: Long): Task? =
     withContext(Dispatchers.IO) {
@@ -46,72 +32,32 @@ class TaskRepository(
         .asFlow()
         .mapToOneOrNull(Dispatchers.IO)
         .first()
-        ?.let { taskData ->
-          Task(
-            id = taskData.id,
-            name = taskData.name,
-            description = taskData.description,
-            categoryId = taskData.category_id,
-            strategy = taskData.strategy,
-            createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
-            updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
-            categoryName = taskData.category_name,
-            categoryColor = taskData.category_color,
-          )
-        }
+        ?.let(::taskFromRow)
     }
 
-  fun getTasksByCategory(categoryId: Long): Flow<List<Task>> =
+  fun getTasksByParent(parentTaskId: Long?): Flow<List<Task>> =
     database.timeblockQueries
-      .selectTasksByCategory(categoryId)
+      .selectTasksByParent(parentTaskId, parentTaskId)
       .asFlow()
       .mapToList(Dispatchers.IO)
-      .map { tasksData ->
-        tasksData.map { taskData ->
-          Task(
-            id = taskData.id,
-            name = taskData.name,
-            description = taskData.description,
-            categoryId = taskData.category_id,
-            strategy = taskData.strategy,
-            createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
-            updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
-            categoryName = taskData.category_name,
-            categoryColor = taskData.category_color,
-          )
-        }
-      }
+      .map { tasksData -> tasksData.map(::taskFromRow) }
 
   fun getTasksByStrategy(strategy: String): Flow<List<Task>> =
     database.timeblockQueries
       .selectTasksByStrategy(strategy)
       .asFlow()
       .mapToList(Dispatchers.IO)
-      .map { tasksData ->
-        tasksData.map { taskData ->
-          Task(
-            id = taskData.id,
-            name = taskData.name,
-            description = taskData.description,
-            categoryId = taskData.category_id,
-            strategy = taskData.strategy,
-            createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
-            updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
-            categoryName = taskData.category_name,
-            categoryColor = taskData.category_color,
-          )
-        }
-      }
+      .map { tasksData -> tasksData.map(::taskFromRow) }
 
   suspend fun insertTask(
     name: String,
     description: String?,
-    categoryId: Long,
+    parentTaskId: Long?,
     strategy: String = "plan",
   ): Long? =
     withContext(Dispatchers.IO) {
       val now = Clock.System.now().toEpochMilliseconds()
-      database.timeblockQueries.insertTask(name, description, categoryId, strategy, now, now)
+      database.timeblockQueries.insertTask(name, description, parentTaskId, strategy, now, now)
       // Get the last inserted row ID
       database.timeblockQueries
         .selectAllTasks()
@@ -124,12 +70,12 @@ class TaskRepository(
     id: Long,
     name: String,
     description: String?,
-    categoryId: Long,
+    parentTaskId: Long?,
     strategy: String,
   ) {
     withContext(Dispatchers.IO) {
       val now = Clock.System.now().toEpochMilliseconds()
-      database.timeblockQueries.updateTask(name, description, categoryId, strategy, now, id)
+      database.timeblockQueries.updateTask(name, description, parentTaskId, strategy, now, id)
     }
   }
 
@@ -138,4 +84,56 @@ class TaskRepository(
       database.timeblockQueries.deleteTask(id)
     }
   }
+
+  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectAllTasks): Task =
+    Task(
+      id = taskData.id,
+      name = taskData.name,
+      description = taskData.description,
+      parentTaskId = taskData.parent_task_id,
+      strategy = taskData.strategy,
+      createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
+      updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
+      parentTaskName = taskData.parent_name,
+      parentTaskStrategy = taskData.parent_strategy,
+    )
+
+  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTaskById): Task =
+    Task(
+      id = taskData.id,
+      name = taskData.name,
+      description = taskData.description,
+      parentTaskId = taskData.parent_task_id,
+      strategy = taskData.strategy,
+      createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
+      updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
+      parentTaskName = taskData.parent_name,
+      parentTaskStrategy = taskData.parent_strategy,
+    )
+
+  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTasksByParent): Task =
+    Task(
+      id = taskData.id,
+      name = taskData.name,
+      description = taskData.description,
+      parentTaskId = taskData.parent_task_id,
+      strategy = taskData.strategy,
+      createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
+      updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
+      parentTaskName = taskData.parent_name,
+      parentTaskStrategy = taskData.parent_strategy,
+    )
+
+  private fun taskFromRow(taskData: dev.tireless.abun.database.TimeblockQueries.SelectTasksByStrategy): Task =
+    Task(
+      id = taskData.id,
+      name = taskData.name,
+      description = taskData.description,
+      parentTaskId = taskData.parent_task_id,
+      strategy = taskData.strategy,
+      createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
+      updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
+      parentTaskName = taskData.parent_name,
+      parentTaskStrategy = taskData.parent_strategy,
+    )
 }

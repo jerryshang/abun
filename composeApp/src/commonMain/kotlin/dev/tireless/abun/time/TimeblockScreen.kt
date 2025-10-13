@@ -68,8 +68,8 @@ data class TimeSlot(
 data class TimeblockDisplayData(
   val id: Long,
   val taskName: String,
-  val categoryColor: String,
   val taskStrategy: String,
+  val parentTaskName: String?,
   val isFuture: Boolean
 )
 
@@ -152,7 +152,7 @@ fun TimeWorkspaceScreen(navController: NavHostController) {
             selectedDate = selectedDate,
             timeblocks = timeblocks,
             viewModel = timeblockViewModel,
-            onManageCategories = { navController.navigate(Route.TimeCategoryManagement) },
+            onManageTasks = { navController.navigate(Route.TimeTaskManagement) },
           )
         TimeWorkspaceTab.Tasks ->
           TaskDashboardScreen(
@@ -196,7 +196,7 @@ private fun TimeblockPlanner(
   selectedDate: String,
   timeblocks: List<Timeblock>,
   viewModel: TimeblockViewModel,
-  onManageCategories: () -> Unit,
+  onManageTasks: () -> Unit,
 ) {
   var zoomLevel by remember { mutableStateOf(ZoomLevel.FULL_DAY) }
   var showCreateDialog by remember { mutableStateOf(false) }
@@ -265,8 +265,8 @@ private fun TimeblockPlanner(
         Text("Create")
       }
 
-      OutlinedButton(onClick = onManageCategories) {
-        Text("Categories")
+      OutlinedButton(onClick = onManageTasks) {
+        Text("Task Hierarchy")
       }
     }
 
@@ -394,9 +394,9 @@ private fun ReviewTimeblockCard(timeblock: Timeblock) {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
-      timeblock.categoryName?.let { category ->
+      timeblock.taskParentName?.let { parentName ->
         Text(
-          text = category,
+          text = "Parent: $parentName",
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -517,12 +517,7 @@ private fun TimeSlotRow(
           .height(contentHeight)
           .background(
             color = timeSlot.timeblock?.let {
-              try {
-                val colorLong = parseHexColor(it.categoryColor)
-                Color(colorLong).copy(alpha = if (it.isFuture) 0.5f else 1.0f)
-              } catch (e: Exception) {
-                Color.Gray.copy(alpha = if (it.isFuture) 0.5f else 1.0f)
-              }
+              getStrategyColor(it.taskStrategy).copy(alpha = if (it.isFuture) 0.5f else 1.0f)
             } ?: Color.Transparent,
             shape = MaterialTheme.shapes.small
           )
@@ -567,6 +562,17 @@ private fun TimeSlotRow(
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier.weight(1f)
             )
+
+            timeblock.parentTaskName?.let { parentName ->
+              Spacer(modifier = Modifier.width(6.dp))
+              Text(
+                text = parentName,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.9f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+              )
+            }
           }
         }
       }
@@ -600,8 +606,8 @@ private fun generateTimeSlots(
         TimeblockDisplayData(
           id = it.id,
           taskName = it.taskName ?: "Unknown Task",
-          categoryColor = it.categoryColor ?: "#808080",
           taskStrategy = it.taskStrategy ?: "plan",
+          parentTaskName = it.taskParentName,
           isFuture = isTimeInFuture(currentTime)
         )
       }
@@ -632,15 +638,6 @@ private fun isTimeInFuture(timeString: String): Boolean {
     targetMillis > currentMillis
   } catch (_: IllegalArgumentException) {
     false
-  }
-}
-
-private fun parseHexColor(hexColor: String): Long {
-  val cleanHex = hexColor.removePrefix("#")
-  return when (cleanHex.length) {
-    6 -> (0xFF000000 or cleanHex.toLong(16))
-    8 -> cleanHex.toLong(16)
-    else -> 0xFF808080 // Default gray
   }
 }
 

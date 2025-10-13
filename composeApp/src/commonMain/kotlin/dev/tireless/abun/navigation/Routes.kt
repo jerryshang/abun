@@ -71,7 +71,7 @@ sealed interface Route {
    * Timeblock module routes
    */
   @Serializable
-  data object TimeCategoryManagement : Route
+  data object TimeTaskManagement : Route
 
   @Serializable
   data object TaskPlanner : Route

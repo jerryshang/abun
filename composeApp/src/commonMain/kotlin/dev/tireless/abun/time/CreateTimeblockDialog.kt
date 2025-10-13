@@ -41,7 +41,6 @@ fun CreateTimeblockDialog(
   selectedDate: String = "2024-01-01",
 ) {
   val tasks by viewModel.tasks.collectAsState()
-  val categories by viewModel.categories.collectAsState()
   val isLoading by viewModel.isLoading.collectAsState()
 
   var startTime by remember { mutableStateOf("09:00") }
@@ -52,7 +51,7 @@ fun CreateTimeblockDialog(
   // Task creation states
   var taskName by remember { mutableStateOf("") }
   var taskDescription by remember { mutableStateOf("") }
-  var selectedCategory by remember { mutableStateOf<Category?>(null) }
+  var selectedParent by remember { mutableStateOf<Task?>(null) }
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -114,20 +113,20 @@ fun CreateTimeblockDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
-                  ) {
-                    Column {
-                      Text(
-                        text = task.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                      )
-                      task.categoryName?.let { categoryName ->
-                        Text(
-                          text = categoryName,
-                          style = MaterialTheme.typography.bodySmall,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                      }
-                    }
+              ) {
+                Column {
+                  Text(
+                    text = task.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                  )
+                  task.parentTaskName?.let { parentName ->
+                    Text(
+                      text = "Parent: $parentName",
+                      style = MaterialTheme.typography.bodySmall,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  }
+                }
                     if (selectedTask?.id == task.id) {
                       Text("Selected", color = MaterialTheme.colorScheme.primary)
                     }
@@ -163,8 +162,8 @@ fun CreateTimeblockDialog(
             minLines = 3,
           )
 
-          // Category selection
-          Text("Select Category:")
+          // Parent selection
+          Text("Parent Task (optional):")
           Card(
             modifier = Modifier.fillMaxWidth(),
           ) {
@@ -172,9 +171,24 @@ fun CreateTimeblockDialog(
               modifier = Modifier.padding(16.dp),
               verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-              categories.forEach { category ->
+              OutlinedButton(
+                onClick = { selectedParent = null },
+                modifier = Modifier.fillMaxWidth(),
+              ) {
+                Text(
+                  text = if (selectedParent == null) "No parent selected" else "Clear parent",
+                  color =
+                    if (selectedParent == null) {
+                      MaterialTheme.colorScheme.primary
+                    } else {
+                      MaterialTheme.colorScheme.onSurface
+                    },
+                )
+              }
+
+              tasks.forEach { task ->
                 OutlinedButton(
-                  onClick = { selectedCategory = category },
+                  onClick = { selectedParent = task },
                   modifier = Modifier.fillMaxWidth(),
                 ) {
                   Row(
@@ -182,8 +196,17 @@ fun CreateTimeblockDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                   ) {
-                    Text(category.name)
-                    if (selectedCategory?.id == category.id) {
+                    Column {
+                      Text(task.name)
+                      task.parentTaskName?.let { parentName ->
+                        Text(
+                          text = "Parent: $parentName",
+                          style = MaterialTheme.typography.bodySmall,
+                          color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                      }
+                    }
+                    if (selectedParent?.id == task.id) {
                       Text("Selected", color = MaterialTheme.colorScheme.primary)
                     }
                   }
@@ -217,11 +240,11 @@ fun CreateTimeblockDialog(
       } else {
         Button(
           onClick = {
-            if (taskName.isNotBlank() && selectedCategory != null) {
+            if (taskName.isNotBlank()) {
               viewModel.createTask(
                 name = taskName,
                 description = taskDescription.ifBlank { null },
-                categoryId = selectedCategory!!.id,
+                parentTaskId = selectedParent?.id,
                 onSuccess = { taskId ->
                   // Switch back to timeblock creation with the new task selected
                   showCreateTask = false
@@ -230,23 +253,23 @@ fun CreateTimeblockDialog(
                       id = taskId,
                       name = taskName,
                       description = taskDescription.ifBlank { null },
-                      categoryId = selectedCategory!!.id,
+                      parentTaskId = selectedParent?.id,
                       strategy = "plan", // Default strategy for newly created tasks
                       createdAt = Clock.System.now(),
                       updatedAt = Clock.System.now(),
-                      categoryName = selectedCategory!!.name,
-                      categoryColor = selectedCategory!!.color,
+                      parentTaskName = selectedParent?.name,
+                      parentTaskStrategy = selectedParent?.strategy,
                     )
                   // Reset task creation form
                   taskName = ""
                   taskDescription = ""
-                  selectedCategory = null
+                  selectedParent = null
                 },
                 onError = { /* Handle error */ },
               )
             }
           },
-          enabled = taskName.isNotBlank() && selectedCategory != null && !isLoading,
+          enabled = taskName.isNotBlank() && !isLoading,
         ) {
           Text("Create Task")
         }
@@ -260,7 +283,7 @@ fun CreateTimeblockDialog(
             // Reset task creation form
             taskName = ""
             taskDescription = ""
-            selectedCategory = null
+            selectedParent = null
           } else {
             onDismiss()
           }

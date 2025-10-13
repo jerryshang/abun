@@ -3,28 +3,18 @@ package dev.tireless.abun.time
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-data class Category
-  @OptIn(ExperimentalTime::class)
-  constructor(
-    val id: Long,
-    val name: String,
-    val color: String,
-    val createdAt: Instant,
-    val updatedAt: Instant,
-  )
-
 data class Task
   @OptIn(ExperimentalTime::class)
   constructor(
     val id: Long,
     val name: String,
     val description: String?,
-    val categoryId: Long,
+    val parentTaskId: Long?,
     val strategy: String,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val categoryName: String? = null,
-    val categoryColor: String? = null,
+    val parentTaskName: String? = null,
+    val parentTaskStrategy: String? = null,
   )
 
 data class Timeblock
@@ -39,8 +29,8 @@ data class Timeblock
     val taskName: String? = null,
     val taskDescription: String? = null,
     val taskStrategy: String? = null,
-    val categoryName: String? = null,
-    val categoryColor: String? = null,
+    val taskParentName: String? = null,
+    val taskParentStrategy: String? = null,
   )
 
 data class Alarm

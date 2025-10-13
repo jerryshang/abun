@@ -17,8 +17,6 @@ import dev.tireless.abun.tags.TagRepository
 import dev.tireless.abun.tasks.TaskBoardViewModel
 import dev.tireless.abun.tasks.TaskPlannerRepository
 import dev.tireless.abun.time.AlarmRepository
-import dev.tireless.abun.time.CategoryRepository
-import dev.tireless.abun.time.CategoryViewModel
 import dev.tireless.abun.time.FocusTimerViewModel
 import dev.tireless.abun.time.TaskRepository
 import dev.tireless.abun.time.TimeblockRepository
@@ -31,7 +29,6 @@ val appModule =
     single { AppDatabase(get()) }
     single { QuotesRepository(get()) }
     single { NoteRepository(get()) }
-    single { CategoryRepository(get()) }
     single { TaskRepository(get()) }
     single { TimeblockRepository(get()) }
     single { AlarmRepository(get()) }
@@ -48,8 +45,7 @@ val viewModelModule =
   module {
     factory { QuoteViewModel(get()) }
     factory { NoteViewModel(get()) }
-    factory { TimeblockViewModel(get(), get(), get()) }
-    factory { CategoryViewModel(get()) }
+    factory { TimeblockViewModel(get(), get()) }
     factory { FocusTimerViewModel(get(), get()) }
     factory { TagManagementViewModel(get()) }
     factory { TaskBoardViewModel(get()) }

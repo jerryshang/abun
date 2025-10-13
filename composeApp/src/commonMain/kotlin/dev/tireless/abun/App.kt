@@ -86,7 +86,7 @@ import dev.tireless.abun.tags.TagManagementViewModel
 import dev.tireless.abun.tags.TagUpdate
 import dev.tireless.abun.tasks.TaskDashboardScreen
 import dev.tireless.abun.notes.NotesHomeScreen
-import dev.tireless.abun.time.CategoryManagementScreen
+import dev.tireless.abun.time.TaskHierarchyScreen
 import dev.tireless.abun.time.TimeWorkspaceScreen
 import dev.tireless.abun.ui.AppTheme
 import dev.tireless.abun.ui.ThemePreference
@@ -240,8 +240,8 @@ fun App() {
           }
 
           // Timeblock sub-screens
-          composable<Route.TimeCategoryManagement> {
-            CategoryManagementScreen(navController)
+          composable<Route.TimeTaskManagement> {
+            TaskHierarchyScreen(navController)
           }
         }
       }
@@ -326,7 +326,7 @@ private val MentalRoutes = setOfNotNull(Route.Mental::class.qualifiedName)
 private val TimeRoutes =
   setOfNotNull(
     Route.Time::class.qualifiedName,
-    Route.TimeCategoryManagement::class.qualifiedName,
+    Route.TimeTaskManagement::class.qualifiedName,
     Route.TaskPlanner::class.qualifiedName,
   )
 private val SettingsRoutes = setOfNotNull(Route.Settings::class.qualifiedName)
@@ -546,14 +546,17 @@ private fun SettingsScreen(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
-        Text("Category Management", style = MaterialTheme.typography.titleLarge)
+        Text("Task Hierarchy", style = MaterialTheme.typography.titleLarge)
         Text(
-          "Manage your timeblock categories and colors",
+          "Manage shared tasks and parent relationships used across time planning.",
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Button(onClick = { navController.navigate(Route.TimeCategoryManagement) }, modifier = Modifier.fillMaxWidth()) {
-          Text("Manage Categories")
+        Button(
+          onClick = { navController.navigate(Route.TimeTaskManagement) },
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          Text("Open Task Hierarchy")
         }
       }
     }

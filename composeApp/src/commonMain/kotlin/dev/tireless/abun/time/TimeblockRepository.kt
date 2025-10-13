@@ -38,8 +38,8 @@ class TimeblockRepository(
             taskName = data.task_name,
             taskDescription = data.task_description,
             taskStrategy = data.task_strategy,
-            categoryName = data.category_name,
-            categoryColor = data.category_color,
+            taskParentName = data.parent_task_name,
+            taskParentStrategy = data.parent_task_strategy,
           )
         }
       }
@@ -62,8 +62,8 @@ class TimeblockRepository(
             taskName = data.task_name,
             taskDescription = data.task_description,
             taskStrategy = data.task_strategy,
-            categoryName = data.category_name,
-            categoryColor = data.category_color,
+            taskParentName = data.parent_task_name,
+            taskParentStrategy = data.parent_task_strategy,
           )
         }
     }

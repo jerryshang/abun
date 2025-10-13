@@ -194,9 +194,9 @@ private fun FocusTaskDropdown(
             text = selectedTask?.name ?: "No task selected",
             style = MaterialTheme.typography.bodyLarge,
           )
-          selectedTask?.categoryName?.let { category ->
+          selectedTask?.parentTaskName?.let { parentName ->
             Text(
-              text = category,
+              text = "Parent: $parentName",
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -225,8 +225,8 @@ private fun FocusTaskDropdown(
       tasks.forEach { task ->
         DropdownItem(
           title = task.name,
-          subtitle = task.categoryName,
-          color = parseCategoryColor(task.categoryColor) ?: MaterialTheme.colorScheme.primary,
+          subtitle = task.parentTaskName?.let { "Parent: $it" },
+          color = strategyColor(task.strategy),
           onClick = {
             onSelectTask(task.id)
             expanded = false
@@ -567,19 +567,11 @@ private fun formatMillis(millis: Long): String {
   return "$minuteText:$secondText"
 }
 
-private fun parseCategoryColor(hex: String?): Color? {
-  if (hex.isNullOrBlank()) return null
-  return try {
-    val sanitized = hex.removePrefix("#")
-    val colorValue = sanitized.toLong(16)
-    val argb =
-      when (sanitized.length) {
-        6 -> 0xFF000000L or colorValue
-        8 -> colorValue
-        else -> return null
-      }
-    Color(argb)
-  } catch (_: Exception) {
-    null
+private fun strategyColor(strategy: String): Color =
+  when (strategy.lowercase()) {
+    "plan" -> Color(0xFF2196F3)
+    "todo" -> Color(0xFFFF9800)
+    "do" -> Color(0xFF4CAF50)
+    "check" -> Color(0xFF9C27B0)
+    else -> MaterialTheme.colorScheme.primary
   }
-}
