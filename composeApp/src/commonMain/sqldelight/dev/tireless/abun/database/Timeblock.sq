@@ -1,5 +1,5 @@
--- Categories table
-CREATE TABLE categories (
+-- Category table
+CREATE TABLE category (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   color TEXT NOT NULL, -- Hex color code
@@ -7,8 +7,8 @@ CREATE TABLE categories (
   updated_at INTEGER NOT NULL
 );
 
--- Tasks table
-CREATE TABLE tasks (
+-- Task table
+CREATE TABLE task (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
@@ -16,95 +16,95 @@ CREATE TABLE tasks (
   strategy TEXT NOT NULL DEFAULT 'plan', -- plan, todo, do, check
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (category_id) REFERENCES categories (id)
+  FOREIGN KEY (category_id) REFERENCES category (id)
 );
 
--- Timeblocks table
-CREATE TABLE timeblocks (
+-- Timeblock table
+CREATE TABLE timeblock (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   start_time TEXT NOT NULL, -- ISO timestamp
   end_time TEXT NOT NULL,   -- ISO timestamp
   task_id INTEGER NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (task_id) REFERENCES tasks (id)
+  FOREIGN KEY (task_id) REFERENCES task (id)
 );
 
--- Alarms table
-CREATE TABLE alarms (
+-- Alarm table
+CREATE TABLE alarm (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   timeblock_id INTEGER NOT NULL,
   minutes_before INTEGER NOT NULL, -- Minutes before timeblock start
   is_enabled INTEGER NOT NULL DEFAULT 1, -- Boolean (0/1)
   created_at INTEGER NOT NULL,
-  FOREIGN KEY (timeblock_id) REFERENCES timeblocks (id) ON DELETE CASCADE
+  FOREIGN KEY (timeblock_id) REFERENCES timeblock (id) ON DELETE CASCADE
 );
 
 -- Category queries
 selectAllCategories:
-SELECT * FROM categories ORDER BY name;
+SELECT * FROM category ORDER BY name;
 
 selectCategoryById:
-SELECT * FROM categories WHERE id = ?;
+SELECT * FROM category WHERE id = ?;
 
 insertCategory:
-INSERT INTO categories (name, color, created_at, updated_at)
+INSERT INTO category (name, color, created_at, updated_at)
 VALUES (?, ?, ?, ?);
 
 updateCategory:
-UPDATE categories
+UPDATE category
 SET name = ?, color = ?, updated_at = ?
 WHERE id = ?;
 
 deleteCategory:
-DELETE FROM categories WHERE id = ?;
+DELETE FROM category WHERE id = ?;
 
 -- Task queries
 selectAllTasks:
 SELECT t.*, c.name AS category_name, c.color AS category_color
-FROM tasks t
-JOIN categories c ON t.category_id = c.id
+FROM task t
+JOIN category c ON t.category_id = c.id
 ORDER BY t.name;
 
 selectTaskById:
 SELECT t.*, c.name AS category_name, c.color AS category_color
-FROM tasks t
-JOIN categories c ON t.category_id = c.id
+FROM task t
+JOIN category c ON t.category_id = c.id
 WHERE t.id = ?;
 
 selectTasksByCategory:
 SELECT t.*, c.name AS category_name, c.color AS category_color
-FROM tasks t
-JOIN categories c ON t.category_id = c.id
+FROM task t
+JOIN category c ON t.category_id = c.id
 WHERE t.category_id = ?
 ORDER BY t.name;
 
 selectTasksByStrategy:
 SELECT t.*, c.name AS category_name, c.color AS category_color
-FROM tasks t
-JOIN categories c ON t.category_id = c.id
+FROM task t
+JOIN category c ON t.category_id = c.id
 WHERE t.strategy = ?
 ORDER BY t.name;
 
 insertTask:
-INSERT INTO tasks (name, description, category_id, strategy, created_at, updated_at)
+INSERT INTO task (name, description, category_id, strategy, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?);
 
 updateTask:
-UPDATE tasks
+UPDATE task
 SET name = ?, description = ?, category_id = ?, strategy = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTask:
-DELETE FROM tasks WHERE id = ?;
+DELETE FROM task WHERE id = ?;
 
 -- Timeblock queries
 selectTimeblocksByDateRange:
 SELECT tb.*, t.name AS task_name, t.description AS task_description,
        t.strategy AS task_strategy, c.name AS category_name, c.color AS category_color
-FROM timeblocks tb
-JOIN tasks t ON tb.task_id = t.id
-JOIN categories c ON t.category_id = c.id
+FROM timeblock tb
+JOIN task t ON tb.task_id = t.id
+JOIN category c ON t.category_id = c.id
 WHERE datetime(tb.start_time) >= datetime(?)
   AND datetime(tb.start_time) <= datetime(?)
 ORDER BY tb.start_time;
@@ -112,38 +112,38 @@ ORDER BY tb.start_time;
 selectTimeblockById:
 SELECT tb.*, t.name AS task_name, t.description AS task_description,
        t.strategy AS task_strategy, c.name AS category_name, c.color AS category_color
-FROM timeblocks tb
-JOIN tasks t ON tb.task_id = t.id
-JOIN categories c ON t.category_id = c.id
+FROM timeblock tb
+JOIN task t ON tb.task_id = t.id
+JOIN category c ON t.category_id = c.id
 WHERE tb.id = ?;
 
 insertTimeblock:
-INSERT INTO timeblocks (start_time, end_time, task_id, created_at, updated_at)
+INSERT INTO timeblock (start_time, end_time, task_id, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?);
 
 updateTimeblock:
-UPDATE timeblocks
+UPDATE timeblock
 SET start_time = ?, end_time = ?, task_id = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTimeblock:
-DELETE FROM timeblocks WHERE id = ?;
+DELETE FROM timeblock WHERE id = ?;
 
 -- Alarm queries
 selectAlarmsByTimeblock:
-SELECT * FROM alarms WHERE timeblock_id = ? ORDER BY minutes_before;
+SELECT * FROM alarm WHERE timeblock_id = ? ORDER BY minutes_before;
 
 insertAlarm:
-INSERT INTO alarms (timeblock_id, minutes_before, is_enabled, created_at)
+INSERT INTO alarm (timeblock_id, minutes_before, is_enabled, created_at)
 VALUES (?, ?, ?, ?);
 
 updateAlarm:
-UPDATE alarms
+UPDATE alarm
 SET minutes_before = ?, is_enabled = ?
 WHERE id = ?;
 
 deleteAlarm:
-DELETE FROM alarms WHERE id = ?;
+DELETE FROM alarm WHERE id = ?;
 
 deleteAlarmsByTimeblock:
-DELETE FROM alarms WHERE timeblock_id = ?;
+DELETE FROM alarm WHERE timeblock_id = ?;

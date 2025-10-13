@@ -16,6 +16,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import dev.tireless.abun.database.Transaction as DbTransaction
+import dev.tireless.abun.database.Transaction_group as DbTransactionGroup
 
 /**
  * Repository for managing financial transactions
@@ -767,7 +768,7 @@ class TransactionRepository(
       queries.getGroupsForTransaction(transactionId).executeAsList().map { it.toDomainGroup() }
     }
 
-  private fun dev.tireless.abun.database.TransactionGroup.toDomainGroup() =
+  private fun DbTransactionGroup.toDomainGroup() =
     TransactionGroup(
       id = id,
       name = name,

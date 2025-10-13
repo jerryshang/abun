@@ -37,10 +37,12 @@ All accounts are organized in a tree structure with **5 fixed root accounts**:
 
 ## Database Schema
 
+All database tables follow a snake_case, singular naming convention (for example, `account`, `transaction_group_member`).
+
 ### Account Table
 
 ```sql
-CREATE TABLE Account (
+CREATE TABLE account (
     id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     parent_id INTEGER,  -- NULL for root accounts (1-5)
@@ -56,13 +58,13 @@ CREATE TABLE Account (
     credit_limit REAL,      -- For credit cards
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    FOREIGN KEY (parent_id) REFERENCES Account(id) ON DELETE SET NULL
+    FOREIGN KEY (parent_id) REFERENCES account(id) ON DELETE SET NULL
 );
 ```
 
 **Root Account Initialization (auto-executed by SQLDelight):**
 ```sql
-INSERT INTO Account (id, name, parent_id, ...) VALUES
+INSERT INTO account (id, name, parent_id, ...) VALUES
   (1, 'Asset', NULL, ...),      -- RootAccountIds.ASSET
   (2, 'Liability', NULL, ...),  -- RootAccountIds.LIABILITY
   (3, 'Equity', NULL, ...),     -- RootAccountIds.EQUITY
@@ -73,7 +75,7 @@ INSERT INTO Account (id, name, parent_id, ...) VALUES
 ### Transaction Table
 
 ```sql
-CREATE TABLE Transaction (
+CREATE TABLE "transaction" (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     amount INTEGER NOT NULL,  -- Always positive, stored as actual * 10000
     debit_account_id INTEGER NOT NULL,   -- Account being debited
@@ -86,8 +88,8 @@ CREATE TABLE Transaction (
     state TEXT NOT NULL DEFAULT 'confirmed',  -- 'planned', 'estimated', 'confirmed'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    FOREIGN KEY (debit_account_id) REFERENCES Account(id),
-    FOREIGN KEY (credit_account_id) REFERENCES Account(id)
+    FOREIGN KEY (debit_account_id) REFERENCES account(id),
+    FOREIGN KEY (credit_account_id) REFERENCES account(id)
 );
 ```
 
@@ -99,7 +101,7 @@ CREATE TABLE Transaction (
 ### Transaction Groups (Many-to-Many)
 
 ```sql
-CREATE TABLE TransactionGroup (
+CREATE TABLE transaction_group (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name TEXT NOT NULL,
     group_type TEXT NOT NULL,  -- 'loan', 'installment', 'split', 'custom'
@@ -110,12 +112,12 @@ CREATE TABLE TransactionGroup (
     updated_at INTEGER NOT NULL
 );
 
-CREATE TABLE TransactionGroupMember (
+CREATE TABLE transaction_group_member (
     transaction_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
     PRIMARY KEY (transaction_id, group_id),
-    FOREIGN KEY (transaction_id) REFERENCES Transaction(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
+    FOREIGN KEY (transaction_id) REFERENCES "transaction"(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES transaction_group(id) ON DELETE CASCADE
 );
 ```
 
@@ -129,14 +131,14 @@ CREATE TABLE TransactionGroupMember (
 
 ```sql
 -- Tags (many-to-many with transactions)
-CREATE TABLE FinanceTag (...);
-CREATE TABLE TransactionTag (...);
+CREATE TABLE finance_tag (...);
+CREATE TABLE transaction_tag (...);
 
 -- Attachments
-CREATE TABLE TransactionAttachment (...);
+CREATE TABLE transaction_attachment (...);
 
 -- Cross-module linking
-CREATE TABLE TransactionLinkedItem (...);
+CREATE TABLE transaction_linked_item (...);
 ```
 
 **Note**: The chart of accounts hierarchy (children of root accounts) provides categorization. There is no separate FinanceCategory table - expense and revenue accounts serve as categories naturally.
@@ -309,31 +311,31 @@ private fun getAccountTypeFromHierarchy(account: Account, allAccounts: List<Acco
 
 ```sql
 -- Expense categories (children of Expense root, id=5)
-SELECT * FROM Account WHERE parent_id = 5 AND is_active = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 5 AND is_active = 1 ORDER BY name;
 
 -- Revenue categories (children of Revenue root, id=4)
-SELECT * FROM Account WHERE parent_id = 4 AND is_active = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 4 AND is_active = 1 ORDER BY name;
 
 -- Asset accounts (children of Asset root, id=1)
-SELECT * FROM Account WHERE parent_id = 1 AND is_active = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 1 AND is_active = 1 ORDER BY name;
 
 -- Liability accounts (children of Liability root, id=2)
-SELECT * FROM Account WHERE parent_id = 2 AND is_active = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 2 AND is_active = 1 ORDER BY name;
 ```
 
 ### Transfer Pair Lookup
 
 ```sql
 -- Get both sides of a transfer
-SELECT * FROM Transaction WHERE transfer_group_id = ? ORDER BY created_at;
+SELECT * FROM "transaction" WHERE transfer_group_id = ? ORDER BY created_at;
 ```
 
 ### Transaction Groups
 
 ```sql
 -- Get all transactions in a group (e.g., loan payments)
-SELECT t.* FROM Transaction t
-INNER JOIN TransactionGroupMember m ON t.id = m.transaction_id
+SELECT t.* FROM "transaction" t
+INNER JOIN transaction_group_member m ON t.id = m.transaction_id
 WHERE m.group_id = ?
 ORDER BY t.transaction_date;
 ```
@@ -638,7 +640,7 @@ The 5 root accounts are **automatically created** by SQLDelight when the databas
 
 ```sql
 -- In Finance.sq (executed once on database creation)
-INSERT INTO Account (id, name, parent_id, ...) VALUES
+INSERT INTO account (id, name, parent_id, ...) VALUES
   (1, 'Asset', NULL, ...),
   (2, 'Liability', NULL, ...),
   (3, 'Equity', NULL, ...),

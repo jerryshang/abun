@@ -2,7 +2,7 @@ package dev.tireless.abun.mental
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.tireless.abun.database.Notes
+import dev.tireless.abun.database.Note as DbNote
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,11 +13,11 @@ import kotlin.time.ExperimentalTime
 class NoteViewModel(
   private val noteRepository: NoteRepository,
 ) : ViewModel() {
-  private val _notes = MutableStateFlow<List<Notes>>(emptyList())
-  val notes: StateFlow<List<Notes>> = _notes.asStateFlow()
+  private val _notes = MutableStateFlow<List<DbNote>>(emptyList())
+  val notes: StateFlow<List<DbNote>> = _notes.asStateFlow()
 
-  private val _selectedNote = MutableStateFlow<Notes?>(null)
-  val selectedNote: StateFlow<Notes?> = _selectedNote.asStateFlow()
+  private val _selectedNote = MutableStateFlow<DbNote?>(null)
+  val selectedNote: StateFlow<DbNote?> = _selectedNote.asStateFlow()
 
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -84,7 +84,7 @@ class NoteViewModel(
     }
   }
 
-  fun selectNote(note: Notes?) {
+  fun selectNote(note: DbNote?) {
     _selectedNote.value = note
   }
 

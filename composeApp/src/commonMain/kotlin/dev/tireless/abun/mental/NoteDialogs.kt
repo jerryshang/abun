@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import dev.tireless.abun.database.Notes
+import dev.tireless.abun.database.Note as DbNote
 
 @Composable
 fun CreateNoteDialog(
@@ -86,7 +86,7 @@ fun CreateNoteDialog(
 
 @Composable
 fun EditNoteDialog(
-  note: Notes,
+  note: DbNote,
   onDismiss: () -> Unit,
   onSave: (title: String, content: String) -> Unit,
 ) {

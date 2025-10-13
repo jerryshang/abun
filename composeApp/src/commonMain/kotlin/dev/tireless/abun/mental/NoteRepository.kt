@@ -4,7 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.database.Notes
+import dev.tireless.abun.database.Note as DbNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -17,13 +17,13 @@ import kotlin.time.ExperimentalTime
 class NoteRepository(
   private val database: AppDatabase,
 ) {
-  fun getAllNotes(): Flow<List<Notes>> =
+  fun getAllNotes(): Flow<List<DbNote>> =
     database.noteQueries
       .selectAllNotes()
       .asFlow()
       .mapToList(Dispatchers.IO)
 
-  suspend fun getNoteById(id: Long): Notes? =
+  suspend fun getNoteById(id: Long): DbNote? =
     withContext(Dispatchers.IO) {
       database.noteQueries
         .selectNoteById(id)
@@ -63,7 +63,7 @@ class NoteRepository(
     }
   }
 
-  fun searchNotes(query: String): Flow<List<Notes>> =
+  fun searchNotes(query: String): Flow<List<DbNote>> =
     database.noteQueries
       .searchNotes(query, query)
       .asFlow()

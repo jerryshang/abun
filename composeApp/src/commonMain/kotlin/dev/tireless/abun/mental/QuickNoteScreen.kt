@@ -42,7 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.tireless.abun.database.Notes
+import dev.tireless.abun.database.Note as DbNote
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -199,7 +199,7 @@ fun QuickNoteScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun NoteCard(
-  note: Notes,
+  note: DbNote,
   onClick: () -> Unit,
 ) {
   Card(
@@ -246,7 +246,7 @@ private fun NoteCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NoteDetailScreen(
-  note: Notes,
+  note: DbNote,
   onBack: () -> Unit,
   onEdit: () -> Unit,
   onDelete: () -> Unit,

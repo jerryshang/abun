@@ -3,6 +3,8 @@ package dev.tireless.abun.finance
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import dev.tireless.abun.database.AppDatabase
+import dev.tireless.abun.database.Transaction as DbTransaction
+import dev.tireless.abun.database.Transaction_group as DbTransactionGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -92,7 +94,7 @@ class TransactionGroupRepository(
       queries.getTransactionsByGroup(groupId).executeAsList().map { mapToTransaction(it) }
     }
 
-  private fun mapToTransactionGroup(entity: dev.tireless.abun.database.TransactionGroup): TransactionGroup =
+  private fun mapToTransactionGroup(entity: DbTransactionGroup): TransactionGroup =
     TransactionGroup(
       id = entity.id,
       name = entity.name,
@@ -102,7 +104,7 @@ class TransactionGroupRepository(
       updatedAt = entity.updated_at,
     )
 
-  private fun mapToTransaction(entity: dev.tireless.abun.database.Transaction): Transaction =
+  private fun mapToTransaction(entity: DbTransaction): Transaction =
     Transaction(
       id = entity.id,
       amountStorage = entity.amount,

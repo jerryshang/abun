@@ -2,7 +2,7 @@ package dev.tireless.abun.mental
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.tireless.abun.database.Quotes
+import dev.tireless.abun.database.Quote as DbQuote
 import dev.tireless.abun.mental.QuotesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 class QuoteViewModel(
   private val quotesRepository: QuotesRepository,
 ) : ViewModel() {
-  private val _currentQuote = MutableStateFlow<Quotes?>(null)
-  val currentQuote: StateFlow<Quotes?> = _currentQuote.asStateFlow()
+  private val _currentQuote = MutableStateFlow<DbQuote?>(null)
+  val currentQuote: StateFlow<DbQuote?> = _currentQuote.asStateFlow()
 
   private val _isLoading = MutableStateFlow(false)
   val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

@@ -16,6 +16,7 @@
 ## Coding Style & Naming Conventions
 - Kotlin files use 4-space indentation, trailing commas in multiline collections, and package roots under `dev.tireless.abun`.
 - Compose UI, feature screens, and view models use PascalCase (`TaskScheduleScreen`, `TaskScheduleViewModel`); data sources end with `Repository`.
+- SQLDelight table names use snake_case and remain singular (for example, `note`, `account`, `transaction_group_member`).
 - Keep feature folders flat—place models, repositories, screens, and view models together within each domain directory.
 - Register dependency bindings through Koin modules (`core/AppModule.kt`); avoid global singletons outside DI wiring.
 

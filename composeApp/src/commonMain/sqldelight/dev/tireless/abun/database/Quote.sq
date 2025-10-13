@@ -1,4 +1,4 @@
-CREATE TABLE quotes (
+CREATE TABLE quote (
   id TEXT NOT NULL PRIMARY KEY,
   content TEXT NOT NULL,        -- quotes content
   source TEXT,                  -- author, book, lecture, etc, optional
@@ -7,7 +7,7 @@ CREATE TABLE quotes (
 );
 
 -- Insert sample quotes
-INSERT INTO quotes (id, content, source, created_at, updated_at)
+INSERT INTO quote (id, content, source, created_at, updated_at)
 VALUES
   ('1', 'The only way to do great work is to love what you do.', 'Steve Jobs', strftime('%s', 'now'), strftime('%s', 'now')),
   ('2', 'Innovation distinguishes between a leader and a follower.', 'Steve Jobs', strftime('%s', 'now'), strftime('%s', 'now')),
@@ -20,19 +20,19 @@ VALUES
 
 -- Queries
 selectAll:
-SELECT * FROM quotes;
+SELECT * FROM quote;
 
 selectRandomQuote:
-SELECT * FROM quotes ORDER BY RANDOM() LIMIT 1;
+SELECT * FROM quote ORDER BY RANDOM() LIMIT 1;
 
 insertQuote:
-INSERT INTO quotes (id, content, source, created_at, updated_at)
+INSERT INTO quote (id, content, source, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?);
 
 deleteQuote:
-DELETE FROM quotes WHERE id = ?;
+DELETE FROM quote WHERE id = ?;
 
 updateQuote:
-UPDATE quotes
+UPDATE quote
 SET content = ?, source = ?, updated_at = ?
 WHERE id = ?;

@@ -1,5 +1,5 @@
--- Notes table for quick note functionality
-CREATE TABLE notes (
+-- Note table for quick note functionality
+CREATE TABLE note (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE notes (
 );
 
 -- Insert sample notes
-INSERT INTO notes (title, content, created_at, updated_at)
+INSERT INTO note (title, content, created_at, updated_at)
 VALUES
   ('Sample Note', 'This is a sample quick note to test the functionality.', datetime('now'), datetime('now')),
   ('Meeting Notes', 'Remember to discuss the quarterly goals in tomorrow meeting.', datetime('now'), datetime('now')),
@@ -16,24 +16,24 @@ VALUES
 
 -- Note queries
 selectAllNotes:
-SELECT * FROM notes ORDER BY updated_at DESC;
+SELECT * FROM note ORDER BY updated_at DESC;
 
 selectNoteById:
-SELECT * FROM notes WHERE id = ?;
+SELECT * FROM note WHERE id = ?;
 
 insertNote:
-INSERT INTO notes (title, content, created_at, updated_at)
+INSERT INTO note (title, content, created_at, updated_at)
 VALUES (?, ?, ?, ?);
 
 updateNote:
-UPDATE notes
+UPDATE note
 SET title = ?, content = ?, updated_at = ?
 WHERE id = ?;
 
 deleteNote:
-DELETE FROM notes WHERE id = ?;
+DELETE FROM note WHERE id = ?;
 
 searchNotes:
-SELECT * FROM notes
+SELECT * FROM note
 WHERE title LIKE '%' || ? || '%' OR content LIKE '%' || ? || '%'
 ORDER BY updated_at DESC;

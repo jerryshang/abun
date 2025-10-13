@@ -4,7 +4,7 @@
 -- Account type is determined by traversing parent_id to the root
 -- Initial balance is recorded as equity transaction, current balance calculated on-demand
 -- IMPORTANT: All amounts are stored as INTEGER (actual value * 10000) to avoid floating point precision loss
-CREATE TABLE Account (
+CREATE TABLE account (
     id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     parent_id INTEGER, -- NULL for root accounts, or FK to parent account
@@ -16,7 +16,7 @@ CREATE TABLE Account (
     credit_limit INTEGER NOT NULL DEFAULT -1, -- Credit limit * 10000, -1 for non-liability accounts
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-    FOREIGN KEY (parent_id) REFERENCES Account(id) ON DELETE SET NULL
+    FOREIGN KEY (parent_id) REFERENCES account(id) ON DELETE SET NULL
 );
 -- =============================================================================
 -- SQL for Initializing the Chart of Accounts
@@ -27,7 +27,7 @@ CREATE TABLE Account (
 -- ----------------------------
 -- 5 Fundamental Root Accounts
 -- ----------------------------
-INSERT INTO Account (id, name, note) VALUES
+INSERT INTO account (id, name, note) VALUES
   (1, 'Asset', '资产')
 , (2, 'Liability', '负债')
 , (3, 'Equity', '权益')
@@ -38,7 +38,7 @@ INSERT INTO Account (id, name, note) VALUES
 -- ----------------------------
 -- ASSET ACCOUNTS (parent_id: 1)
 -- ----------------------------
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (101, 'Cash', 1, '现金')
 , (102, 'Checking Accounts', 1, '借记卡或活期账户')
 , (103, 'E-Wallets', 1,  '电子钱包')
@@ -50,7 +50,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 ;
 
 -- debit cards & checking accounts
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (10201, 'CMB', 102, '招商银行')
 , (10202, 'BOC', 102, '中国银行')
 , (10203, 'ICBC', 102, '工商银行')
@@ -58,12 +58,12 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 , (10205, 'iFast', 102, 'iFast GB')
 ;
 -- e-wallets
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (10301, 'Alipay', 103, '支付宝，包括余额宝')
 , (10302, 'WeChat Wallet', 103, '微信钱包')
 ;
 -- growth
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (10401, 'MIPA', 104, '医保个人账户')
 , (10402, 'HPF', 104, '住房公积金')
 , (10403, 'Crypto Wallets', 104, '加密货币')
@@ -73,13 +73,13 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 -- -------------------------------
 -- LIABILITY ACCOUNTS (parent_id: 2)
 -- -------------------------------
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (201, 'Credit Cards', 2, '信用卡')
 , (202, 'Loans', 2, '银行或机构贷款')
 , (203, 'Borrowing', 2, '个人借款')
 ;
 -- credit cards
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (20101, 'CMB', 201, '招商银行')
 , (20102, 'Huabei', 201, '花呗')
 , (20103, 'JDCredit ', 201, '京东白条')
@@ -88,7 +88,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 , (20106, 'Gzcb', 201, '广州银行')
 ;
 
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (20201, 'CMB', 202, '招商银行')
 , (20202, 'Jiebei', 202, '借呗')
 , (20203, 'Duxiaoman', 202, '度小满')
@@ -99,7 +99,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 -- ----------------------------
 -- EQUITY ACCOUNTS (parent_id: 3)
 -- ----------------------------
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (301, 'Open Balance', 3, '初始权益，仅用于App初始化时，建立各账户的期初余额')
 , (302, 'Capital Contributions', 3, '资本注入，用于记录无需偿还的外部资金支持，如家庭赠与')
 , (303, 'Capital Losses', 3, '资本损失，用于核销确认无法收回的资产，如坏账')
@@ -111,20 +111,20 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 -- REVENUE ACCOUNTS (parent_id: 4)
 -- -----------------------------
 -- Level 2 Categories
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (401, 'Active', 4, '主动收入')
 , (402, 'Passive', 4, '被动收入')
 , (403, 'Others', 4, '其它')
 ;
 
 -- Level 3 under Active (401)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (40101, 'Pay', 401, '薪酬，所有作为雇员的收入')
 , (40102, 'Bonus', 401, '所有基于业绩的浮动收入')
 , (40103, 'Freelance', 401, '所有作为独立工作者的一次性收入')
 ;
 -- Level 3 under Passive (402)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (40201, 'Interest', 402, '利息')
 , (40202, 'Dividends', 402, '分红，股票、基金、公司股权')
 , (40203, 'Capital Gains', 402, '出售资产（房产、股票）的增值部分')
@@ -133,7 +133,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 ;
 
 -- Level 3 under Others (403)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (40301, 'Red Packets', 403, '家人转账、节日红包，小额')
 , (40302, 'Second-hand Sales', 403, '二手出售')
 , (40303, 'Windfall', 403, '中奖、继承、保险赔付')
@@ -143,7 +143,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 -- EXPENSE ACCOUNTS (parent_id: 5)
 -- -----------------------------
 -- Level 2 Categories
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (501, 'Essential', 5, '维持个人和家庭（包括宠物）基本生存和责任的、不可或缺的刚性开支')
 , (502, 'Lifestyle', 5, '体验当下')
 , (503, 'Growth & Creation', 5, '投资未来')
@@ -152,7 +152,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 ;
 
 -- Level 3 under Essential (501)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (50101, 'Groceries', 501, '食品与日用杂货，超市购买的食材')
 , (50102, 'Household', 501, '居家物品，生活用品、清洁用品等消耗品，基础家具、床上用品、厨具等耐用品')
 , (50103, 'Convenience Dining', 501, '便利餐饮，工作餐、外卖、快餐等以节省时间为目的的餐食')
@@ -171,7 +171,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 ;
 
 -- Level 3 under Lifestyle (502)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (50201, 'Treats & Beverages', 502, '零食与饮品，奶茶、咖啡、蛋糕、点心、酒水、饮料')
 , (50202, 'Dining & Social', 502, '餐饮与社交，餐厅、咖啡馆、酒吧、请客吃饭、朋友聚会')
 , (50203, 'Fashion & Accessories', 502, '时尚服饰与配饰，用于提升形象、满足审美需求的品牌衣物、鞋包、首饰')
@@ -184,13 +184,13 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 ;
 
 -- Level 3 under Growth & Creation (503)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (50301, 'Self-Development', 503, '自我提升，学费、课程订阅、书籍、知识付费、参加工作坊、个人域名')
 , (50302, 'Side Hustle Costs', 503, '副业项目，平台费、软件订阅费、快递费、办公用品、进货成本、广告投放、社交媒体推广费用')
 ;
 
 -- Level 3 under Financial Costs (504)
-INSERT INTO Account (id, name, parent_id, note) VALUES
+INSERT INTO account (id, name, parent_id, note) VALUES
   (50401, 'Interest Paid', 504, '利息支出，信用卡利息、各类贷款利息')
 , (50402, 'Fees & Charges', 504, '手续与服务费，银行账户年费、转账手续费、会员费、滞纳金')
 , (50403, 'Taxes', 504,  '税金，个人所得税、资产相关税费')
@@ -199,7 +199,7 @@ INSERT INTO Account (id, name, parent_id, note) VALUES
 -- Transaction Groups Table (Pure virtual grouping for related transactions)
 -- This is a logical grouping mechanism without financial meaning
 -- Aggregate amounts and status should be calculated from member transactions
-CREATE TABLE TransactionGroup (
+CREATE TABLE transaction_group (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     name TEXT NOT NULL,
     group_type TEXT NOT NULL, -- 'loan', 'installment', 'split', 'custom'
@@ -210,7 +210,7 @@ CREATE TABLE TransactionGroup (
 
 -- Transactions Table (Pure Double-Entry Booking)
 -- IMPORTANT: All amounts are stored as INTEGER (actual value * 10000) to avoid floating point precision loss
-CREATE TABLE `Transaction` (
+CREATE TABLE "transaction" (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     amount INTEGER NOT NULL, -- Always positive, actual amount * 10000 (supports up to .4f precision)
     debit_account_id INTEGER NOT NULL, -- Account being debited
@@ -223,17 +223,17 @@ CREATE TABLE `Transaction` (
     state TEXT NOT NULL DEFAULT 'confirmed', -- 'planned', 'estimated', 'confirmed'
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL,
-    FOREIGN KEY (debit_account_id) REFERENCES Account(id) ON DELETE CASCADE,
-    FOREIGN KEY (credit_account_id) REFERENCES Account(id) ON DELETE CASCADE
+    FOREIGN KEY (debit_account_id) REFERENCES account(id) ON DELETE CASCADE,
+    FOREIGN KEY (credit_account_id) REFERENCES account(id) ON DELETE CASCADE
 );
 
 -- Transaction Group Membership (Many-to-Many)
-CREATE TABLE TransactionGroupMember (
+CREATE TABLE transaction_group_member (
     transaction_id INTEGER NOT NULL,
     group_id INTEGER NOT NULL,
     PRIMARY KEY (transaction_id, group_id),
-    FOREIGN KEY (transaction_id) REFERENCES `Transaction`(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES TransactionGroup(id) ON DELETE CASCADE
+    FOREIGN KEY (transaction_id) REFERENCES "transaction"(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES transaction_group(id) ON DELETE CASCADE
 );
 
 -- Note: Transaction Templates and Recurring Transactions removed temporarily
@@ -241,132 +241,132 @@ CREATE TABLE TransactionGroupMember (
 
 -- Queries for Accounts
 insertAccount:
-INSERT INTO Account (name, parent_id, currency, config,  bill_date, payment_date, credit_limit, created_at, updated_at)
+INSERT INTO account (name, parent_id, currency, config,  bill_date, payment_date, credit_limit, created_at, updated_at)
 VALUES (?, ?, ?,  ?, ?, ?, ?, ?, ?);
 
 updateAccount:
-UPDATE Account
+UPDATE account
 SET name = ?, parent_id = ?, currency = ?, config = ?,  bill_date = ?, payment_date = ?, credit_limit = ?, updated_at = ?
 WHERE id = ?;
 
 deleteAccount:
-DELETE FROM Account WHERE id = ? AND id > 5;  -- Prevent deletion of root accounts
+DELETE FROM account WHERE id = ? AND id > 5;  -- Prevent deletion of root accounts
 
 getAccountById:
-SELECT * FROM Account WHERE id = ?;
+SELECT * FROM account WHERE id = ?;
 
 getAllAccounts:
-SELECT * FROM Account ORDER BY (config & 1) DESC, created_at DESC;  -- bit0 = active
+SELECT * FROM account ORDER BY (config & 1) DESC, created_at DESC;  -- bit0 = active
 
 getActiveAccounts:
-SELECT * FROM Account WHERE (config & 1) = 1 ORDER BY created_at DESC;  -- bit0 = active
+SELECT * FROM account WHERE (config & 1) = 1 ORDER BY created_at DESC;  -- bit0 = active
 
 -- Get all expense categories (sub-accounts of Expense root, id=5)
 getExpenseCategories:
-SELECT * FROM Account WHERE parent_id = 5 AND (config & 1) = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 5 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all revenue categories (sub-accounts of Revenue root, id=4)
 getRevenueCategories:
-SELECT * FROM Account WHERE parent_id = 4 AND (config & 1) = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 4 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all asset accounts (sub-accounts of Asset root, id=1)
 getAssetAccounts:
-SELECT * FROM Account WHERE parent_id = 1 AND (config & 1) = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 1 AND (config & 1) = 1 ORDER BY name;
 
 -- Get all liability accounts (sub-accounts of Liability root, id=2)
 getLiabilityAccounts:
-SELECT * FROM Account WHERE parent_id = 2 AND (config & 1) = 1 ORDER BY name;
+SELECT * FROM account WHERE parent_id = 2 AND (config & 1) = 1 ORDER BY name;
 
 -- Queries for Transaction Groups
 insertTransactionGroup:
-INSERT INTO TransactionGroup (id, name, group_type, description, created_at, updated_at)
+INSERT INTO transaction_group (id, name, group_type, description, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?);
 
 getMaxTransactionGroupIdInRange:
-SELECT MAX(id) FROM TransactionGroup WHERE id BETWEEN ? AND ?;
+SELECT MAX(id) FROM transaction_group WHERE id BETWEEN ? AND ?;
 
 getLastInsertedRowId:
 SELECT last_insert_rowid();
 
 updateTransactionGroup:
-UPDATE TransactionGroup
+UPDATE transaction_group
 SET name = ?, description = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransactionGroup:
-DELETE FROM TransactionGroup WHERE id = ?;
+DELETE FROM transaction_group WHERE id = ?;
 
 getTransactionGroupById:
-SELECT * FROM TransactionGroup WHERE id = ?;
+SELECT * FROM transaction_group WHERE id = ?;
 
 getAllTransactionGroups:
-SELECT * FROM TransactionGroup ORDER BY created_at DESC;
+SELECT * FROM transaction_group ORDER BY created_at DESC;
 
 getTransactionGroupsByType:
-SELECT * FROM TransactionGroup WHERE group_type = ? ORDER BY created_at DESC;
+SELECT * FROM transaction_group WHERE group_type = ? ORDER BY created_at DESC;
 
 -- Queries for Transaction Group Membership
 addTransactionToGroup:
-INSERT OR IGNORE INTO TransactionGroupMember (transaction_id, group_id) VALUES (?, ?);
+INSERT OR IGNORE INTO transaction_group_member (transaction_id, group_id) VALUES (?, ?);
 
 removeTransactionFromGroup:
-DELETE FROM TransactionGroupMember WHERE transaction_id = ? AND group_id = ?;
+DELETE FROM transaction_group_member WHERE transaction_id = ? AND group_id = ?;
 
 getGroupsForTransaction:
-SELECT g.* FROM TransactionGroup g
-INNER JOIN TransactionGroupMember m ON g.id = m.group_id
+SELECT g.* FROM transaction_group g
+INNER JOIN transaction_group_member m ON g.id = m.group_id
 WHERE m.transaction_id = ?
 ORDER BY g.created_at;
 
 getTransactionsByGroup:
-SELECT t.* FROM `Transaction` t
-INNER JOIN TransactionGroupMember m ON t.id = m.transaction_id
+SELECT t.* FROM "transaction" t
+INNER JOIN transaction_group_member m ON t.id = m.transaction_id
 WHERE m.group_id = ?
 ORDER BY t.transaction_date;
 
 -- Queries for Transactions
 insertTransaction:
-INSERT INTO `Transaction` (amount, debit_account_id, credit_account_id, transaction_date, transfer_group_id, payee, member, notes, state, created_at, updated_at)
+INSERT INTO "transaction" (amount, debit_account_id, credit_account_id, transaction_date, transfer_group_id, payee, member, notes, state, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateTransaction:
-UPDATE `Transaction`
+UPDATE "transaction"
 SET amount = ?, debit_account_id = ?, credit_account_id = ?, transaction_date = ?, transfer_group_id = ?, payee = ?, member = ?, notes = ?, state = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTransaction:
-DELETE FROM `Transaction` WHERE id = ?;
+DELETE FROM "transaction" WHERE id = ?;
 
 getTransactionById:
-SELECT * FROM `Transaction` WHERE id = ?;
+SELECT * FROM "transaction" WHERE id = ?;
 
 getAllTransactions:
-SELECT * FROM `Transaction` ORDER BY transaction_date DESC, created_at DESC;
+SELECT * FROM "transaction" ORDER BY transaction_date DESC, created_at DESC;
 
 getTransactionsByAccount:
-SELECT * FROM `Transaction`
+SELECT * FROM "transaction"
 WHERE debit_account_id = ? OR credit_account_id = ?
 ORDER BY transaction_date DESC;
 
 getTransactionsByDateRange:
-SELECT * FROM `Transaction`
+SELECT * FROM "transaction"
 WHERE transaction_date BETWEEN ? AND ?
 ORDER BY transaction_date DESC;
 
 getTransferPair:
-SELECT * FROM `Transaction` WHERE transfer_group_id = ? ORDER BY created_at;
+SELECT * FROM "transaction" WHERE transfer_group_id = ? ORDER BY created_at;
 
 getPlannedTransactions:
-SELECT * FROM `Transaction` WHERE state = 'planned' ORDER BY transaction_date;
+SELECT * FROM "transaction" WHERE state = 'planned' ORDER BY transaction_date;
 
 getEstimatedTransactions:
-SELECT * FROM `Transaction` WHERE state = 'estimated' ORDER BY transaction_date;
+SELECT * FROM "transaction" WHERE state = 'estimated' ORDER BY transaction_date;
 
 getTransactionsByState:
-SELECT * FROM `Transaction` WHERE state = ? ORDER BY transaction_date;
+SELECT * FROM "transaction" WHERE state = ? ORDER BY transaction_date;
 
 updateTransactionState:
-UPDATE `Transaction` SET state = ?, updated_at = ? WHERE id = ?;
+UPDATE "transaction" SET state = ?, updated_at = ? WHERE id = ?;
 
 -- Note: Template and recurring transaction queries removed
 -- Will be re-implemented after full migration to debit/credit model
@@ -379,7 +379,7 @@ SELECT
   COALESCE(
     (
       SELECT SUM(amount)
-      FROM `Transaction`
+      FROM "transaction"
       WHERE debit_account_id = :accountId
         AND transaction_date <= :asOfDate
         AND state = 'confirmed'
@@ -389,7 +389,7 @@ SELECT
   COALESCE(
     (
       SELECT SUM(amount)
-      FROM `Transaction`
+      FROM "transaction"
       WHERE credit_account_id = :accountId
         AND transaction_date <= :asOfDate
         AND state = 'confirmed'
@@ -398,7 +398,7 @@ SELECT
   ) AS balance;
 
 getRecentPayees:
-SELECT DISTINCT payee FROM `Transaction`
+SELECT DISTINCT payee FROM "transaction"
 WHERE payee IS NOT NULL AND payee != ''
 ORDER BY transaction_date DESC
 LIMIT 20;
