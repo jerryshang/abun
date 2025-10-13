@@ -57,6 +57,9 @@ sealed interface Route {
   data object PriceComparison : Route
 
   @Serializable
+  data object TrialCalculator : Route
+
+  @Serializable
   data object FutureView : Route
 
   @Serializable

@@ -19,6 +19,7 @@ import dev.tireless.abun.tasks.TaskPlannerRepository
 import dev.tireless.abun.time.AlarmRepository
 import dev.tireless.abun.time.CategoryRepository
 import dev.tireless.abun.time.CategoryViewModel
+import dev.tireless.abun.time.FocusTimerViewModel
 import dev.tireless.abun.time.TaskRepository
 import dev.tireless.abun.time.TimeblockRepository
 import dev.tireless.abun.time.TimeblockViewModel
@@ -49,6 +50,7 @@ val viewModelModule =
     factory { NoteViewModel(get()) }
     factory { TimeblockViewModel(get(), get(), get()) }
     factory { CategoryViewModel(get()) }
+    factory { FocusTimerViewModel(get(), get()) }
     factory { TagManagementViewModel(get()) }
     factory { TaskBoardViewModel(get()) }
     factory { NotesViewModel(get()) }

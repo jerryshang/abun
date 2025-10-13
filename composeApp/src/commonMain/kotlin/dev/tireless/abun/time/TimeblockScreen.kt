@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -26,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -89,11 +87,14 @@ private enum class TimeWorkspaceTab(val label: String) {
 @Composable
 fun TimeWorkspaceScreen(navController: NavHostController) {
   val timeblockViewModel: TimeblockViewModel = koinViewModel()
+  val focusTimerViewModel: FocusTimerViewModel = koinViewModel()
   var currentTab by rememberSaveable { mutableStateOf(TimeWorkspaceTab.Schedule) }
   var selectedDate by rememberSaveable { mutableStateOf("2024-01-01") }
-  var showFocusPrompt by remember { mutableStateOf(false) }
+  var showFocusTimer by remember { mutableStateOf(false) }
 
   val timeblocks by timeblockViewModel.timeblocks.collectAsState()
+  val tasks by timeblockViewModel.tasks.collectAsState()
+  val focusState by focusTimerViewModel.uiState.collectAsState()
 
   LaunchedEffect(selectedDate) {
     timeblockViewModel.loadTimeblocks(selectedDate)
@@ -135,7 +136,7 @@ fun TimeWorkspaceScreen(navController: NavHostController) {
       }
     },
     floatingActionButton = {
-      FocusActionButton(onStartFocus = { showFocusPrompt = true })
+      FocusActionButton(onStartFocus = { showFocusTimer = true })
     },
   ) { innerPadding ->
     Box(
@@ -169,13 +170,22 @@ fun TimeWorkspaceScreen(navController: NavHostController) {
     }
   }
 
-  if (showFocusPrompt) {
-    FocusEntryDialog(
-      onDismiss = { showFocusPrompt = false },
-      onNavigateToTasks = {
-        showFocusPrompt = false
-        currentTab = TimeWorkspaceTab.Tasks
-      },
+  val shouldShowTimer =
+    showFocusTimer || focusState.stage != FocusStage.Idle || focusState.isStopDialogVisible
+
+  if (shouldShowTimer) {
+    FocusTimerOverlay(
+      state = focusState,
+      tasks = tasks,
+      onSelectTask = focusTimerViewModel::selectTask,
+      onStart = focusTimerViewModel::startTimer,
+      onPause = focusTimerViewModel::pauseTimer,
+      onResume = focusTimerViewModel::resumeTimer,
+      onStop = focusTimerViewModel::showStopDialog,
+      onDismiss = { showFocusTimer = false },
+      onConfirmStop = { task, strategy -> focusTimerViewModel.confirmStop(strategy, task) },
+      onDismissStop = focusTimerViewModel::dismissStopDialog,
+      onClearError = focusTimerViewModel::clearError,
     )
   }
 }
@@ -283,33 +293,6 @@ private fun FocusActionButton(onStartFocus: () -> Unit) {
     onClick = onStartFocus,
     icon = { Icon(Lucide.Timer, contentDescription = "Start focus session") },
     text = { Text("Focus") },
-  )
-}
-
-@Composable
-private fun FocusEntryDialog(
-  onDismiss: () -> Unit,
-  onNavigateToTasks: () -> Unit,
-) {
-  AlertDialog(
-    onDismissRequest = onDismiss,
-    title = { Text("Start focus session") },
-    text = {
-      Text(
-        "Pick a task to stay with. We'll open your task list so you can choose what deserves your attention.",
-        style = MaterialTheme.typography.bodyMedium,
-      )
-    },
-    confirmButton = {
-      TextButton(onClick = onNavigateToTasks) {
-        Text("Go to tasks")
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onDismiss) {
-        Text("Cancel")
-      }
-    },
   )
 }
 

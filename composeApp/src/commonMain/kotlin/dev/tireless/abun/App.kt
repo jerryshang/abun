@@ -72,6 +72,7 @@ import dev.tireless.abun.finance.FinanceScreen
 import dev.tireless.abun.finance.FutureViewScreen
 import dev.tireless.abun.finance.LoanEditScreen
 import dev.tireless.abun.finance.PriceComparator
+import dev.tireless.abun.finance.TrialCalculatorScreen
 import dev.tireless.abun.finance.RevenueEditScreen
 import dev.tireless.abun.finance.SplitExpenseDraft
 import dev.tireless.abun.finance.TransactionViewModel
@@ -231,6 +232,9 @@ fun App() {
           composable<Route.PriceComparison> {
             PriceComparator(navController)
           }
+          composable<Route.TrialCalculator> {
+            TrialCalculatorScreen(navController)
+          }
           composable<Route.FutureView> {
             FutureViewScreen(navController)
           }
@@ -314,6 +318,7 @@ private val MaterialRoutes =
     Route.TransferEdit::class.qualifiedName,
     Route.LoanEdit::class.qualifiedName,
     Route.PriceComparison::class.qualifiedName,
+    Route.TrialCalculator::class.qualifiedName,
     Route.FutureView::class.qualifiedName,
     Route.AccountDetails::class.qualifiedName,
   )

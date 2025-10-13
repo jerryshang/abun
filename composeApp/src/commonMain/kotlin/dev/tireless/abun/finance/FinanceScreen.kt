@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -254,6 +255,12 @@ fun FinanceScreen(
             icon = Lucide.Calculator,
             contentDescription = "Price comparison",
             onClick = { navController.navigate(Route.PriceComparison) },
+          )
+          Spacer(modifier = Modifier.width(8.dp))
+          ToolbarActionButton(
+            icon = Icons.Filled.List,
+            contentDescription = "试算 Calculator",
+            onClick = { navController.navigate(Route.TrialCalculator) },
           )
           Spacer(modifier = Modifier.width(8.dp))
           ToolbarActionButton(
