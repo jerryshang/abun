@@ -1,12 +1,14 @@
 package dev.tireless.abun.finance
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,9 +20,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,9 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,32 +50,34 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.navigation.NavHostController
-
-private data class TrialCalculatorEntry(
-  val id: Long,
-  val isPositive: Boolean = true,
-  val amount: String = "",
-  val note: String = "",
-)
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrialCalculatorScreen(
   navController: NavHostController,
+  viewModel: TrialCalculatorViewModel = koinViewModel(),
 ) {
-  val entries = remember {
-    mutableStateListOf(
-      TrialCalculatorEntry(id = 0),
-      TrialCalculatorEntry(id = 1),
-    )
-  }
-  var nextId by remember { mutableStateOf(2L) }
+  val uiState by viewModel.uiState.collectAsState()
+  val entries = uiState.entries
 
   val total = entries.fold(0.0) { acc, entry ->
     val raw = entry.amount.toDoubleOrNull() ?: 0.0
     acc + if (entry.isPositive) raw else -raw
   }
+
+  val canClear =
+    remember(entries) {
+      entries.size > TRIAL_CALCULATOR_DEFAULT_ENTRY_COUNT ||
+        entries.any { entry ->
+          entry.amount.isNotBlank() || entry.note.isNotBlank() || !entry.isPositive
+        }
+    }
 
   Scaffold(
     topBar = {
@@ -100,6 +104,15 @@ fun TrialCalculatorScreen(
             Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
           }
         },
+        actions = {
+          TextButton(
+            onClick = { viewModel.clearAll() },
+            enabled = canClear,
+          ) {
+            Text("Clear")
+          }
+        },
+        windowInsets = WindowInsets(0, 0, 0, 0),
       )
     },
   ) { innerPadding ->
@@ -109,8 +122,8 @@ fun TrialCalculatorScreen(
           .fillMaxSize()
           .background(MaterialTheme.colorScheme.background)
           .padding(innerPadding)
-          .padding(horizontal = 20.dp, vertical = 16.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp),
+          .padding(horizontal = 20.dp, vertical = 12.dp),
+      verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
       Card(
         modifier = Modifier.fillMaxWidth(),
@@ -123,16 +136,11 @@ fun TrialCalculatorScreen(
           modifier =
             Modifier
               .fillMaxWidth()
-              .padding(16.dp),
-          verticalArrangement = Arrangement.spacedBy(8.dp),
+              .padding(horizontal = 12.dp, vertical = 10.dp),
+          verticalArrangement = Arrangement.Center,
         ) {
           Text(
-            text = "Summary",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-          )
-          Text(
-            text = "Net cash flow: ¥${formatAmount(total)}",
+            text = "¥${formatAmount(total)}",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color =
@@ -142,11 +150,6 @@ fun TrialCalculatorScreen(
                 MaterialTheme.colorScheme.error
               },
           )
-          Text(
-            text = "Use plus/minus to mark income or expense, and add new assumptions anytime.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
         }
       }
 
@@ -155,105 +158,110 @@ fun TrialCalculatorScreen(
           Modifier
             .weight(1f)
             .fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 80.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 64.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         var runningSum = 0.0
         itemsIndexed(
           items = entries,
           key = { _, entry -> entry.id },
-        ) { index, entry ->
+        ) { _, entry ->
           val amountValue = entry.amount.toDoubleOrNull() ?: 0.0
           runningSum += if (entry.isPositive) amountValue else -amountValue
-
-          val canMoveUp = index > 0
-          val canMoveDown = index < entries.lastIndex
 
           TrialCalculatorRow(
             modifier = Modifier.fillMaxWidth(),
             entry = entry,
             subtotal = runningSum,
             canDelete = entries.size > 1,
-            canMoveUp = canMoveUp,
-            canMoveDown = canMoveDown,
-            onToggleSign = { updated ->
-              entries.updateEntry(entry.id) { it.copy(isPositive = updated) }
-            },
-            onAmountChange = { newAmount ->
-              if (newAmount.isEmpty() || isValidAmountInput(newAmount)) {
-                entries.updateEntry(entry.id) { it.copy(amount = newAmount) }
-              }
-            },
-            onNoteChange = { note ->
-              entries.updateEntry(entry.id) { it.copy(note = note) }
-            },
-            onAddBelow = {
-              val newEntry = TrialCalculatorEntry(id = nextId++)
-              val currentIndex = entries.indexOfEntry(entry.id)
-              if (currentIndex >= 0) {
-                entries.add(currentIndex + 1, newEntry)
-              } else {
-                entries.add(newEntry)
-              }
-            },
-            onDelete = {
-              if (entries.size > 1) {
-                entries.removeAll { it.id == entry.id }
-              }
-            },
-            onMoveUp = {
-              val currentIndex = entries.indexOfEntry(entry.id)
-              if (currentIndex > 0) {
-                entries.move(currentIndex, currentIndex - 1)
-              }
-            },
-            onMoveDown = {
-              val currentIndex = entries.indexOfEntry(entry.id)
-              if (currentIndex >= 0 && currentIndex < entries.lastIndex) {
-                entries.move(currentIndex, currentIndex + 1)
-              }
-            },
+            onToggleSign = { updated -> viewModel.updateSign(entry.id, updated) },
+            onAmountChange = { newAmount -> viewModel.updateAmount(entry.id, newAmount) },
+            onNoteChange = { note -> viewModel.updateNote(entry.id, note) },
+            onAddBelow = { viewModel.addEntryBelow(entry.id) },
+            onDelete = { viewModel.deleteEntry(entry.id) },
+            onMoveUp = { viewModel.moveEntryUp(entry.id) },
+            onMoveDown = { viewModel.moveEntryDown(entry.id) },
           )
         }
       }
 
-      TextButton(
-        onClick = {
-          val newEntry = TrialCalculatorEntry(id = nextId++)
-          entries.add(newEntry)
-        },
-        modifier = Modifier.align(Alignment.CenterHorizontally),
-      ) {
-        Icon(
-          imageVector = Icons.Filled.Add,
-          contentDescription = "Add row",
-          modifier = Modifier.size(18.dp),
-        )
-        Spacer(modifier = Modifier.size(8.dp))
-        Text("Add new row")
-      }
     }
   }
 }
 
-private fun MutableList<TrialCalculatorEntry>.updateEntry(
-  id: Long,
-  transform: (TrialCalculatorEntry) -> TrialCalculatorEntry,
+@Composable
+private fun ActionIcon(
+  imageVector: ImageVector,
+  contentDescription: String,
+  onClick: () -> Unit,
+  enabled: Boolean = true,
+  tint: Color? = null,
 ) {
-  val index = indexOfEntry(id)
-  if (index >= 0) {
-    this[index] = transform(this[index])
-  }
+  val resolvedTint =
+    tint ?: if (enabled) {
+      MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+      MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    }
+
+  Icon(
+    imageVector = imageVector,
+    contentDescription = contentDescription,
+    tint = resolvedTint,
+    modifier =
+      Modifier
+        .size(24.dp)
+        .clickable(enabled = enabled, onClick = onClick),
+  )
 }
 
-private fun MutableList<TrialCalculatorEntry>.indexOfEntry(id: Long): Int =
-  indexOfFirst { it.id == id }
+@Composable
+private fun DragHandle(
+  enabled: Boolean,
+  rowHeightPx: Float,
+  onMoveUp: () -> Unit,
+  onMoveDown: () -> Unit,
+) {
+  var dragAccum by remember { mutableStateOf(0f) }
 
-private fun <T> MutableList<T>.move(fromIndex: Int, toIndex: Int) {
-  if (fromIndex == toIndex || fromIndex !in indices || toIndex !in 0..size) return
-  val item = removeAt(fromIndex)
-  val target = if (toIndex > fromIndex) toIndex - 1 else toIndex
-  add(target.coerceIn(0, size), item)
+  val effectiveHeight = rowHeightPx.coerceAtLeast(1f)
+  val threshold = effectiveHeight / 2f
+
+  Icon(
+    imageVector = Icons.Filled.DragHandle,
+    contentDescription = "Reorder",
+    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    modifier =
+      Modifier
+        .alpha(if (enabled) 1f else 0.3f)
+        .size(24.dp)
+        .pointerInput(enabled, effectiveHeight) {
+          if (!enabled) return@pointerInput
+          detectDragGestures(
+            onDragStart = {
+              dragAccum = 0f
+            },
+            onDragCancel = {
+              dragAccum = 0f
+            },
+            onDragEnd = {
+              dragAccum = 0f
+            },
+            onDrag = { change, dragAmount ->
+              change.consumePositionChange()
+              dragAccum += dragAmount.y
+              while (dragAccum <= -threshold) {
+                onMoveUp()
+                dragAccum += effectiveHeight
+              }
+              while (dragAccum >= threshold) {
+                onMoveDown()
+                dragAccum -= effectiveHeight
+              }
+            },
+          )
+        },
+  )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -263,8 +271,6 @@ private fun TrialCalculatorRow(
   entry: TrialCalculatorEntry,
   subtotal: Double,
   canDelete: Boolean,
-  canMoveUp: Boolean,
-  canMoveDown: Boolean,
   onToggleSign: (Boolean) -> Unit,
   onAmountChange: (String) -> Unit,
   onNoteChange: (String) -> Unit,
@@ -273,6 +279,8 @@ private fun TrialCalculatorRow(
   onMoveUp: () -> Unit,
   onMoveDown: () -> Unit,
 ) {
+  var rowHeightPx by remember { mutableStateOf(1f) }
+
   Card(
     modifier = modifier,
     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -281,13 +289,23 @@ private fun TrialCalculatorRow(
       modifier =
         Modifier
           .fillMaxWidth()
-          .padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
+          .padding(horizontal = 12.dp, vertical = 10.dp)
+          .onGloballyPositioned { coordinates ->
+            rowHeightPx = coordinates.size.height.coerceAtLeast(1).toFloat()
+          },
+      verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
       ) {
+        DragHandle(
+          enabled = canDelete,
+          rowHeightPx = rowHeightPx,
+          onMoveUp = onMoveUp,
+          onMoveDown = onMoveDown,
+        )
+
         Surface(
           shape = CircleShape,
           color =
@@ -333,58 +351,19 @@ private fun TrialCalculatorRow(
             ),
         )
 
-        IconButton(onClick = onAddBelow) {
-          Icon(
-            imageVector = Icons.Filled.Add,
-            contentDescription = "Add row below",
-          )
-        }
+        ActionIcon(
+          imageVector = Icons.Filled.Add,
+          contentDescription = "Add row below",
+          onClick = onAddBelow,
+          tint = MaterialTheme.colorScheme.primary,
+        )
 
-        IconButton(
-          onClick = onMoveUp,
-          enabled = canMoveUp,
-        ) {
-          Icon(
-            imageVector = Icons.Filled.ArrowUpward,
-            contentDescription = "Move row up",
-            tint =
-              if (canMoveUp) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-              } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-              },
-          )
-        }
-
-        IconButton(
-          onClick = onMoveDown,
-          enabled = canMoveDown,
-        ) {
-          Icon(
-            imageVector = Icons.Filled.ArrowDownward,
-            contentDescription = "Move row down",
-            tint =
-              if (canMoveDown) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-              } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-              },
-          )
-        }
-
-        IconButton(
-          onClick = onDelete,
+        ActionIcon(
+          imageVector = Icons.Filled.Delete,
+          contentDescription = "Delete row",
           enabled = canDelete,
-        ) {
-          Icon(
-            imageVector = Icons.Filled.Delete,
-            contentDescription = "Delete row",
-            tint =
-              if (canDelete) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = 0.3f,
-              ),
-          )
-        }
+          onClick = onDelete,
+        )
       }
 
       OutlinedTextField(

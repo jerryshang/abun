@@ -1,6 +1,0 @@
-name,parent_name,currency,is_active,is_countable,is_visible,icon_name,color_hex
-Cash,Asset,CNY,true,true,true,cash,#4CAF50
-Bank,Asset,CNY,true,true,true,bank,#2196F3
-Salary,Revenue,CNY,true,true,true,salary,#FFC107
-Food,Expense,CNY,true,true,true,restaurant,#FF5722
-Transport,Expense,CNY,true,true,true,directions_car,#9C27B0

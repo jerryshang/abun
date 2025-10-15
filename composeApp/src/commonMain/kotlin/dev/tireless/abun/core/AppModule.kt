@@ -6,6 +6,8 @@ import dev.tireless.abun.finance.AccountViewModel
 import dev.tireless.abun.finance.TransactionGroupRepository
 import dev.tireless.abun.finance.TransactionRepository
 import dev.tireless.abun.finance.TransactionViewModel
+import dev.tireless.abun.finance.TrialCalculatorRepository
+import dev.tireless.abun.finance.TrialCalculatorViewModel
 import dev.tireless.abun.mental.NoteRepository
 import dev.tireless.abun.mental.NoteViewModel
 import dev.tireless.abun.mental.QuoteViewModel
@@ -39,6 +41,7 @@ val appModule =
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository
     single { TransactionGroupRepository(get(), get()) } // database, transactionRepository
+    single { TrialCalculatorRepository(get()) }
   }
 
 val viewModelModule =
@@ -53,6 +56,7 @@ val viewModelModule =
     // Finance ViewModels
     factory { TransactionViewModel(get(), get(), get()) }
     factory { AccountViewModel(get()) } // accountRepository, accountLoaderService
+    factory { TrialCalculatorViewModel(get()) }
   }
 
 val allModules =
