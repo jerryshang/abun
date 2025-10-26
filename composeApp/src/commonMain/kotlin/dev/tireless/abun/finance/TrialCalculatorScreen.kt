@@ -54,8 +54,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavHostController
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,9 +225,18 @@ private fun DragHandle(
   onMoveDown: () -> Unit,
 ) {
   var dragAccum by remember { mutableStateOf(0f) }
+  val density = LocalDensity.current
+
+  val dragThreshold =
+    remember(rowHeightPx) {
+      val minimum =
+        with(density) {
+          32.dp.toPx()
+        }
+      max(rowHeightPx * 0.25f, minimum)
+    }
 
   val effectiveHeight = rowHeightPx.coerceAtLeast(1f)
-  val threshold = effectiveHeight / 2f
 
   Icon(
     imageVector = Icons.Filled.DragHandle,
@@ -234,7 +245,7 @@ private fun DragHandle(
     modifier =
       Modifier
         .alpha(if (enabled) 1f else 0.3f)
-        .size(24.dp)
+        .size(32.dp)
         .pointerInput(enabled, effectiveHeight) {
           if (!enabled) return@pointerInput
           detectDragGestures(
@@ -250,11 +261,11 @@ private fun DragHandle(
             onDrag = { change, dragAmount ->
               change.consumePositionChange()
               dragAccum += dragAmount.y
-              while (dragAccum <= -threshold) {
+              while (dragAccum <= -dragThreshold) {
                 onMoveUp()
                 dragAccum += effectiveHeight
               }
-              while (dragAccum >= threshold) {
+              while (dragAccum >= dragThreshold) {
                 onMoveDown()
                 dragAccum -= effectiveHeight
               }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -79,16 +78,15 @@ enum class ZoomLevel {
 }
 
 private enum class TimeWorkspaceTab(val label: String) {
-  Schedule("Schedule"),
   Tasks("Tasks"),
-  Review("Review")
+  Blocks("Blocks")
 }
 
 @Composable
 fun TimeWorkspaceScreen(navController: NavHostController) {
   val timeblockViewModel: TimeblockViewModel = koinViewModel()
   val focusTimerViewModel: FocusTimerViewModel = koinViewModel()
-  var currentTab by rememberSaveable { mutableStateOf(TimeWorkspaceTab.Schedule) }
+  var currentTab by rememberSaveable { mutableStateOf(TimeWorkspaceTab.Tasks) }
   var selectedDate by rememberSaveable { mutableStateOf("2024-01-01") }
   var showFocusTimer by remember { mutableStateOf(false) }
 
@@ -106,37 +104,30 @@ fun TimeWorkspaceScreen(navController: NavHostController) {
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background),
     topBar = {
-      Column(
+      Row(
         modifier =
           Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
       ) {
-        Text(
-          text = "Time",
-          style = MaterialTheme.typography.headlineLarge,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-          text = "Start with your schedule, then focus on tasks.",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        TabRow(selectedTabIndex = currentTab.ordinal) {
+        TabRow(
+          selectedTabIndex = currentTab.ordinal,
+          modifier = Modifier.weight(1f),
+        ) {
           TimeWorkspaceTab.values().forEach { tab ->
             Tab(
               selected = tab == currentTab,
               onClick = { currentTab = tab },
+              modifier = Modifier.weight(1f),
               text = { Text(tab.label) },
             )
           }
         }
+        Spacer(modifier = Modifier.width(12.dp))
+        FocusIconButton(onClick = { showFocusTimer = true })
       }
-    },
-    floatingActionButton = {
-      FocusActionButton(onStartFocus = { showFocusTimer = true })
     },
   ) { innerPadding ->
     Box(
@@ -146,25 +137,19 @@ fun TimeWorkspaceScreen(navController: NavHostController) {
           .padding(innerPadding),
     ) {
       when (currentTab) {
-        TimeWorkspaceTab.Schedule ->
-          TimeblockPlanner(
-            modifier = Modifier.fillMaxSize(),
-            selectedDate = selectedDate,
-            timeblocks = timeblocks,
-            viewModel = timeblockViewModel,
-            onManageTasks = { navController.navigate(Route.TimeTaskManagement) },
-          )
         TimeWorkspaceTab.Tasks ->
           TaskDashboardScreen(
             navController = null,
             modifier = Modifier.fillMaxSize(),
             embedded = true,
           )
-        TimeWorkspaceTab.Review ->
-          TimeReviewPanel(
+        TimeWorkspaceTab.Blocks ->
+          TimeblockPlanner(
             modifier = Modifier.fillMaxSize(),
             selectedDate = selectedDate,
             timeblocks = timeblocks,
+            viewModel = timeblockViewModel,
+            onManageTasks = { navController.navigate(Route.TimeTaskManagement) },
           )
       }
     }
@@ -288,158 +273,10 @@ private fun TimeblockPlanner(
 }
 
 @Composable
-private fun FocusActionButton(onStartFocus: () -> Unit) {
-  ExtendedFloatingActionButton(
-    onClick = onStartFocus,
-    icon = { Icon(Lucide.Timer, contentDescription = "Start focus session") },
-    text = { Text("Focus") },
-  )
-}
-
-@Composable
-private fun TimeReviewPanel(
-  modifier: Modifier = Modifier,
-  selectedDate: String,
-  timeblocks: List<Timeblock>,
-) {
-  val totalMinutes = remember(timeblocks) { timeblocks.sumOf { it.durationMinutes() } }
-
-  LazyColumn(
-    modifier = modifier.fillMaxSize(),
-    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-  ) {
-    item {
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("Daily review", style = MaterialTheme.typography.titleLarge)
-        Text(
-          text = selectedDate,
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-    }
-
-    item {
-      ReviewSummaryCard(totalMinutes = totalMinutes, blockCount = timeblocks.size)
-    }
-
-    if (timeblocks.isEmpty()) {
-      item {
-        Text(
-          text = "No timeblocks scheduled yet. Capture tasks, then block time to see your day come together.",
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-    } else {
-      item {
-        Text("Recent timeblocks", style = MaterialTheme.typography.titleMedium)
-      }
-      items(timeblocks, key = { it.id }) { block ->
-        ReviewTimeblockCard(timeblock = block)
-      }
-    }
+private fun FocusIconButton(onClick: () -> Unit) {
+  FilledIconButton(onClick = onClick) {
+    Icon(Lucide.Timer, contentDescription = "Start focus session")
   }
-}
-
-@Composable
-private fun ReviewSummaryCard(
-  totalMinutes: Long,
-  blockCount: Int,
-) {
-  Card {
-    Column(
-      modifier = Modifier.padding(20.dp),
-      verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      Text(
-        text = "Scheduled time",
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-      Text(
-        text = formatDuration(totalMinutes),
-        style = MaterialTheme.typography.headlineSmall,
-      )
-      Text(
-        text = "$blockCount timeblocks planned",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-    }
-  }
-}
-
-@Composable
-private fun ReviewTimeblockCard(timeblock: Timeblock) {
-  Card {
-    Column(
-      modifier = Modifier.padding(16.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-      Text(
-        text = timeblock.taskName ?: "Unassigned task",
-        style = MaterialTheme.typography.titleMedium,
-      )
-      Text(
-        text =
-          buildString {
-            append(formatTimeRange(timeblock.startTime, timeblock.endTime))
-            timeblock.taskStrategy?.let {
-              append(" • ")
-              append(it.uppercase())
-            }
-          },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
-      timeblock.taskParentName?.let { parentName ->
-        Text(
-          text = "Parent: $parentName",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-      }
-    }
-  }
-}
-
-@OptIn(ExperimentalTime::class)
-private fun Timeblock.durationMinutes(): Long {
-  return runCatching {
-    val start =
-      LocalDateTime
-        .parse(startTime)
-        .toInstant(TimeZone.currentSystemDefault())
-    val end =
-      LocalDateTime
-        .parse(endTime)
-        .toInstant(TimeZone.currentSystemDefault())
-    (end - start).inWholeMinutes
-  }.getOrDefault(0L)
-}
-
-private fun formatDuration(totalMinutes: Long): String {
-  if (totalMinutes <= 0) return "0m"
-  val hours = totalMinutes / 60
-  val minutes = totalMinutes % 60
-  return when {
-    hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
-    hours > 0 -> "${hours}h"
-    else -> "${minutes}m"
-  }
-}
-
-private fun formatTimeRange(
-  startIso: String,
-  endIso: String,
-): String {
-  return runCatching {
-    val start = LocalDateTime.parse(startIso).time
-    val end = LocalDateTime.parse(endIso).time
-    "${start.toDisplayString()} - ${end.toDisplayString()}"
-  }.getOrDefault("—")
 }
 
 private fun LocalTime.toDisplayString(): String {

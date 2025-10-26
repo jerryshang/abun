@@ -2,11 +2,11 @@ package dev.tireless.abun.tasks
 
 import dev.tireless.abun.tags.TagDomain
 import dev.tireless.abun.tags.TagRepository
+import dev.tireless.abun.core.time.currentInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import dev.tireless.abun.core.time.currentInstant
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -27,20 +27,42 @@ class TaskPlannerRepository(
 
   fun observeAllTasks(): StateFlow<List<Task>> = tasks
 
-  fun observeToday(date: LocalDate): Flow<List<TaskNode>> {
-    return tasks.map { list ->
-      list.filter { it.plannedDate == date }
-        .toHierarchy()
+  fun observeInbox(): Flow<List<TaskNode>> =
+    tasks.map { list ->
+      list
+        .filter { task -> !task.isArchived() && task.plannedDate == null }
+        .toHierarchy(alphabeticalSorter)
     }
-  }
 
-  fun observeUpcoming(after: LocalDate): Flow<List<TaskNode>> {
-    return tasks.map { list ->
-      list.filter { it.plannedDate > after }
-        .sortedBy { it.plannedDate }
-        .toHierarchy()
+  fun observeToday(reference: LocalDate): Flow<List<TaskNode>> =
+    tasks.map { list ->
+      val active = list.filterNot { it.isArchived() }
+      val todays = active.filter { it.plannedDate == reference }
+      val overdue =
+        active.filter { task ->
+          val planned = task.plannedDate
+          planned != null && planned < reference
+        }
+      val todayNodes = todays.toHierarchy(alphabeticalSorter)
+      val overdueNodes = overdue.toHierarchy(overdueSorter)
+      todayNodes + overdueNodes
     }
-  }
+
+  fun observeFuture(reference: LocalDate): Flow<List<TaskNode>> =
+    tasks.map { list ->
+      list
+        .filter { task ->
+          !task.isArchived() && task.plannedDate?.let { it > reference } == true
+        }
+        .toHierarchy(futureSorter)
+    }
+
+  fun observeArchived(): Flow<List<TaskNode>> =
+    tasks.map { list ->
+      list
+        .filter { task -> task.isArchived() }
+        .toHierarchy(archivedSorter)
+    }
 
   fun observeTask(taskId: Long): Flow<Task?> = tasks.map { list -> list.find { it.id == taskId } }
 
@@ -144,10 +166,10 @@ class TaskPlannerRepository(
     return result
   }
 
-  private fun List<Task>.toHierarchy(): List<TaskNode> {
+  private fun List<Task>.toHierarchy(sorter: Comparator<Task> = taskSorter): List<TaskNode> {
     val map = groupBy { it.parentId }
     fun build(parentId: Long?, depth: Int): List<TaskNode> {
-      val children = map[parentId].orEmpty().sortedWith(taskSorter)
+      val children = map[parentId].orEmpty().sortedWith(sorter)
       return children.map { task ->
         val childNodes = build(task.id, depth + 1)
         val totalEstimate = childNodes.sumOf { it.totalEstimate } + task.estimateMinutes
@@ -175,8 +197,35 @@ class TaskPlannerRepository(
 
   private fun nextLogId(): Long = logIdCounter++
 
+  private val alphabeticalSorter =
+    compareBy<Task> { it.title.lowercase() }
+      .thenBy { it.id }
+
+  private val overdueSorter =
+    compareBy<Task> { it.plannedDate ?: LocalDate(1970, 1, 1) }
+      .thenBy { it.title.lowercase() }
+      .thenBy { it.id }
+
+  private val futureSorter =
+    compareBy<Task> { it.plannedDate ?: LocalDate(9999, 12, 31) }
+      .thenBy { it.plannedStart?.hour ?: Int.MAX_VALUE }
+      .thenBy { it.plannedStart?.minute ?: Int.MAX_VALUE }
+      .thenBy { it.title.lowercase() }
+      .thenBy { it.id }
+
+  private val archivedSorter =
+    compareByDescending<Task> { it.updatedAt }.thenByDescending { it.id }
+
   private val taskSorter =
-    compareBy<Task>({ it.plannedDate }, { it.plannedStart.hour }, { it.plannedStart.minute }, { it.id })
+    compareBy<Task>(
+      { it.plannedDate == null },
+      { it.plannedDate ?: LocalDate(1970, 1, 1) },
+      { it.plannedStart?.hour ?: Int.MAX_VALUE },
+      { it.plannedStart?.minute ?: Int.MAX_VALUE },
+      { it.id },
+    )
+
+  private fun Task.isArchived(): Boolean = state == TaskState.Done || state == TaskState.Cancelled
 
   private fun sampleTasks(): List<Task> {
     val nowInstant = currentInstant()

@@ -183,8 +183,8 @@ data class TrialCalculatorUiState(
 )
 
 private fun MutableList<TrialCalculatorEntry>.move(fromIndex: Int, toIndex: Int) {
-  if (fromIndex == toIndex || fromIndex !in indices || toIndex !in 0..size) return
+  if (fromIndex == toIndex || fromIndex !in indices) return
   val item = removeAt(fromIndex)
-  val target = if (toIndex > fromIndex) toIndex - 1 else toIndex
-  add(target.coerceIn(0, size), item)
+  val boundedIndex = toIndex.coerceIn(0, size)
+  add(boundedIndex, item)
 }
