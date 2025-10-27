@@ -99,9 +99,11 @@ class NotesViewModel(
   }
 
   fun deleteNote(noteId: Long) {
-    repository.deleteNote(noteId)
-    if (_editingNoteId.value == noteId) {
-      _editingNoteId.value = null
+    viewModelScope.launch {
+      repository.deleteNote(noteId)
+      if (_editingNoteId.value == noteId) {
+        _editingNoteId.value = null
+      }
     }
   }
 

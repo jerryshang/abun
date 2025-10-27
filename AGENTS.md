@@ -5,6 +5,7 @@
 - Place SQLDelight schemas and migrations by domain under `composeApp/src/commonMain/sqldelight/{time|mental|material}`.
 - Use `iosApp/` for the Xcode wrapper and root Gradle scripts (`build.gradle.kts`, `settings.gradle.kts`, `gradle/`) for target configuration.
 - Reserve `docs/` for reference material and store contributor policies at the repository root for quick discovery.
+- Use SQLite (via SQLDelight) to persist all data; keep in-memory state limited to transient UI concerns.
 
 ## Build, Test, and Development Commands
 - `./gradlew :composeApp:assembleDebug` builds the Android debug APK for device validation.

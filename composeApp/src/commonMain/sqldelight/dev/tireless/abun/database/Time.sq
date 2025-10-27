@@ -6,6 +6,11 @@ CREATE TABLE task (
   parent_id INTEGER,
   strategy TEXT NOT NULL DEFAULT 'plan', -- plan, todo, do, check
   "constraint" TEXT NOT NULL DEFAULT 'exactly', -- exactly, not_before, not_after
+  estimate_minutes INTEGER NOT NULL DEFAULT 45,
+  planned_date TEXT,
+  planned_start TEXT,
+  state TEXT NOT NULL DEFAULT 'Ready',
+  actual_minutes INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (parent_id) REFERENCES task (id) ON DELETE SET NULL
@@ -20,6 +25,28 @@ CREATE TABLE timeblock (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (task_id) REFERENCES task (id)
+);
+
+-- Task tags table
+CREATE TABLE task_tag (
+  task_id INTEGER NOT NULL,
+  tag_id INTEGER NOT NULL,
+  PRIMARY KEY (task_id, tag_id),
+  FOREIGN KEY (task_id) REFERENCES task (id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tag (id) ON DELETE CASCADE
+);
+
+-- Task logs table
+CREATE TABLE task_log (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  state_after TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at TEXT NOT NULL,
+  actual_minutes INTEGER NOT NULL,
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (task_id) REFERENCES task (id) ON DELETE CASCADE
 );
 
 -- Alarm table

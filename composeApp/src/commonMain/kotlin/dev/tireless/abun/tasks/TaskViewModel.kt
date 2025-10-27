@@ -63,9 +63,7 @@ class TaskBoardViewModel(
 
   fun createTask(draft: TaskDraft): Task = repository.createTask(draft)
 
-  fun updateTask(update: TaskUpdate) {
-    repository.updateTask(update)
-  }
+  fun updateTask(update: TaskUpdate): Task? = repository.updateTask(update)
 
   fun changeTaskState(
     taskId: Long,

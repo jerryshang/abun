@@ -1,0 +1,112 @@
+selectPlannerTasks:
+SELECT
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.estimate_minutes,
+  t.planned_date,
+  t.planned_start,
+  t.state,
+  t.actual_minutes,
+  t.created_at,
+  t.updated_at
+FROM task t
+ORDER BY t.created_at DESC, t.id DESC;
+
+selectPlannerTaskById:
+SELECT
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.estimate_minutes,
+  t.planned_date,
+  t.planned_start,
+  t.state,
+  t.actual_minutes,
+  t.created_at,
+  t.updated_at
+FROM task t
+WHERE t.id = ?;
+
+selectPlannerTaskTags:
+SELECT task_id, tag_id FROM task_tag;
+
+selectPlannerTaskTagsForTask:
+SELECT tag_id FROM task_tag WHERE task_id = ?;
+
+insertPlannerTask:
+INSERT INTO task (
+  name,
+  description,
+  parent_id,
+  strategy,
+  "constraint",
+  estimate_minutes,
+  planned_date,
+  planned_start,
+  state,
+  actual_minutes,
+  created_at,
+  updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updatePlannerTask:
+UPDATE task
+SET
+  name = ?,
+  description = ?,
+  parent_id = ?,
+  strategy = ?,
+  "constraint" = ?,
+  estimate_minutes = ?,
+  planned_date = ?,
+  planned_start = ?,
+  state = ?,
+  updated_at = ?
+WHERE id = ?;
+
+updatePlannerTaskState:
+UPDATE task
+SET state = ?, actual_minutes = ?, updated_at = ?
+WHERE id = ?;
+
+deletePlannerTask:
+DELETE FROM task WHERE id = ?;
+
+deletePlannerTaskTags:
+DELETE FROM task_tag WHERE task_id = ?;
+
+insertPlannerTaskTag:
+INSERT INTO task_tag (task_id, tag_id) VALUES (?, ?);
+
+selectPlannerTaskLogs:
+SELECT * FROM task_log ORDER BY started_at;
+
+selectPlannerTaskLogsByTaskId:
+SELECT * FROM task_log WHERE task_id = ? ORDER BY started_at;
+
+selectPlannerTaskLogById:
+SELECT * FROM task_log WHERE id = ?;
+
+insertPlannerTaskLog:
+INSERT INTO task_log (
+  task_id,
+  state_after,
+  started_at,
+  ended_at,
+  actual_minutes,
+  note,
+  created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deletePlannerTaskLogsForTask:
+DELETE FROM task_log WHERE task_id = ?;
+
+lastInsertedPlannerTaskRowId:
+SELECT last_insert_rowid();

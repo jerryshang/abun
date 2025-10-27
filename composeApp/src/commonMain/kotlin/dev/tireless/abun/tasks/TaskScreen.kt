@@ -1,5 +1,6 @@
 package dev.tireless.abun.tasks
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -93,6 +95,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -118,6 +121,7 @@ fun TaskDashboardScreen(
   var parentForNew by remember { mutableStateOf<Long?>(null) }
   var showStateDialog by remember { mutableStateOf(false) }
   var pendingAction by remember { mutableStateOf<TaskActionRequest?>(null) }
+  var highlightedTaskId by remember { mutableStateOf<Long?>(null) }
 
   val todayDate =
     currentInstant()
@@ -125,6 +129,12 @@ fun TaskDashboardScreen(
       .date
   LaunchedEffect(todayDate) {
     viewModel.selectDate(todayDate)
+  }
+  LaunchedEffect(highlightedTaskId) {
+    if (highlightedTaskId != null) {
+      delay(500)
+      highlightedTaskId = null
+    }
   }
 
   Surface(modifier = modifier.fillMaxSize()) {
@@ -195,6 +205,7 @@ fun TaskDashboardScreen(
             showStateDialog = true
           },
           onDelete = { viewModel.deleteTask(it) },
+          highlightedTaskId = highlightedTaskId,
         )
       }
 
@@ -236,13 +247,21 @@ fun TaskDashboardScreen(
           onSubmit = { draft ->
             val adjustedDraft =
               if (parentForNew != null) draft.copy(parentId = parentForNew) else draft
-            viewModel.createTask(adjustedDraft)
+            val createdTask = viewModel.createTask(adjustedDraft)
+            currentTab = createdTask.resolveCategory(selectedDate)
+            highlightedTaskId = null
+            highlightedTaskId = createdTask.id
             showEditor = false
             editingTaskId = null
             parentForNew = null
           },
           onUpdate = { update ->
-            viewModel.updateTask(update)
+            val updatedTask = viewModel.updateTask(update)
+            if (updatedTask != null) {
+              currentTab = updatedTask.resolveCategory(selectedDate)
+              highlightedTaskId = null
+              highlightedTaskId = updatedTask.id
+            }
             showEditor = false
             editingTaskId = null
             parentForNew = null
@@ -275,6 +294,15 @@ fun TaskDashboardScreen(
     }
   }
 }
+
+private fun Task.resolveCategory(reference: LocalDate): TaskCategory =
+  when {
+    isArchived() -> TaskCategory.Archived
+    plannedDate == null -> TaskCategory.Inbox
+    shouldAppearToday(reference) || isOverdueOn(reference) -> TaskCategory.Today
+    isFutureRelativeTo(reference) -> TaskCategory.Future
+    else -> TaskCategory.Today
+  }
 
 private enum class TaskCategory(
   val label: String,
@@ -359,6 +387,7 @@ private fun TaskHierarchyList(
   onAddChild: (Long) -> Unit,
   onStateChange: (TaskActionRequest) -> Unit,
   onDelete: (Long) -> Unit,
+  highlightedTaskId: Long?,
 ) {
   val flattened = remember(nodes) { nodes.flattenHierarchy() }
   LazyColumn(
@@ -366,7 +395,10 @@ private fun TaskHierarchyList(
     contentPadding = PaddingValues(bottom = 96.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp),
   ) {
-    items(flattened) { node ->
+    items(
+      items = flattened,
+      key = { it.task.id },
+    ) { node ->
       TaskNodeCard(
         node = node,
         tagLookup = tagLookup,
@@ -374,6 +406,7 @@ private fun TaskHierarchyList(
         onAddChild = onAddChild,
         onStateChange = onStateChange,
         onDelete = onDelete,
+        highlighted = node.task.id == highlightedTaskId,
       )
     }
   }
@@ -388,9 +421,20 @@ private fun TaskNodeCard(
   onAddChild: (Long) -> Unit,
   onStateChange: (TaskActionRequest) -> Unit,
   onDelete: (Long) -> Unit,
+  highlighted: Boolean,
 ) {
   val task = node.task
   var menuExpanded by remember { mutableStateOf(false) }
+  val highlightColor =
+    if (highlighted) {
+      MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+    } else {
+      MaterialTheme.colorScheme.surface
+    }
+  val containerColor by animateColorAsState(
+    targetValue = highlightColor,
+    label = "taskHighlight",
+  )
 
   OutlinedCard(
     modifier =
@@ -398,6 +442,7 @@ private fun TaskNodeCard(
         .padding(horizontal = 16.dp)
         .fillMaxWidth()
         .padding(start = (node.depth * 12).dp),
+    colors = CardDefaults.outlinedCardColors(containerColor = containerColor),
   ) {
     Column(
       modifier = Modifier.fillMaxWidth().padding(16.dp),

@@ -34,9 +34,9 @@ val appModule =
     single { TaskRepository(get()) }
     single { TimeblockRepository(get()) }
     single { AlarmRepository(get()) }
-    single { TagRepository() }
-    single { TaskPlannerRepository(get()) }
-    single { RichNoteRepository(get()) }
+    single { TagRepository(get()) }
+    single { TaskPlannerRepository(get(), get()) }
+    single { RichNoteRepository(get(), get()) }
     // Finance repositories
     single { AccountRepository(get()) }
     single { TransactionRepository(get(), get()) } // database, accountRepository

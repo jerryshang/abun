@@ -1,0 +1,31 @@
+CREATE TABLE tag (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  path TEXT NOT NULL,
+  color_hex TEXT NOT NULL,
+  domains TEXT NOT NULL,
+  description TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+selectAllTags:
+SELECT * FROM tag ORDER BY name COLLATE NOCASE;
+
+selectTagById:
+SELECT * FROM tag WHERE id = ?;
+
+insertTag:
+INSERT INTO tag (name, path, color_hex, domains, description, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+updateTag:
+UPDATE tag
+SET name = ?, path = ?, color_hex = ?, domains = ?, description = ?, updated_at = ?
+WHERE id = ?;
+
+deleteTag:
+DELETE FROM tag WHERE id = ?;
+
+lastInsertedTagId:
+SELECT last_insert_rowid();
