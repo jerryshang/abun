@@ -20,7 +20,7 @@ class TimeblockRepository(
     startDate: String,
     endDate: String,
   ): Flow<List<Timeblock>> =
-    database.timeblockQueries
+    database.timeQueries
       .selectTimeblocksByDateRange(startDate, endDate)
       .asFlow()
       .mapToList(Dispatchers.IO)
@@ -44,7 +44,7 @@ class TimeblockRepository(
 
   suspend fun getTimeblockById(id: Long): Timeblock? =
     withContext(Dispatchers.IO) {
-      database.timeblockQueries
+      database.timeQueries
         .selectTimeblockById(id)
         .asFlow()
         .mapToOneOrNull(Dispatchers.IO)
@@ -73,9 +73,9 @@ class TimeblockRepository(
   ): Long? =
     withContext(Dispatchers.IO) {
       val now = currentEpochMillis()
-      database.timeblockQueries.insertTimeblock(startTime, endTime, taskId, now, now)
+      database.timeQueries.insertTimeblock(startTime, endTime, taskId, now, now)
       // Get the last inserted row ID - this is a simplified approach
-      database.timeblockQueries
+      database.timeQueries
         .selectTimeblocksByDateRange(
           startTime.substring(0, 10), // Extract date part
           startTime.substring(0, 10),
@@ -92,13 +92,13 @@ class TimeblockRepository(
   ) {
     withContext(Dispatchers.IO) {
       val now = currentEpochMillis()
-      database.timeblockQueries.updateTimeblock(startTime, endTime, taskId, now, id)
+      database.timeQueries.updateTimeblock(startTime, endTime, taskId, now, id)
     }
   }
 
   suspend fun deleteTimeblock(id: Long) {
     withContext(Dispatchers.IO) {
-      database.timeblockQueries.deleteTimeblock(id)
+      database.timeQueries.deleteTimeblock(id)
     }
   }
 }

@@ -626,7 +626,9 @@ private fun TaskEditSheet(
   }
   var plannedDate by remember { mutableStateOf(existing?.plannedDate) }
   var plannedTime by remember { mutableStateOf(existing?.plannedStart) }
+  var constraint by remember { mutableStateOf(existing?.constraint ?: TaskConstraint.Exactly) }
   var parentMenuExpanded by remember { mutableStateOf(false) }
+  var constraintMenuExpanded by remember { mutableStateOf(false) }
   var parentId by remember { mutableStateOf(existing?.parentId ?: parentPrefill) }
   var showDatePicker by remember { mutableStateOf(false) }
   var showTimePicker by remember { mutableStateOf(false) }
@@ -680,7 +682,7 @@ private fun TaskEditSheet(
                 estimateMinutes = minutes,
                 plannedDate = plannedDate,
                 plannedStart = plannedTime,
-                notBefore = null,
+                constraint = constraint,
                 parentId = parentId,
                 tagIds = preservedTags,
               ),
@@ -694,7 +696,7 @@ private fun TaskEditSheet(
                 estimateMinutes = minutes,
                 plannedDate = plannedDate,
                 plannedStart = plannedTime,
-                notBefore = null,
+                constraint = constraint,
                 parentId = parentId,
                 tagIds = preservedTags,
                 state = existing.state,
@@ -800,6 +802,38 @@ private fun TaskEditSheet(
             modifier = Modifier.weight(1f),
           )
           Icon(Lucide.Clock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+      }
+
+      ExposedDropdownMenuBox(
+        expanded = constraintMenuExpanded,
+        onExpandedChange = { constraintMenuExpanded = !constraintMenuExpanded },
+      ) {
+        OutlinedTextField(
+          modifier =
+            Modifier
+              .menuAnchor(type = MenuAnchorType.PrimaryNotEditable)
+              .fillMaxWidth(),
+          value = constraintLabel(constraint),
+          onValueChange = {},
+          readOnly = true,
+          label = { Text("Constraint") },
+          supportingText = { Text(constraintDescription(constraint)) },
+          trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = constraintMenuExpanded) },
+        )
+        ExposedDropdownMenu(
+          expanded = constraintMenuExpanded,
+          onDismissRequest = { constraintMenuExpanded = false },
+        ) {
+          TaskConstraint.entries.forEach { option ->
+            DropdownMenuItem(
+              text = { Text(constraintLabel(option)) },
+              onClick = {
+                constraint = option
+                constraintMenuExpanded = false
+              },
+            )
+          }
         }
       }
 
@@ -993,10 +1027,28 @@ private fun buildTaskSubtitle(task: Task): String {
   val parts = mutableListOf<String>()
   task.plannedStart?.let { parts += formatTime(it) }
   parts += "${task.estimateMinutes}m"
-  task.notBefore?.let { parts += "Earliest ${formatDate(it)}" }
+  when (task.constraint) {
+    TaskConstraint.Exactly -> task.plannedDate?.let { parts += "On ${formatDate(it)}" }
+    TaskConstraint.NotBefore -> task.plannedDate?.let { parts += "Earliest ${formatDate(it)}" }
+    TaskConstraint.NotAfter -> task.plannedDate?.let { parts += "Due ${formatDate(it)}" }
+  }
   task.actualMinutes?.let { parts += "Actual ${it}m" }
   return parts.joinToString(" • ")
 }
+
+private fun constraintLabel(constraint: TaskConstraint): String =
+  when (constraint) {
+    TaskConstraint.Exactly -> "Exactly on date"
+    TaskConstraint.NotBefore -> "Not before date"
+    TaskConstraint.NotAfter -> "Not after date"
+  }
+
+private fun constraintDescription(constraint: TaskConstraint): String =
+  when (constraint) {
+    TaskConstraint.Exactly -> "Task occurs only on the scheduled day."
+    TaskConstraint.NotBefore -> "Task can start on or any time after the scheduled day."
+    TaskConstraint.NotAfter -> "Task must finish on or before the scheduled day."
+  }
 
 private fun formatDate(date: LocalDate): String = "${date.month.name.lowercase().replaceFirstChar { it.titlecase() }} ${date.dayOfMonth}"
 

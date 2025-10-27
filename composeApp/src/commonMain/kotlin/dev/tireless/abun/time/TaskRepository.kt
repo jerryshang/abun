@@ -21,7 +21,7 @@ class TaskRepository(
   private val database: AppDatabase,
 ) {
   fun getAllTasks(): Flow<List<Task>> =
-    database.timeblockQueries
+    database.timeQueries
       .selectAllTasks()
       .asFlow()
       .mapToList(Dispatchers.IO)
@@ -29,7 +29,7 @@ class TaskRepository(
 
   suspend fun getTaskById(id: Long): Task? =
     withContext(Dispatchers.IO) {
-      database.timeblockQueries
+      database.timeQueries
         .selectTaskById(id)
         .asFlow()
         .mapToOneOrNull(Dispatchers.IO)
@@ -37,15 +37,15 @@ class TaskRepository(
         ?.let(::taskFromRow)
     }
 
-  fun getTasksByParent(parentTaskId: Long?): Flow<List<Task>> =
-    database.timeblockQueries
-      .selectTasksByParent(parentTaskId)
+  fun getTasksByParent(parentId: Long?): Flow<List<Task>> =
+    database.timeQueries
+      .selectTasksByParent(parentId)
       .asFlow()
       .mapToList(Dispatchers.IO)
       .map { tasksData -> tasksData.map(::taskFromRow) }
 
   fun getTasksByStrategy(strategy: String): Flow<List<Task>> =
-    database.timeblockQueries
+    database.timeQueries
       .selectTasksByStrategy(strategy)
       .asFlow()
       .mapToList(Dispatchers.IO)
@@ -54,14 +54,15 @@ class TaskRepository(
   suspend fun insertTask(
     name: String,
     description: String?,
-    parentTaskId: Long?,
+    parentId: Long?,
     strategy: String = "plan",
+    constraint: TaskConstraint = TaskConstraint.Exactly,
   ): Long? =
     withContext(Dispatchers.IO) {
       val now = currentEpochMillis()
-      database.timeblockQueries.insertTask(name, description, parentTaskId, strategy, now, now)
+      database.timeQueries.insertTask(name, description, parentId, strategy, constraint.raw, now, now)
       // Get the last inserted row ID
-      database.timeblockQueries
+      database.timeQueries
         .selectAllTasks()
         .executeAsList()
         .lastOrNull()
@@ -72,18 +73,19 @@ class TaskRepository(
     id: Long,
     name: String,
     description: String?,
-    parentTaskId: Long?,
+    parentId: Long?,
     strategy: String,
+    constraint: TaskConstraint,
   ) {
     withContext(Dispatchers.IO) {
       val now = currentEpochMillis()
-      database.timeblockQueries.updateTask(name, description, parentTaskId, strategy, now, id)
+      database.timeQueries.updateTask(name, description, parentId, strategy, constraint.raw, now, id)
     }
   }
 
   suspend fun deleteTask(id: Long) {
     withContext(Dispatchers.IO) {
-      database.timeblockQueries.deleteTask(id)
+      database.timeQueries.deleteTask(id)
     }
   }
 
@@ -92,8 +94,9 @@ class TaskRepository(
       id = taskData.id,
       name = taskData.name,
       description = taskData.description,
-      parentTaskId = taskData.parent_task_id,
+      parentId = taskData.parent_id,
       strategy = taskData.strategy,
+      constraint = TaskConstraint.fromRaw(taskData.constraint_value),
       createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
       updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
       parentTaskName = taskData.parent_name,
@@ -105,8 +108,9 @@ class TaskRepository(
       id = taskData.id,
       name = taskData.name,
       description = taskData.description,
-      parentTaskId = taskData.parent_task_id,
+      parentId = taskData.parent_id,
       strategy = taskData.strategy,
+      constraint = TaskConstraint.fromRaw(taskData.constraint_value),
       createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
       updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
       parentTaskName = taskData.parent_name,
@@ -118,8 +122,9 @@ class TaskRepository(
       id = taskData.id,
       name = taskData.name,
       description = taskData.description,
-      parentTaskId = taskData.parent_task_id,
+      parentId = taskData.parent_id,
       strategy = taskData.strategy,
+      constraint = TaskConstraint.fromRaw(taskData.constraint_value),
       createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
       updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
       parentTaskName = taskData.parent_name,
@@ -131,8 +136,9 @@ class TaskRepository(
       id = taskData.id,
       name = taskData.name,
       description = taskData.description,
-      parentTaskId = taskData.parent_task_id,
+      parentId = taskData.parent_id,
       strategy = taskData.strategy,
+      constraint = TaskConstraint.fromRaw(taskData.constraint_value),
       createdAt = Instant.fromEpochMilliseconds(taskData.created_at),
       updatedAt = Instant.fromEpochMilliseconds(taskData.updated_at),
       parentTaskName = taskData.parent_name,

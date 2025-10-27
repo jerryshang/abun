@@ -167,13 +167,13 @@ fun TaskHierarchyScreen(navController: NavHostController) {
         showEditor = false
         editingTask = null
       },
-      onConfirm = { name, description, parentId, strategy ->
+      onConfirm = { name, description, parentId, strategy, constraint ->
         scope.launch {
           try {
             if (editingTask == null) {
-              taskRepository.insertTask(name, description, parentId, strategy)
+              taskRepository.insertTask(name, description, parentId, strategy, constraint)
             } else {
-              taskRepository.updateTask(editingTask!!.id, name, description, parentId, strategy)
+              taskRepository.updateTask(editingTask!!.id, name, description, parentId, strategy, constraint)
             }
             showEditor = false
             editingTask = null
@@ -195,7 +195,7 @@ private data class TaskListItem(
 private fun tasksWithDepth(tasks: List<Task>): List<TaskListItem> {
   if (tasks.isEmpty()) return emptyList()
 
-  val childrenByParent = tasks.groupBy { it.parentTaskId }
+  val childrenByParent = tasks.groupBy { it.parentId }
   val ordered = mutableListOf<TaskListItem>()
 
   fun traverse(task: Task, depth: Int) {
@@ -296,7 +296,7 @@ private fun TaskEditorDialog(
   tasks: List<Task>,
   editingTask: Task?,
   onDismiss: () -> Unit,
-  onConfirm: (String, String?, Long?, String) -> Unit,
+  onConfirm: (String, String?, Long?, String, TaskConstraint) -> Unit,
 ) {
   var name by remember { mutableStateOf(editingTask?.name ?: "") }
   var description by remember { mutableStateOf(editingTask?.description ?: "") }
@@ -305,7 +305,7 @@ private fun TaskEditorDialog(
 
   val strategies = listOf("plan", "todo", "do", "check")
 
-  val childrenByParent = remember(tasks) { tasks.groupBy { it.parentTaskId } }
+  val childrenByParent = remember(tasks) { tasks.groupBy { it.parentId } }
   val disallowedParentIds = remember(editingTask, childrenByParent) {
     val accumulator = mutableSetOf<Long>()
     editingTask?.let { task ->
@@ -322,8 +322,9 @@ private fun TaskEditorDialog(
         .sortedBy { it.name.lowercase() }
     }
 
-  var selectedParentId by remember(editingTask) { mutableStateOf(editingTask?.parentTaskId) }
+  var selectedParentId by remember(editingTask) { mutableStateOf(editingTask?.parentId) }
   val selectedParentName = parentCandidates.firstOrNull { it.id == selectedParentId }?.name
+  var selectedConstraint by remember(editingTask) { mutableStateOf(editingTask?.constraint ?: TaskConstraint.Exactly) }
 
   AlertDialog(
     onDismissRequest = onDismiss,
@@ -395,6 +396,17 @@ private fun TaskEditorDialog(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           Text(
+            text = "Constraint",
+            style = MaterialTheme.typography.labelLarge,
+          )
+          ConstraintSelector(
+            selected = selectedConstraint,
+            onSelect = { selectedConstraint = it },
+          )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Text(
             text = "Strategy phase",
             style = MaterialTheme.typography.labelLarge,
           )
@@ -414,6 +426,7 @@ private fun TaskEditorDialog(
             description.trim().takeIf { it.isNotEmpty() },
             selectedParentId,
             selectedStrategy,
+            selectedConstraint,
           )
         },
         enabled = name.isNotBlank(),
@@ -493,6 +506,51 @@ private fun StrategySelector(
     }
   }
 }
+
+@Composable
+private fun ConstraintSelector(
+  selected: TaskConstraint,
+  onSelect: (TaskConstraint) -> Unit,
+) {
+  var expanded by remember { mutableStateOf(false) }
+  OutlinedButton(
+    onClick = { expanded = true },
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(selected.displayLabel())
+      Icon(
+        imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
+        contentDescription = null,
+      )
+    }
+  }
+  DropdownMenu(
+    expanded = expanded,
+    onDismissRequest = { expanded = false },
+  ) {
+    TaskConstraint.entries.forEach { option ->
+      DropdownMenuItem(
+        text = { Text(option.displayLabel()) },
+        onClick = {
+          onSelect(option)
+          expanded = false
+        },
+      )
+    }
+  }
+}
+
+private fun TaskConstraint.displayLabel(): String =
+  when (this) {
+    TaskConstraint.Exactly -> "Exactly on date"
+    TaskConstraint.NotBefore -> "Not before date"
+    TaskConstraint.NotAfter -> "Not after date"
+  }
 
 private fun collectDescendants(
   taskId: Long,

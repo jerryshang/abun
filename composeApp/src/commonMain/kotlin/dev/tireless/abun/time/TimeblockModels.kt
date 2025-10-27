@@ -2,12 +2,25 @@ package dev.tireless.abun.time
 
 import kotlinx.datetime.Instant
 
+enum class TaskConstraint(val raw: String) {
+  Exactly("exactly"),
+  NotBefore("not_before"),
+  NotAfter("not_after"),
+  ;
+
+  companion object {
+    fun fromRaw(value: String): TaskConstraint =
+      entries.firstOrNull { it.raw == value } ?: Exactly
+  }
+}
+
 data class Task(
   val id: Long,
   val name: String,
   val description: String?,
-  val parentTaskId: Long?,
+  val parentId: Long?,
   val strategy: String,
+  val constraint: TaskConstraint,
   val createdAt: Instant,
   val updatedAt: Instant,
   val parentTaskName: String? = null,

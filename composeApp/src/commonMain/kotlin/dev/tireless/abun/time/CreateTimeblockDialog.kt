@@ -243,7 +243,7 @@ fun CreateTimeblockDialog(
               viewModel.createTask(
                 name = taskName,
                 description = taskDescription.ifBlank { null },
-                parentTaskId = selectedParent?.id,
+                parentId = selectedParent?.id,
                 onSuccess = { taskId ->
                   // Switch back to timeblock creation with the new task selected
                   showCreateTask = false
@@ -252,8 +252,9 @@ fun CreateTimeblockDialog(
                       id = taskId,
                       name = taskName,
                       description = taskDescription.ifBlank { null },
-                      parentTaskId = selectedParent?.id,
+                      parentId = selectedParent?.id,
                       strategy = "plan", // Default strategy for newly created tasks
+                      constraint = TaskConstraint.Exactly,
                       createdAt = currentInstant(),
                       updatedAt = currentInstant(),
                       parentTaskName = selectedParent?.name,

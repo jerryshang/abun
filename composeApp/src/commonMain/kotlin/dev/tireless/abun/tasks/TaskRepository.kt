@@ -1,8 +1,8 @@
 package dev.tireless.abun.tasks
 
+import dev.tireless.abun.core.time.currentInstant
 import dev.tireless.abun.tags.TagDomain
 import dev.tireless.abun.tags.TagRepository
-import dev.tireless.abun.core.time.currentInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,18 +11,20 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.minus
 import kotlin.math.max
 
 class TaskPlannerRepository(
   private val tagRepository: TagRepository,
 ) {
-  private val tasks = MutableStateFlow(sampleTasks())
-  private val logs = MutableStateFlow(sampleLogs())
+  private companion object {
+    private const val MINUTES_PER_DAY = 24 * 60
+  }
 
-  private var taskIdCounter: Long = tasks.value.maxOfOrNull { it.id }?.plus(1) ?: 1L
+  private val tasks = MutableStateFlow<List<Task>>(emptyList())
+  private val logs = MutableStateFlow<List<TaskLog>>(emptyList())
+
+  private var taskIdCounter: Long = 1L
   private var logIdCounter: Long = 1L
 
   fun observeAllTasks(): StateFlow<List<Task>> = tasks
@@ -37,12 +39,9 @@ class TaskPlannerRepository(
   fun observeToday(reference: LocalDate): Flow<List<TaskNode>> =
     tasks.map { list ->
       val active = list.filterNot { it.isArchived() }
-      val todays = active.filter { it.plannedDate == reference }
-      val overdue =
-        active.filter { task ->
-          val planned = task.plannedDate
-          planned != null && planned < reference
-        }
+      val todays = active.filter { it.shouldAppearToday(reference) }
+      val overdue = active
+        .filter { it.isOverdueOn(reference) }
       val todayNodes = todays.toHierarchy(alphabeticalSorter)
       val overdueNodes = overdue.toHierarchy(overdueSorter)
       todayNodes + overdueNodes
@@ -52,7 +51,7 @@ class TaskPlannerRepository(
     tasks.map { list ->
       list
         .filter { task ->
-          !task.isArchived() && task.plannedDate?.let { it > reference } == true
+          !task.isArchived() && task.isFutureRelativeTo(reference)
         }
         .toHierarchy(futureSorter)
     }
@@ -78,7 +77,7 @@ class TaskPlannerRepository(
         estimateMinutes = max(5, draft.estimateMinutes),
         plannedDate = draft.plannedDate,
         plannedStart = draft.plannedStart,
-        notBefore = draft.notBefore,
+        constraint = draft.constraint,
         state = TaskState.Ready,
         parentId = draft.parentId,
         tagIds = draft.tagIds,
@@ -101,7 +100,7 @@ class TaskPlannerRepository(
             estimateMinutes = max(5, update.estimateMinutes),
             plannedDate = update.plannedDate,
             plannedStart = update.plannedStart,
-            notBefore = update.notBefore,
+            constraint = update.constraint,
             parentId = update.parentId,
             tagIds = update.tagIds,
             state = update.state,
@@ -166,6 +165,58 @@ class TaskPlannerRepository(
     return result
   }
 
+  private fun Task.shouldAppearToday(reference: LocalDate): Boolean {
+    val scheduled = plannedDate ?: return false
+    return when (constraint) {
+      TaskConstraint.Exactly -> scheduled == reference
+      TaskConstraint.NotBefore -> scheduled <= reference
+      TaskConstraint.NotAfter -> {
+        val windowStart = latestStartDate() ?: return false
+        reference in windowStart..scheduled
+      }
+    }
+  }
+
+  private fun Task.isOverdueOn(reference: LocalDate): Boolean =
+    when (constraint) {
+      TaskConstraint.Exactly -> plannedDate?.let { it < reference } == true
+      TaskConstraint.NotBefore -> false
+      TaskConstraint.NotAfter -> plannedDate?.let { it < reference } == true
+    }
+
+  private fun Task.isFutureRelativeTo(reference: LocalDate): Boolean =
+    when (constraint) {
+      TaskConstraint.Exactly -> plannedDate?.let { it > reference } == true
+      TaskConstraint.NotBefore -> plannedDate?.let { it > reference } == true
+      TaskConstraint.NotAfter -> {
+        val windowStart = latestStartDate() ?: return false
+        windowStart > reference
+      }
+    }
+
+  private fun Task.latestStartDate(): LocalDate? {
+    val due = plannedDate ?: return null
+    val spanDays = estimateDaySpan()
+    return if (spanDays <= 1) {
+      due
+    } else {
+      due.minus(spanDays - 1, DateTimeUnit.DAY)
+    }
+  }
+
+  private fun Task.estimateDaySpan(): Int {
+    val minutes = estimateMinutes.coerceAtLeast(1)
+    val span = (minutes + MINUTES_PER_DAY - 1) / MINUTES_PER_DAY
+    return span.coerceAtLeast(1)
+  }
+
+  private fun Task.actionableDate(): LocalDate? =
+    when (constraint) {
+      TaskConstraint.Exactly -> plannedDate
+      TaskConstraint.NotBefore -> plannedDate
+      TaskConstraint.NotAfter -> latestStartDate()
+    }
+
   private fun List<Task>.toHierarchy(sorter: Comparator<Task> = taskSorter): List<TaskNode> {
     val map = groupBy { it.parentId }
     fun build(parentId: Long?, depth: Int): List<TaskNode> {
@@ -207,7 +258,7 @@ class TaskPlannerRepository(
       .thenBy { it.id }
 
   private val futureSorter =
-    compareBy<Task> { it.plannedDate ?: LocalDate(9999, 12, 31) }
+    compareBy<Task> { it.actionableDate() ?: LocalDate(9999, 12, 31) }
       .thenBy { it.plannedStart?.hour ?: Int.MAX_VALUE }
       .thenBy { it.plannedStart?.minute ?: Int.MAX_VALUE }
       .thenBy { it.title.lowercase() }
@@ -218,8 +269,8 @@ class TaskPlannerRepository(
 
   private val taskSorter =
     compareBy<Task>(
-      { it.plannedDate == null },
-      { it.plannedDate ?: LocalDate(1970, 1, 1) },
+      { it.actionableDate() == null },
+      { it.actionableDate() ?: LocalDate(1970, 1, 1) },
       { it.plannedStart?.hour ?: Int.MAX_VALUE },
       { it.plannedStart?.minute ?: Int.MAX_VALUE },
       { it.id },
@@ -227,104 +278,4 @@ class TaskPlannerRepository(
 
   private fun Task.isArchived(): Boolean = state == TaskState.Done || state == TaskState.Cancelled
 
-  private fun sampleTasks(): List<Task> {
-    val nowInstant = currentInstant()
-    val today = nowInstant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val tomorrow = today.plus(1, DateTimeUnit.DAY)
-    val dayAfter = today.plus(2, DateTimeUnit.DAY)
-    val now = nowInstant
-    return listOf(
-      Task(
-        id = 1,
-        title = "Outline Q3 OKRs",
-        description = "Draft objectives for the next quarter and align with stakeholders.",
-        estimateMinutes = 120,
-        plannedDate = today,
-        plannedStart = LocalTime(hour = 9, minute = 0),
-        notBefore = today,
-        state = TaskState.Ready,
-        parentId = null,
-        tagIds = setOf(1L),
-        actualMinutes = null,
-        createdAt = now,
-        updatedAt = now,
-      ),
-      Task(
-        id = 2,
-        title = "Review budgeting spreadsheet",
-        description = "Double-check latest spending categories and update cashflow forecast.",
-        estimateMinutes = 45,
-        plannedDate = today,
-        plannedStart = LocalTime(hour = 11, minute = 30),
-        notBefore = today,
-        state = TaskState.Ready,
-        parentId = null,
-        tagIds = setOf(2L),
-        actualMinutes = null,
-        createdAt = now,
-        updatedAt = now,
-      ),
-      Task(
-        id = 3,
-        title = "Prepare meeting agenda",
-        description = "Summarize progress and blockers for the strategy sync.",
-        estimateMinutes = 30,
-        plannedDate = today,
-        plannedStart = LocalTime(hour = 10, minute = 30),
-        notBefore = today,
-        state = TaskState.InProgress,
-        parentId = 1,
-        tagIds = setOf(1L),
-        actualMinutes = 20,
-        createdAt = now,
-        updatedAt = now,
-      ),
-      Task(
-        id = 4,
-        title = "Draft project charter",
-        description = "First pass on the discovery project charter.",
-        estimateMinutes = 90,
-        plannedDate = tomorrow,
-        plannedStart = LocalTime(hour = 13, minute = 30),
-        notBefore = today,
-        state = TaskState.Backlog,
-        parentId = null,
-        tagIds = setOf(1L),
-        actualMinutes = null,
-        createdAt = now,
-        updatedAt = now,
-      ),
-      Task(
-        id = 5,
-        title = "Read 'Deep Work' chapter 3",
-        description = null,
-        estimateMinutes = 40,
-        plannedDate = dayAfter,
-        plannedStart = LocalTime(hour = 7, minute = 30),
-        notBefore = today,
-        state = TaskState.Ready,
-        parentId = null,
-        tagIds = setOf(3L),
-        actualMinutes = null,
-        createdAt = now,
-        updatedAt = now,
-      ),
-    )
-  }
-
-  private fun sampleLogs(): List<TaskLog> {
-    val nowInstant = currentInstant()
-    val today = nowInstant.toLocalDateTime(TimeZone.currentSystemDefault())
-    return listOf(
-      TaskLog(
-        id = nextLogId(),
-        taskId = 3,
-        stateAfter = TaskState.InProgress,
-        startedAt = LocalDateTime(today.date, LocalTime(hour = 10, minute = 0)),
-        endedAt = LocalDateTime(today.date, LocalTime(hour = 10, minute = 20)),
-        actualMinutes = 20,
-        note = "Kick-off session",
-      ),
-    )
-  }
 }

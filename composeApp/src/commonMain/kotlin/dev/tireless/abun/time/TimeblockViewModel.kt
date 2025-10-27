@@ -88,13 +88,14 @@ class TimeblockViewModel(
   fun createTask(
     name: String,
     description: String?,
-    parentTaskId: Long?,
+    parentId: Long?,
+    constraint: TaskConstraint = TaskConstraint.Exactly,
     onSuccess: (Long) -> Unit = {},
     onError: (String) -> Unit = {}
   ) {
     viewModelScope.launch {
       try {
-        val taskId = taskRepository.insertTask(name, description, parentTaskId)
+        val taskId = taskRepository.insertTask(name, description, parentId, constraint = constraint)
         if (taskId != null) {
           onSuccess(taskId)
         } else {

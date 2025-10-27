@@ -16,6 +16,12 @@ enum class TaskState {
   Cancelled,
 }
 
+enum class TaskConstraint {
+  Exactly,
+  NotBefore,
+  NotAfter,
+}
+
 data class Task(
   val id: Long,
   val title: String,
@@ -23,7 +29,7 @@ data class Task(
   val estimateMinutes: Int,
   val plannedDate: LocalDate?,
   val plannedStart: LocalTime?,
-  val notBefore: LocalDate?,
+  val constraint: TaskConstraint,
   val state: TaskState,
   val parentId: Long?,
   val tagIds: Set<Long>,
@@ -38,7 +44,7 @@ data class TaskDraft(
   val estimateMinutes: Int,
   val plannedDate: LocalDate?,
   val plannedStart: LocalTime?,
-  val notBefore: LocalDate?,
+  val constraint: TaskConstraint,
   val parentId: Long?,
   val tagIds: Set<Long>,
 )
@@ -50,7 +56,7 @@ data class TaskUpdate(
   val estimateMinutes: Int,
   val plannedDate: LocalDate?,
   val plannedStart: LocalTime?,
-  val notBefore: LocalDate?,
+  val constraint: TaskConstraint,
   val parentId: Long?,
   val tagIds: Set<Long>,
   val state: TaskState,

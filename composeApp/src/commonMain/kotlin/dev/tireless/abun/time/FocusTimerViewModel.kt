@@ -137,7 +137,7 @@ class FocusTimerViewModel(
         logSegments(segmentsSnapshot, stopInstant)
         if (task != null && selectedStrategy != null && task.strategy != selectedStrategy) {
           try {
-            taskRepository.updateTask(task.id, task.name, task.description, task.parentTaskId, selectedStrategy)
+            taskRepository.updateTask(task.id, task.name, task.description, task.parentId, selectedStrategy, task.constraint)
           } catch (error: Exception) {
             // Persist the error but continue resetting the timer
             _uiState.update {

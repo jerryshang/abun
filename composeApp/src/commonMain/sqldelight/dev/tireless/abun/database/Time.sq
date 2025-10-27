@@ -3,11 +3,12 @@ CREATE TABLE task (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
-  parent_task_id INTEGER,
+  parent_id INTEGER,
   strategy TEXT NOT NULL DEFAULT 'plan', -- plan, todo, do, check
+  "constraint" TEXT NOT NULL DEFAULT 'exactly', -- exactly, not_before, not_after
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  FOREIGN KEY (parent_task_id) REFERENCES task (id) ON DELETE SET NULL
+  FOREIGN KEY (parent_id) REFERENCES task (id) ON DELETE SET NULL
 );
 
 -- Timeblock table
@@ -34,51 +35,79 @@ CREATE TABLE alarm (
 -- Task queries
 selectAllTasks:
 SELECT
-  t.*,
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.created_at,
+  t.updated_at,
   parent.name AS parent_name,
   parent.strategy AS parent_strategy
 FROM task t
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 ORDER BY t.name;
 
 selectTaskById:
 SELECT
-  t.*,
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.created_at,
+  t.updated_at,
   parent.name AS parent_name,
   parent.strategy AS parent_strategy
 FROM task t
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 WHERE t.id = ?;
 
 selectTasksByParent:
 SELECT
-  t.*,
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.created_at,
+  t.updated_at,
   parent.name AS parent_name,
   parent.strategy AS parent_strategy
 FROM task t
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 WHERE
-  (:parentTaskId IS NULL AND t.parent_task_id IS NULL)
-  OR t.parent_task_id = :parentTaskId
+  (:parentId IS NULL AND t.parent_id IS NULL)
+  OR t.parent_id = :parentId
 ORDER BY t.name;
 
 selectTasksByStrategy:
 SELECT
-  t.*,
+  t.id,
+  t.name,
+  t.description,
+  t.parent_id,
+  t.strategy,
+  t."constraint" AS constraint_value,
+  t.created_at,
+  t.updated_at,
   parent.name AS parent_name,
   parent.strategy AS parent_strategy
 FROM task t
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 WHERE t.strategy = ?
 ORDER BY t.name;
 
 insertTask:
-INSERT INTO task (name, description, parent_task_id, strategy, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO task (name, description, parent_id, strategy, "constraint", created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateTask:
 UPDATE task
-SET name = ?, description = ?, parent_task_id = ?, strategy = ?, updated_at = ?
+SET name = ?, description = ?, parent_id = ?, strategy = ?, "constraint" = ?, updated_at = ?
 WHERE id = ?;
 
 deleteTask:
@@ -95,7 +124,7 @@ SELECT
   parent.strategy AS parent_task_strategy
 FROM timeblock tb
 JOIN task t ON tb.task_id = t.id
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 WHERE datetime(tb.start_time) >= datetime(?)
   AND datetime(tb.start_time) <= datetime(?)
 ORDER BY tb.start_time;
@@ -110,7 +139,7 @@ SELECT
   parent.strategy AS parent_task_strategy
 FROM timeblock tb
 JOIN task t ON tb.task_id = t.id
-LEFT JOIN task parent ON t.parent_task_id = parent.id
+LEFT JOIN task parent ON t.parent_id = parent.id
 WHERE tb.id = ?;
 
 insertTimeblock:
