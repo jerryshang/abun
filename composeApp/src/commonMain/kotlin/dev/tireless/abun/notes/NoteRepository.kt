@@ -4,7 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import dev.tireless.abun.core.time.currentInstant
 import dev.tireless.abun.database.AppDatabase
-import dev.tireless.abun.database.Rich_note
+import dev.tireless.abun.database.Note as DbNoteRow
 import dev.tireless.abun.tags.TagDomain
 import dev.tireless.abun.tags.TagRepository
 import kotlinx.coroutines.Dispatchers
@@ -18,16 +18,16 @@ class RichNoteRepository(
   private val database: AppDatabase,
   private val tagRepository: TagRepository,
 ) {
-  private val queries = database.richNotesQueries
+  private val queries = database.noteQueries
 
   private val notesFlow: Flow<List<Note>> =
     combine(
       queries
-        .selectAllRichNotes()
+        .selectAllNotes()
         .asFlow()
         .mapToList(Dispatchers.IO),
       queries
-        .selectRichNoteTagLinks()
+        .selectNoteTagLinks()
         .asFlow()
         .mapToList(Dispatchers.IO),
     ) { noteRows, tagLinks ->
@@ -71,37 +71,37 @@ class RichNoteRepository(
     database.transactionWithResult {
       val now = currentInstant()
       val normalizedTitle = draft.title.ifBlank { "Untitled" }.trim()
-      queries.insertRichNote(
+      queries.insertNote(
         title = normalizedTitle,
         content = draft.content,
         pinned = draft.pinned.toDbBoolean(),
         created_at = now.toEpochMilliseconds(),
         updated_at = now.toEpochMilliseconds(),
       )
-      val id = queries.lastInsertedRichNoteId().executeAsOne()
-      queries.deleteRichNoteTags(id)
-      draft.tagIds.forEach { tagId -> queries.insertRichNoteTag(id, tagId) }
-      val tagIds = queries.selectTagIdsForRichNote(id).executeAsList().toSet()
-      queries.selectRichNoteById(id).executeAsOne().toDomain(tagIds)
+      val id = queries.lastInsertedNoteId().executeAsOne()
+      queries.deleteNoteTags(id)
+      draft.tagIds.forEach { tagId -> queries.insertNoteTag(id, tagId) }
+      val tagIds = queries.selectTagIdsForNote(id).executeAsList().toSet()
+      queries.selectNoteById(id).executeAsOne().toDomain(tagIds)
     }
 
   fun updateNote(update: NoteUpdate) {
     val now = currentInstant()
     database.transaction {
-      queries.updateRichNote(
+      queries.updateNote(
         title = update.title.ifBlank { "Untitled" }.trim(),
         content = update.content,
         pinned = update.pinned.toDbBoolean(),
         updated_at = now.toEpochMilliseconds(),
         id = update.id,
       )
-      queries.deleteRichNoteTags(update.id)
-      update.tagIds.forEach { tagId -> queries.insertRichNoteTag(update.id, tagId) }
+      queries.deleteNoteTags(update.id)
+      update.tagIds.forEach { tagId -> queries.insertNoteTag(update.id, tagId) }
     }
   }
 
   fun deleteNote(id: Long) {
-    queries.deleteRichNote(id)
+    queries.deleteNote(id)
   }
 
   private val summaryComparator =
@@ -110,7 +110,7 @@ class RichNoteRepository(
       .thenBy { it.title }
 }
 
-private fun Rich_note.toDomain(tagIds: Set<Long>): Note =
+private fun DbNoteRow.toDomain(tagIds: Set<Long>): Note =
   Note(
     id = id,
     title = title,

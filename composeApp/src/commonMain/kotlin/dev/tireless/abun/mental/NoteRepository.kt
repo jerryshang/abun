@@ -36,7 +36,7 @@ class NoteRepository(
   ): Long =
     withContext(Dispatchers.IO) {
       val now = currentEpochMillis()
-      database.noteQueries.insertNote(title, content, now, now)
+      database.noteQueries.insertNote(title, content, 0, now, now)
       database.noteQueries
         .selectAllNotes()
         .executeAsList()
@@ -51,7 +51,8 @@ class NoteRepository(
   ) {
     val now = currentEpochMillis()
     withContext(Dispatchers.IO) {
-      database.noteQueries.updateNote(title, content, now, id)
+      val currentPinned = database.noteQueries.selectNoteById(id).executeAsOneOrNull()?.pinned ?: 0
+      database.noteQueries.updateNote(title, content, currentPinned, now, id)
     }
   }
 

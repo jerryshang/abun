@@ -1,39 +1,58 @@
--- Note table for quick note functionality
 CREATE TABLE note (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
+  pinned INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
 
--- Insert sample notes
-INSERT INTO note (title, content, created_at, updated_at)
-VALUES
-  ('Sample Note', 'This is a sample quick note to test the functionality.', datetime('now'), datetime('now')),
-  ('Meeting Notes', 'Remember to discuss the quarterly goals in tomorrow meeting.', datetime('now'), datetime('now')),
-  ('Ideas', 'App feature idea: Dark mode toggle in settings.', datetime('now'), datetime('now'));
+CREATE TABLE note_tag (
+  note_id INTEGER NOT NULL,
+  tag_id INTEGER NOT NULL,
+  PRIMARY KEY (note_id, tag_id),
+  FOREIGN KEY (note_id) REFERENCES note (id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tag (id) ON DELETE CASCADE
+);
 
--- Note queries
 selectAllNotes:
-SELECT * FROM note ORDER BY updated_at DESC;
+SELECT *
+FROM note
+ORDER BY pinned DESC, updated_at DESC, title COLLATE NOCASE;
 
 selectNoteById:
 SELECT * FROM note WHERE id = ?;
 
 insertNote:
-INSERT INTO note (title, content, created_at, updated_at)
-VALUES (?, ?, ?, ?);
+INSERT INTO note (title, content, pinned, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?);
 
 updateNote:
 UPDATE note
-SET title = ?, content = ?, updated_at = ?
+SET title = ?, content = ?, pinned = ?, updated_at = ?
 WHERE id = ?;
 
 deleteNote:
 DELETE FROM note WHERE id = ?;
 
 searchNotes:
-SELECT * FROM note
+SELECT *
+FROM note
 WHERE title LIKE '%' || ? || '%' OR content LIKE '%' || ? || '%'
-ORDER BY updated_at DESC;
+ORDER BY pinned DESC, updated_at DESC, title COLLATE NOCASE;
+
+selectNoteTagLinks:
+SELECT note_id, tag_id FROM note_tag;
+
+selectTagIdsForNote:
+SELECT tag_id FROM note_tag WHERE note_id = ?;
+
+deleteNoteTags:
+DELETE FROM note_tag WHERE note_id = ?;
+
+insertNoteTag:
+INSERT INTO note_tag (note_id, tag_id)
+VALUES (?, ?);
+
+lastInsertedNoteId:
+SELECT last_insert_rowid();
