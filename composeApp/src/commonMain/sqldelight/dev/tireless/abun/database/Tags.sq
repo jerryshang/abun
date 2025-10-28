@@ -9,6 +9,40 @@ CREATE TABLE tag (
   updated_at INTEGER NOT NULL
 );
 
+-- Seed default tags for initial experience
+INSERT INTO tag (id, name, path, color_hex, domains, description, created_at, updated_at)
+VALUES
+  (
+    1,
+    'Deep Work',
+    'productivity/focus',
+    '#1E88E5',
+    'Tasks,Notes',
+    NULL,
+    strftime('%s', 'now') * 1000,
+    strftime('%s', 'now') * 1000
+  ),
+  (
+    2,
+    'Personal Finance',
+    'life/finance',
+    '#43A047',
+    'Finance,Tasks,Notes',
+    NULL,
+    strftime('%s', 'now') * 1000,
+    strftime('%s', 'now') * 1000
+  ),
+  (
+    3,
+    'Reading',
+    'learning/reading',
+    '#F4511E',
+    'Notes,Tasks',
+    NULL,
+    strftime('%s', 'now') * 1000,
+    strftime('%s', 'now') * 1000
+  );
+
 selectAllTags:
 SELECT * FROM tag ORDER BY name COLLATE NOCASE;
 
