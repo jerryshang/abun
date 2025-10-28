@@ -13,7 +13,7 @@ actual class DatabaseDriverFactory(
     AndroidSqliteDriver(
       schema = AppDatabase.Schema,
       context = context,
-      name = "app.db",
+      name = "app_v2.db",
       callback =
         object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {
           override fun onOpen(db: SupportSQLiteDatabase) {

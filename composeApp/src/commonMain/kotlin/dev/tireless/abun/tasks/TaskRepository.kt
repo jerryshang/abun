@@ -24,7 +24,7 @@ class TaskPlannerRepository(
   private val database: AppDatabase,
   private val tagRepository: TagRepository,
 ) {
-  private val queries = database.plannerTasksQueries
+  private val queries = database.timeQueries
 
   private val tasksFlow: Flow<List<Task>> =
     combine(
