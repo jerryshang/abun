@@ -122,6 +122,26 @@ fun TaskDashboardScreen(
   var showStateDialog by remember { mutableStateOf(false) }
   var pendingAction by remember { mutableStateOf<TaskActionRequest?>(null) }
   var highlightedTaskId by remember { mutableStateOf<Long?>(null) }
+  var editorContext by remember { mutableStateOf<TaskEditorContext?>(null) }
+  var editorOriginState by remember { mutableStateOf<TaskEditorFormState?>(null) }
+  var editorState by remember { mutableStateOf<TaskEditorFormState?>(null) }
+
+  fun openEditor(taskId: Long?, parentId: Long?) {
+    val existingTask = taskId?.let { id -> allTasks.find { it.id == id } }
+    val context = TaskEditorContext(taskId = taskId, parentPrefill = parentId, sourceUpdatedAt = existingTask?.updatedAt)
+    if (editorContext != context || editorState == null || editorOriginState == null) {
+      val initial = TaskEditorFormState.from(
+        existing = existingTask,
+        parentPrefill = parentId,
+      )
+      editorContext = context
+      editorOriginState = initial
+      editorState = initial
+    }
+    editingTaskId = taskId
+    parentForNew = parentId
+    showEditor = true
+  }
 
   val todayDate =
     currentInstant()
@@ -191,14 +211,10 @@ fun TaskDashboardScreen(
           nodes = list,
           tagLookup = tags.associateBy { it.id },
           onEdit = { taskId ->
-            editingTaskId = taskId
-            parentForNew = null
-            showEditor = true
+            openEditor(taskId, null)
           },
           onAddChild = { parentId ->
-            editingTaskId = null
-            parentForNew = parentId
-            showEditor = true
+            openEditor(null, parentId)
           },
           onStateChange = { request ->
             pendingAction = request
@@ -211,9 +227,7 @@ fun TaskDashboardScreen(
 
       FloatingActionButton(
         onClick = {
-          editingTaskId = null
-          parentForNew = null
-          showEditor = true
+          openEditor(null, null)
         },
         modifier =
           Modifier
@@ -224,7 +238,7 @@ fun TaskDashboardScreen(
       }
     }
 
-    if (showEditor) {
+    if (showEditor && editorState != null && editorOriginState != null) {
       val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
       ModalBottomSheet(
         onDismissRequest = {
@@ -238,7 +252,15 @@ fun TaskDashboardScreen(
         TaskEditSheet(
           allTasks = allTasks,
           existing = existingTask,
-          parentPrefill = parentForNew,
+          state = editorState!!,
+          originState = editorOriginState!!,
+          onStateChange = { editorState = it },
+          onReset = {
+            val origin = editorOriginState
+            if (origin != null) {
+              editorState = origin
+            }
+          },
           onDismiss = {
             showEditor = false
             editingTaskId = null
@@ -254,6 +276,9 @@ fun TaskDashboardScreen(
             showEditor = false
             editingTaskId = null
             parentForNew = null
+            editorState = null
+            editorOriginState = null
+            editorContext = null
           },
           onUpdate = { update ->
             val updatedTask = viewModel.updateTask(update)
@@ -265,6 +290,9 @@ fun TaskDashboardScreen(
             showEditor = false
             editingTaskId = null
             parentForNew = null
+            editorState = null
+            editorOriginState = null
+            editorContext = null
           },
           defaultDate = selectedDate,
           defaultTime = viewModel.defaultStartSlot(),
@@ -318,6 +346,48 @@ private data class TaskActionRequest(
   val task: Task,
   val targetState: TaskState,
 )
+
+private const val DEFAULT_ESTIMATE_MINUTES = 45
+
+private data class TaskEditorContext(
+  val taskId: Long?,
+  val parentPrefill: Long?,
+  val sourceUpdatedAt: Instant?,
+)
+
+private data class TaskEditorFormState(
+  val title: String,
+  val description: String,
+  val estimateUnit: EstimateUnit,
+  val durationValue: String,
+  val plannedDate: LocalDate?,
+  val plannedTime: LocalTime?,
+  val constraint: TaskConstraint,
+  val parentId: Long?,
+  val preservedTags: Set<Long>,
+) {
+  companion object {
+    fun from(
+      existing: Task?,
+      parentPrefill: Long?,
+    ): TaskEditorFormState {
+      val minutes = existing?.estimateMinutes ?: DEFAULT_ESTIMATE_MINUTES
+      val unit = EstimateUnit.fromMinutes(minutes)
+      val duration = unit.amountFor(minutes)?.toString() ?: minutes.toString()
+      return TaskEditorFormState(
+        title = existing?.title ?: "",
+        description = existing?.description ?: "",
+        estimateUnit = unit,
+        durationValue = duration,
+        plannedDate = existing?.plannedDate,
+        plannedTime = existing?.plannedStart,
+        constraint = existing?.constraint ?: TaskConstraint.Exactly,
+        parentId = existing?.parentId ?: parentPrefill,
+        preservedTags = existing?.tagIds ?: emptySet(),
+      )
+    }
+  }
+}
 
 @Composable
 private fun TaskCategoryHeaderRow(
@@ -653,33 +723,24 @@ private fun TaskStateDialog(
 private fun TaskEditSheet(
   allTasks: List<Task>,
   existing: Task?,
-  parentPrefill: Long?,
+  state: TaskEditorFormState,
+  originState: TaskEditorFormState,
+  onStateChange: (TaskEditorFormState) -> Unit,
+  onReset: () -> Unit,
   onDismiss: () -> Unit,
   onSubmit: (TaskDraft) -> Unit,
   onUpdate: (TaskUpdate) -> Unit,
   defaultDate: LocalDate,
   defaultTime: LocalTime,
 ) {
-  var title by rememberSaveable { mutableStateOf(existing?.title ?: "") }
-  var description by rememberSaveable { mutableStateOf(existing?.description ?: "") }
-  val initialMinutes = existing?.estimateMinutes ?: 45
-  val initialUnit = EstimateUnit.fromMinutes(initialMinutes)
-  val preservedTags = existing?.tagIds ?: emptySet()
-  var estimateUnit by rememberSaveable { mutableStateOf(initialUnit) }
-  var durationValue by rememberSaveable {
-    mutableStateOf(initialUnit.amountFor(initialMinutes)?.toString() ?: initialMinutes.toString())
-  }
-  var plannedDate by remember { mutableStateOf(existing?.plannedDate) }
-  var plannedTime by remember { mutableStateOf(existing?.plannedStart) }
-  var constraint by remember { mutableStateOf(existing?.constraint ?: TaskConstraint.Exactly) }
+  val preservedTags = state.preservedTags
   var parentMenuExpanded by remember { mutableStateOf(false) }
   var constraintMenuExpanded by remember { mutableStateOf(false) }
-  var parentId by remember { mutableStateOf(existing?.parentId ?: parentPrefill) }
   var showDatePicker by remember { mutableStateOf(false) }
   var showTimePicker by remember { mutableStateOf(false) }
 
   val scrollState = rememberScrollState()
-  val saveEnabled = title.isNotBlank()
+  val saveEnabled = state.title.isNotBlank()
   val topLevelParents =
     remember(allTasks, existing?.id) {
       allTasks
@@ -714,21 +775,27 @@ private fun TaskEditSheet(
         modifier = Modifier.weight(1f),
       )
       TextButton(
+        onClick = onReset,
+        enabled = state != originState,
+      ) {
+        Text("Reset")
+      }
+      TextButton(
         onClick = {
-          val minutes = durationValue.toIntOrNull()?.let { estimateUnit.toMinutes(it) } ?: 0
-          if (minutes <= 0 || title.isBlank()) {
+          val minutes = state.durationValue.toIntOrNull()?.let { state.estimateUnit.toMinutes(it) } ?: 0
+          if (minutes <= 0 || state.title.isBlank()) {
             return@TextButton
           }
           if (existing == null) {
             onSubmit(
               TaskDraft(
-                title = title.trim(),
-                description = description.trim().takeIf { it.isNotBlank() },
+                title = state.title.trim(),
+                description = state.description.trim().takeIf { it.isNotBlank() },
                 estimateMinutes = minutes,
-                plannedDate = plannedDate,
-                plannedStart = plannedTime,
-                constraint = constraint,
-                parentId = parentId,
+                plannedDate = state.plannedDate,
+                plannedStart = state.plannedTime,
+                constraint = state.constraint,
+                parentId = state.parentId,
                 tagIds = preservedTags,
               ),
             )
@@ -736,13 +803,13 @@ private fun TaskEditSheet(
             onUpdate(
               TaskUpdate(
                 id = existing.id,
-                title = title.trim(),
-                description = description.trim().takeIf { it.isNotBlank() },
+                title = state.title.trim(),
+                description = state.description.trim().takeIf { it.isNotBlank() },
                 estimateMinutes = minutes,
-                plannedDate = plannedDate,
-                plannedStart = plannedTime,
-                constraint = constraint,
-                parentId = parentId,
+                plannedDate = state.plannedDate,
+                plannedStart = state.plannedTime,
+                constraint = state.constraint,
+                parentId = state.parentId,
                 tagIds = preservedTags,
                 state = existing.state,
               ),
@@ -760,16 +827,16 @@ private fun TaskEditSheet(
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       OutlinedTextField(
-        value = title,
-        onValueChange = { input -> title = input.take(120) },
+        value = state.title,
+        onValueChange = { input -> onStateChange(state.copy(title = input.take(120))) },
         label = { Text("Title *") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
       )
 
       OutlinedTextField(
-        value = description,
-        onValueChange = { description = it },
+        value = state.description,
+        onValueChange = { description -> onStateChange(state.copy(description = description)) },
         label = { Text("Description (optional)") },
         modifier = Modifier.fillMaxWidth(),
         minLines = 3,
@@ -781,8 +848,8 @@ private fun TaskEditSheet(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         OutlinedTextField(
-          value = durationValue,
-          onValueChange = { text -> durationValue = text.filter { it.isDigit() } },
+          value = state.durationValue,
+          onValueChange = { text -> onStateChange(state.copy(durationValue = text.filter { it.isDigit() })) },
           modifier = Modifier.weight(1f),
           singleLine = true,
           placeholder = { Text("Amount") },
@@ -793,24 +860,24 @@ private fun TaskEditSheet(
         )
         SegmentedButtonRow(
           options = EstimateUnit.values().toList(),
-          selected = estimateUnit,
+          selected = state.estimateUnit,
           onSelected = { unit ->
-            if (unit == estimateUnit) return@SegmentedButtonRow
-            val currentMinutes = durationValue.toIntOrNull()?.let { estimateUnit.toMinutes(it) }
-            estimateUnit = unit
-            durationValue =
+            if (unit == state.estimateUnit) return@SegmentedButtonRow
+            val currentMinutes = state.durationValue.toIntOrNull()?.let { state.estimateUnit.toMinutes(it) }
+            val updatedValue =
               currentMinutes?.let { minutes ->
                 unit.amountFor(minutes)?.takeIf { it > 0 }?.toString()
               } ?: ""
+            onStateChange(state.copy(estimateUnit = unit, durationValue = updatedValue))
           },
         )
       }
 
       Surface(
         modifier =
-          Modifier
-            .fillMaxWidth()
-            .clickable { showDatePicker = true },
+            Modifier
+              .fillMaxWidth()
+              .clickable { showDatePicker = true },
         shape = MaterialTheme.shapes.extraSmall,
         tonalElevation = 0.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -820,7 +887,7 @@ private fun TaskEditSheet(
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Text(
-            text = formatOptionalDate(plannedDate),
+            text = formatOptionalDate(state.plannedDate),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
           )
@@ -830,9 +897,9 @@ private fun TaskEditSheet(
 
       Surface(
         modifier =
-          Modifier
-            .fillMaxWidth()
-            .clickable { showTimePicker = true },
+            Modifier
+              .fillMaxWidth()
+              .clickable { showTimePicker = true },
         shape = MaterialTheme.shapes.extraSmall,
         tonalElevation = 0.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -842,7 +909,7 @@ private fun TaskEditSheet(
           verticalAlignment = Alignment.CenterVertically,
         ) {
           Text(
-            text = formatOptionalTime(plannedTime),
+            text = formatOptionalTime(state.plannedTime),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f),
           )
@@ -859,11 +926,11 @@ private fun TaskEditSheet(
             Modifier
               .menuAnchor(type = MenuAnchorType.PrimaryNotEditable)
               .fillMaxWidth(),
-          value = constraintLabel(constraint),
+          value = constraintLabel(state.constraint),
           onValueChange = {},
           readOnly = true,
           label = { Text("Constraint") },
-          supportingText = { Text(constraintDescription(constraint)) },
+          supportingText = { Text(constraintDescription(state.constraint)) },
           trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = constraintMenuExpanded) },
         )
         ExposedDropdownMenu(
@@ -874,7 +941,7 @@ private fun TaskEditSheet(
             DropdownMenuItem(
               text = { Text(constraintLabel(option)) },
               onClick = {
-                constraint = option
+                onStateChange(state.copy(constraint = option))
                 constraintMenuExpanded = false
               },
             )
@@ -894,7 +961,7 @@ private fun TaskEditSheet(
           value =
             parentDisplay(
               titleLookup = topLevelParents.associateBy { it.id },
-              parentId = parentId,
+              parentId = state.parentId,
             ),
           onValueChange = {},
           readOnly = true,
@@ -908,7 +975,7 @@ private fun TaskEditSheet(
           DropdownMenuItem(
             text = { Text("No parent") },
             onClick = {
-              parentId = null
+              onStateChange(state.copy(parentId = null))
               parentMenuExpanded = false
             },
           )
@@ -916,7 +983,7 @@ private fun TaskEditSheet(
             DropdownMenuItem(
               text = { Text(option.title) },
               onClick = {
-                parentId = option.id
+                onStateChange(state.copy(parentId = option.id))
                 parentMenuExpanded = false
               },
             )
@@ -927,18 +994,18 @@ private fun TaskEditSheet(
   }
 
   if (showDatePicker) {
-    val state =
+    val datePickerState =
       rememberDatePickerState(
-        initialSelectedDateMillis = plannedDate?.toEpochMillis() ?: defaultDate.toEpochMillis(),
+        initialSelectedDateMillis = state.plannedDate?.toEpochMillis() ?: defaultDate.toEpochMillis(),
       )
     DatePickerDialog(
       onDismissRequest = { showDatePicker = false },
       confirmButton = {
         TextButton(
           onClick = {
-            val millis = state.selectedDateMillis
+            val millis = datePickerState.selectedDateMillis
             if (millis != null) {
-              plannedDate = millis.toLocalDate()
+              onStateChange(state.copy(plannedDate = millis.toLocalDate()))
             }
             showDatePicker = false
           },
@@ -948,7 +1015,7 @@ private fun TaskEditSheet(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           TextButton(
             onClick = {
-              plannedDate = null
+              onStateChange(state.copy(plannedDate = null))
               showDatePicker = false
             },
           ) { Text("Clear") }
@@ -956,20 +1023,20 @@ private fun TaskEditSheet(
         }
       },
     ) {
-      DatePicker(state = state)
+      DatePicker(state = datePickerState)
     }
   }
 
   if (showTimePicker) {
     TimePickerDialog(
-      initialTime = plannedTime ?: defaultTime,
+      initialTime = state.plannedTime ?: defaultTime,
       onDismiss = { showTimePicker = false },
       onConfirm = { time ->
-        plannedTime = time
+        onStateChange(state.copy(plannedTime = time))
         showTimePicker = false
       },
       onClear = {
-        plannedTime = null
+        onStateChange(state.copy(plannedTime = null))
         showTimePicker = false
       },
     )
